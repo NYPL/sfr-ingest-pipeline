@@ -1,0 +1,41 @@
+{
+  "name": "sfr-gutenberg-lambda",
+  "version": "0.0.1",
+  "description": "A lambda to read epub records from the GITenberg project of Project Gutenberg and pass the resulting metadata to a Kinesis stream",
+  "main": "index.js",
+  "scripts": {
+    "clean": "./node_modules/.bin/rimraf dist",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src",
+    "local-run": "npm run build && ./node_modules/.bin/node-lambda run -j ./event.json -f ./config/local.env --handler dist/index.handler",
+    "deploy-dev": "npm run build && ./node_modules/.bin/node-lambda deploy -e development -f ./config/dev.env -S config/event_sources_dev.json --handler dist/index.handler -P nypl-sandbox",
+    "deploy-qa": "npm run build && ./node_modules/.bin/node-lambda deploy -e qa -f ./config/qa.env -S config/event_sources_qa.json --handler dist/index.handler",
+    "deploy-prod": "npm run build && ./node_modules/.bin/node-lambda deploy -e production -f ./config/prod.env -S config/event_sources_prod.json --handler dist/index.handler -P nypl-digital-dev",
+    "package": "./node_modules/.bin/node-lambda package"
+  },
+  "author": "Michael Benowitz",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-cli": "^6.26.0",
+    "babel-plugin-istanbul": "^5.1.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-register": "^6.26.0",
+    "babel-runtime": "^6.26.0",
+    "node-lambda": "^0.12.0",
+    "rimraf": "^2.6.2"
+  },
+  "dependencies": {
+    "apollo-boost": "^0.1.20",
+    "apollo-cache-inmemory": "^1.3.9",
+    "apollo-client": "^2.4.5",
+    "apollo-link-context": "^1.0.9",
+    "apollo-link-http": "^1.5.5",
+    "apollo-link-timeout": "^1.1.8",
+    "csvtojson": "^2.0.8",
+    "graphql": "^14.0.2",
+    "graphql-tag": "^2.10.0",
+    "node-fetch": "^2.2.1",
+    "xml2js": "^0.4.19"
+  }
+}
