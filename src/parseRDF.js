@@ -1,4 +1,3 @@
-import csvtojson from 'csvtojson'
 import {parseString} from 'xml2js'
 
 const storeFields = [
@@ -22,49 +21,99 @@ const fileFields = [
     ["dcterms:extent", "size"]
 ]
 
-const lcRels = loadLCRels()
+const subjAuthRegex = /\/([A-Z]+)$/
 
-export const parseRDF = (data) => {
+export const parseRDF = (data, lcRels, callback) => {
     let rdfData = data["data"]["repository"]["object"]
     let rdfText = rdfData["text"]
     parseString(rdfText, (err, result) => {
-        loadGutenbergRecord(result["rdf:RDF"])
+        let gutenbergData = loadGutenbergRecord(result["rdf:RDF"], lcRels)
+        callback(gutenbergData)
     })
 }
 
-const loadGutenbergRecord = (rdf) => {
+const loadGutenbergRecord = (rdf, lcRels) => {
     let bibRecord = {}
     let ebook = rdf["pgterms:ebook"][0]
     let work = rdf["cc:Work"][0]
-
-    // TODO
-    // 1) Load license URL from work record
-    // 2) Load Subjects into record
-    // 3) Load creator and other entities into record
-    // 3a) Handle multiple aliases
-    // 4) Scan RDF records to be sure that we aren't missing any fields
-    console.log(work)
-    console.log(ebook["dcterms:subject"][0]["rdf:Description"][0])
-    console.log(ebook["dcterms:creator"][0]["pgterms:agent"][0])
-
+    
     bibRecord["formats"] = getFormats(ebook["dcterms:hasFormat"])
+    bibRecord["subjects"] = getSubjects(ebook["dcterms:subject"])
+    bibRecord["entities"] = getEntities(ebook, lcRels)
     storeFields.map(field => {
         bibRecord[field[1]] = getRecordField(ebook, field[0])
     })
-    console.log(bibRecord)
+    bibRecord["license"] = getFieldAttrib(work["cc:license"][0], "rdf:resource")
+    let languageCont = ebook["dcterms:language"][0]["rdf:Description"][0]
+    bibRecord["language"] = getRecordField(languageCont, "rdf:value")
+    return bibRecord
+}
+
+const getEntities = (ebook, lcRels) => {
+    let entities = []
+    try{
+        let creator = getEntity(ebook["dcterms:creator"][0]["pgterms:agent"][0], "author")
+        entities.push(creator)
+    } catch(e) {
+        if (e instanceof TypeError){
+            console.log("No creator associated")
+        } else {
+            throw e
+        }
+    }
+    lcRels.map((rel) => {
+        let roleTerm = 'marcrel:' + rel[0]
+        if(roleTerm in ebook){
+            let ent = getEntity(ebook[roleTerm][0]["pgterms:agent"][0], rel[1])
+            entities.push(ent)
+        }
+    })
+    return entities
+}
+
+const getEntity = (entity, role) => {
+    let entRec = {
+        "role": role
+    }
+    entityFields.map(field => {
+        entRec[field[1]] = getRecordField(entity, field[0])
+    })
+
+    entRec["aliases"] = entity["pgterms:alias"]
+    if( "pgterms:webpage" in entity){
+        entRec["webpage"] = getFieldAttrib(entity["pgterms:webpage"][0], "rdf:resource")
+    }
+    return entRec
+}
+
+const getSubjects = (subjects) => {
+    let terms = []
+    if(!subjects) return terms
+    subjects.map(subject => {
+        let subjRecord = subject["rdf:Description"][0]
+        let authURL = getFieldAttrib(subjRecord["dcam:memberOf"][0], "rdf:resource")
+
+        let term = {
+            "term": getRecordField(subjRecord, "rdf:value"),
+            "authority": subjAuthRegex.exec(authURL)[1]
+        }
+        terms.push(term)
+    })
+    return terms
 }
 
 const getFormats = (formats) => {
     let epubs = []
+    if(!formats) return epubs
     formats.map(format => {
         let fileFormat = format["pgterms:file"][0]
-        url = getFieldAttrib(format, "rdf:about")
+        let url = getFieldAttrib(fileFormat, "rdf:about")
         if (url.includes(".epub")){
             let epub = {
                 "url": url
             }
             fileFields.map(field => {
-                epub[field[1]] = getRecordField(format, field[0])
+                epub[field[1]] = getRecordField(fileFormat, field[0])
             })
             epubs.push(epub)
         }
@@ -92,14 +141,4 @@ const getRecordField = (rec, field) => {
 const getFieldAttrib = (field, attrib) => {
     let attribs = field["$"]
     return attribs[attrib]
-}
-
-const loadLCRels = () => {
-    let rels = {}
-    csvtojson().fromFile("./lc_relators.csv").then((obj) => {
-        obj.forReach((rel) => {
-            rels[rel[1]] = rel[2].toLowerCase()
-        })
-        return rels
-    })
 }
