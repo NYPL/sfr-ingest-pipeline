@@ -6,7 +6,14 @@ This ingest process utilizes the GITenberg project (https://github.com/gitenberg
 in the past 24 hours, but this can be adjusted to run as frequently (or infrequently) as necessary.
 
 ## Output
-The lambda writes
+The lambda writes a basic metadata block to a Kinesis stream. That block includes:
+- Title/Alt Title
+- Publisher
+- Created
+- Updated
+- Subjects
+- ePub Formats
+- Entities (creator, editor, etc.)
 
 ## TODO
 - Create version of Lambda that can ingest ALL records
