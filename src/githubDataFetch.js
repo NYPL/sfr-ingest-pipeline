@@ -3,20 +3,34 @@ import gql from 'graphql-tag'
 import fetch from 'node-fetch'
 import { createHttpLink } from 'apollo-link-http'
 import { setContext } from 'apollo-link-context'
+import { onError } from 'apollo-link-error'
 import { InMemoryCache } from 'apollo-cache-inmemory'
 import ApolloLinkTimeout from 'apollo-link-timeout'
 import moment from 'moment'
 
-import { parseRDF } from './parseRDF'
+import RDFParser from './parseRDF'
+import logger from './helpers/logger'
 
 const httpLink = createHttpLink({
   uri: 'https://api.github.com/graphql',
   fetch: fetch
 })
 
+const errorLink = onError(({ graphQLErrors, networkError }) => {
+  if (graphQLErrors) {
+    graphQLErrors.map(({ message, location, path }) => {
+      logger.error(`Error in GraphQL Query: ${message}, Location: ${location}, Path: ${path}`)
+    })
+  } else if (networkError) {
+    logger.error(`GraphQL Connection Error: ${networkError}`)
+  }
+})
+
+const errorHttpLink = errorLink.concat(httpLink)
+
 const timeoutLink = new ApolloLinkTimeout(20000)
 
-const timeoutHttpLink = timeoutLink.concat(httpLink)
+const errorTimeoutHttpLink = timeoutLink.concat(errorHttpLink)
 
 const authLink = setContext((_, { headers }) => {
   const token = process.env.GITHUB_API_TOKEN
@@ -27,14 +41,29 @@ const authLink = setContext((_, { headers }) => {
   }
 })
 
+// We don't want to cache queries because we are always looking for new records
+// Since this is only trigged at most a few times a day (and probably less than
+// that) it should not make an impact (this is responding to a lambda, not users)
+const apolloOpts = {
+  watchQuery: {
+    fetchPolicy: 'network-only',
+    errorPolicy: 'ignore'
+  },
+  query: {
+    fetchPolicy: 'network-only',
+    errorPolicy: 'ignore'
+  }
+}
+
 const client = new ApolloClient({
-  link: authLink.concat(timeoutHttpLink),
-  cache: new InMemoryCache()
+  link: authLink.concat(errorTimeoutHttpLink),
+  cache: new InMemoryCache(),
+  defaultOptions: apolloOpts
 })
 
 const pgIDRegex = /([0-9]+)$/
 
-export const getRepos = () => {
+exports.getRepos = () => {
   let first = 25
   let fetchBoundary = moment().subtract(process.env.UPDATE_MAX_AGE_DAYS, 'days')
   let repoIDs = []
@@ -59,23 +88,20 @@ export const getRepos = () => {
         let name = repo['name']
 
         let idnoMatch = pgIDRegex.exec(name)
-        if (!idnoMatch) {
-          console.log(repo)
-          return
-        }
+        if (!idnoMatch) return
+
         let idno = idnoMatch[0]
         repoIDs.push([name, idno])
       })
       resolve(repoIDs)
     })
       .catch(err => {
-        console.log(err)
         resolve(false)
       })
   })
 }
 /* eslint-disable prefer-promise-reject-errors */
-export const getRDF = (repo, lcRels) => {
+exports.getRDF = (repo, lcRels) => {
   return new Promise((resolve, reject) => {
     let repoName = repo[0]
     let gutID = repo[1]
@@ -92,13 +118,13 @@ export const getRDF = (repo, lcRels) => {
             }
           `
     }).then(data => {
-      parseRDF(data, lcRels, (err, rdfData) => {
+      RDFParser.parseRDF(data, lcRels, (err, rdfData) => {
         if (err) {
-          reject({
+          resolve({
             'gutenbergID': gutID,
             'data': err,
             'status': 500,
-            'message': 'Retrieved Gutenberg Metadata'
+            'message': 'Could not parse Gutenberg Metadata'
           })
         } else {
           resolve({
@@ -110,8 +136,7 @@ export const getRDF = (repo, lcRels) => {
         }
       })
     }).catch(err => {
-      console.log(err)
-      reject({
+      resolve({
         'gutenbergID': gutID,
         'data': err,
         'status': 500,

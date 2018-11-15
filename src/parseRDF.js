@@ -23,37 +23,37 @@ const fileFields = [
 
 const subjAuthRegex = /\/([A-Z]+)$/
 
-export const parseRDF = (data, lcRels, callback) => {
+exports.parseRDF = (data, lcRels, callback) => {
   let rdfData = data['data']['repository']['object']
   let rdfText = rdfData['text']
   parseString(rdfText, (err, result) => {
-    if (err) callback(err, null)
-    let gutenbergData = loadGutenbergRecord(result['rdf:RDF'], lcRels)
+    if (err) return callback(err, null)
+    let gutenbergData = exports.loadGutenbergRecord(result['rdf:RDF'], lcRels)
     callback(null, gutenbergData)
   })
 }
 
-const loadGutenbergRecord = (rdf, lcRels) => {
+exports.loadGutenbergRecord = (rdf, lcRels) => {
   let bibRecord = {}
   let ebook = rdf['pgterms:ebook'][0]
   let work = rdf['cc:Work'][0]
 
-  bibRecord['formats'] = getFormats(ebook['dcterms:hasFormat'])
-  bibRecord['subjects'] = getSubjects(ebook['dcterms:subject'])
-  bibRecord['entities'] = getEntities(ebook, lcRels)
+  bibRecord['formats'] = exports.getFormats(ebook['dcterms:hasFormat'])
+  bibRecord['subjects'] = exports.getSubjects(ebook['dcterms:subject'])
+  bibRecord['entities'] = exports.getEntities(ebook, lcRels)
   storeFields.map(field => {
-    bibRecord[field[1]] = getRecordField(ebook, field[0])
+    bibRecord[field[1]] = exports.getRecordField(ebook, field[0])
   })
-  bibRecord['license'] = getFieldAttrib(work['cc:license'][0], 'rdf:resource')
+  bibRecord['license'] = exports.getFieldAttrib(work['cc:license'][0], 'rdf:resource')
   let languageCont = ebook['dcterms:language'][0]['rdf:Description'][0]
-  bibRecord['language'] = getRecordField(languageCont, 'rdf:value')
+  bibRecord['language'] = exports.getRecordField(languageCont, 'rdf:value')
   return bibRecord
 }
 
-const getEntities = (ebook, lcRels) => {
+exports.getEntities = (ebook, lcRels) => {
   let entities = []
   try {
-    let creator = getEntity(ebook['dcterms:creator'][0]['pgterms:agent'][0], 'author')
+    let creator = exports.getEntity(ebook['dcterms:creator'][0]['pgterms:agent'][0], 'author')
     entities.push(creator)
   } catch (e) {
     if (e instanceof TypeError) {
@@ -65,37 +65,37 @@ const getEntities = (ebook, lcRels) => {
   lcRels.map((rel) => {
     let roleTerm = 'marcrel:' + rel[0]
     if (roleTerm in ebook) {
-      let ent = getEntity(ebook[roleTerm][0]['pgterms:agent'][0], rel[1])
+      let ent = exports.getEntity(ebook[roleTerm][0]['pgterms:agent'][0], rel[1])
       entities.push(ent)
     }
   })
   return entities
 }
 
-const getEntity = (entity, role) => {
+exports.getEntity = (entity, role) => {
   let entRec = {
     'role': role
   }
   entityFields.map(field => {
-    entRec[field[1]] = getRecordField(entity, field[0])
+    entRec[field[1]] = exports.getRecordField(entity, field[0])
   })
 
   entRec['aliases'] = entity['pgterms:alias']
   if ('pgterms:webpage' in entity) {
-    entRec['webpage'] = getFieldAttrib(entity['pgterms:webpage'][0], 'rdf:resource')
+    entRec['webpage'] = exports.getFieldAttrib(entity['pgterms:webpage'][0], 'rdf:resource')
   }
   return entRec
 }
 
-const getSubjects = (subjects) => {
+exports.getSubjects = (subjects) => {
   let terms = []
   if (!subjects) return terms
   subjects.map(subject => {
     let subjRecord = subject['rdf:Description'][0]
-    let authURL = getFieldAttrib(subjRecord['dcam:memberOf'][0], 'rdf:resource')
+    let authURL = exports.getFieldAttrib(subjRecord['dcam:memberOf'][0], 'rdf:resource')
 
     let term = {
-      'term': getRecordField(subjRecord, 'rdf:value'),
+      'term': exports.getRecordField(subjRecord, 'rdf:value'),
       'authority': subjAuthRegex.exec(authURL)[1]
     }
     terms.push(term)
@@ -103,18 +103,18 @@ const getSubjects = (subjects) => {
   return terms
 }
 
-const getFormats = (formats) => {
+exports.getFormats = (formats) => {
   let epubs = []
   if (!formats) return epubs
   formats.map(format => {
     let fileFormat = format['pgterms:file'][0]
-    let url = getFieldAttrib(fileFormat, 'rdf:about')
+    let url = exports.getFieldAttrib(fileFormat, 'rdf:about')
     if (url.includes('.epub')) {
       let epub = {
         'url': url
       }
       fileFields.map(field => {
-        epub[field[1]] = getRecordField(fileFormat, field[0])
+        epub[field[1]] = exports.getRecordField(fileFormat, field[0])
       })
       epubs.push(epub)
     }
@@ -122,7 +122,7 @@ const getFormats = (formats) => {
   return epubs
 }
 
-const getRecordField = (rec, field) => {
+exports.getRecordField = (rec, field) => {
   try {
     if (typeof rec[field][0] === 'object') {
       return rec[field][0]._
@@ -138,7 +138,7 @@ const getRecordField = (rec, field) => {
   }
 }
 
-const getFieldAttrib = (field, attrib) => {
+exports.getFieldAttrib = (field, attrib) => {
   let attribs = field['$']
   return attribs[attrib]
 }
