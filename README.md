@@ -17,6 +17,6 @@ The lambda writes a basic metadata block to a Kinesis stream. That block include
 
 ## TODO
 - Create version of Lambda that can ingest ALL records
-- Write basic unit tests
+- ~~Write basic unit tests~~
 - Add CI code/tests
 - Better Documentation/Comment Coverage
