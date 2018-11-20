@@ -22,4 +22,14 @@ router.post('/generate_report', async (req, res) => {
   }
 })
 
+router.get('/', async (req, res) => {
+  res.send({
+    'status': 200,
+    'code': 'service-up',
+    'data': {
+      'message': 'Report Service Running'
+    }
+  })
+})
+
 export { router }
