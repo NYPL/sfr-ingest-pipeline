@@ -1,5 +1,5 @@
 import express from 'express'
-import AccessiblityRep from './accessibility_report'
+import AccessiblityRep from '../accessibility_report'
 
 const router = express.Router()
 
