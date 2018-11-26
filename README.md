@@ -21,6 +21,9 @@ This API can be deployed in an ec2 instance, and depending on the AMI used sever
 - pm2 is used to daemonize the API. This should be installed and use to start/run the node app.
 - Chromium is a dependency of the Ace Accessibility Report. npm will install this package but depending on the linux distro several dependencies may be missing. If that is the case you may need to install the libX libraries or others. It is difficult to predict. This can be partially solved by installing chromium via yum/apt-get which will pull in at least some of those dependencies if not all. **TODO** Create list of all necessary dependcies and include one-line install script here
 
+### Setup Details
+Further information on how/why this service is currently configured can be found in [docs/rationale.md](the further documentation)
+
 ### Tasks
 - Create TravisCI integration that auto-deploys to an ec2 instance
 - Create integration tests with other parts of ingest pipeline
