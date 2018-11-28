@@ -121,14 +121,16 @@ exports.getRDF = (repo, lcRels) => {
       RDFParser.parseRDF(data, lcRels, (err, rdfData) => {
         if (err) {
           resolve({
-            'gutenbergID': gutID,
+            'recordID': gutID,
+            'source': 'gutenberg'
             'data': err,
             'status': 500,
             'message': 'Could not parse Gutenberg Metadata'
           })
         } else {
           resolve({
-            'gutenbergID': gutID,
+            'recordID': gutID,
+            'source': 'gutenberg',
             'data': rdfData,
             'status': 200,
             'message': 'Retrieved Gutenberg Metadata'
@@ -137,7 +139,8 @@ exports.getRDF = (repo, lcRels) => {
       })
     }).catch(err => {
       resolve({
-        'gutenbergID': gutID,
+        'recordID': gutID,
+        'source': 'gutenberg',
         'data': err,
         'status': 500,
         'message': 'Error in parsing Gutenberg Record'
