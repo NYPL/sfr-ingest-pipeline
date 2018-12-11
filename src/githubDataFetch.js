@@ -8,7 +8,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory'
 import ApolloLinkTimeout from 'apollo-link-timeout'
 import moment from 'moment'
 
-import RDFParser from './parseRDF2'
+import RDFParser from './parseRDF'
 import logger from './helpers/logger'
 
 const httpLink = createHttpLink({
@@ -46,12 +46,12 @@ const authLink = setContext((_, { headers }) => {
 // that) it should not make an impact (this is responding to a lambda, not users)
 const apolloOpts = {
   watchQuery: {
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'no-cache',
     errorPolicy: 'ignore'
   },
   query: {
-    fetchPolicy: 'network-only',
-    errorPolicy: 'ignore'
+    fetchPolicy: 'no-cache',
+    errorPolicy: 'all'
   }
 }
 
@@ -81,6 +81,10 @@ exports.getRepos = () => {
             }
           `
     }).then(data => {
+
+      // If data is null, the GraphQL request errored out and should return false
+      if (data['data'] == 'null') resolve(false)
+
       let repoList = data['data']['organization']['repositories']['nodes']
       repoList.forEach((repo) => {
         let updatedAt = moment(repo['pushedAt'])
@@ -91,6 +95,9 @@ exports.getRepos = () => {
         if (!idnoMatch) return
 
         let idno = idnoMatch[0]
+
+        let url = repo['url']
+
         repoIDs.push([name, idno, url])
       })
       resolve(repoIDs)
@@ -119,7 +126,7 @@ exports.getRDF = (repo, lcRels) => {
             }
           `
     }).then(data => {
-      RDFParser.parseRDF(data, repoURI, lcRels, (err, rdfData) => {
+      RDFParser.parseRDF(data, gutID, repoURI, lcRels, (err, rdfData) => {
         if (err) {
           resolve({
             'recordID': gutID,
