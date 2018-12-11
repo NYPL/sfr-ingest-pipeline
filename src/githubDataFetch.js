@@ -8,7 +8,7 @@ import { InMemoryCache } from 'apollo-cache-inmemory'
 import ApolloLinkTimeout from 'apollo-link-timeout'
 import moment from 'moment'
 
-import RDFParser from './parseRDF'
+import RDFParser from './parseRDF2'
 import logger from './helpers/logger'
 
 const httpLink = createHttpLink({
@@ -82,7 +82,6 @@ exports.getRepos = () => {
           `
     }).then(data => {
       let repoList = data['data']['organization']['repositories']['nodes']
-      console.log(repoList)
       repoList.forEach((repo) => {
         let updatedAt = moment(repo['pushedAt'])
         if (updatedAt.isBefore(fetchBoundary)) return
@@ -92,7 +91,7 @@ exports.getRepos = () => {
         if (!idnoMatch) return
 
         let idno = idnoMatch[0]
-        repoIDs.push([name, idno])
+        repoIDs.push([name, idno, url])
       })
       resolve(repoIDs)
     })
@@ -106,6 +105,7 @@ exports.getRDF = (repo, lcRels) => {
   return new Promise((resolve, reject) => {
     let repoName = repo[0]
     let gutID = repo[1]
+    let repoURI = repo[2]
     let rdfPath = 'master:pg' + gutID + '.rdf'
     client.query({
       query: gql`
@@ -119,7 +119,7 @@ exports.getRDF = (repo, lcRels) => {
             }
           `
     }).then(data => {
-      RDFParser.parseRDF(data, lcRels, (err, rdfData) => {
+      RDFParser.parseRDF(data, repoURI, lcRels, (err, rdfData) => {
         if (err) {
           resolve({
             'recordID': gutID,
