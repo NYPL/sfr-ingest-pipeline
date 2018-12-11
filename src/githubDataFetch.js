@@ -74,7 +74,7 @@ exports.getRepos = () => {
                 organization(login:\"GITenberg\") {
                   repositories(orderBy:{direction:DESC, field:PUSHED_AT}, first:${first}) {
                   nodes {
-                    id, name, resourcePath, url, updatedAt, pushedAt
+                    id, name, resourcePath, url, pushedAt
                   }
                 }
               }
@@ -84,7 +84,7 @@ exports.getRepos = () => {
       let repoList = data['data']['organization']['repositories']['nodes']
       console.log(repoList)
       repoList.forEach((repo) => {
-        let updatedAt = moment(repo['updatedAt'])
+        let updatedAt = moment(repo['pushedAt'])
         if (updatedAt.isBefore(fetchBoundary)) return
         let name = repo['name']
 
