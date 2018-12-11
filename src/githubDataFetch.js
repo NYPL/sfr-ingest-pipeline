@@ -72,9 +72,9 @@ exports.getRepos = () => {
       query: gql`
               {
                 organization(login:\"GITenberg\") {
-                  repositories(orderBy:{direction:DESC, field:UPDATED_AT}, first:${first}) {
+                  repositories(orderBy:{direction:DESC, field:PUSHED_AT}, first:${first}) {
                   nodes {
-                    id, name, resourcePath, url, updatedAt
+                    id, name, resourcePath, url, updatedAt, pushedAt
                   }
                 }
               }
@@ -82,6 +82,7 @@ exports.getRepos = () => {
           `
     }).then(data => {
       let repoList = data['data']['organization']['repositories']['nodes']
+      console.log(repoList)
       repoList.forEach((repo) => {
         let updatedAt = moment(repo['updatedAt'])
         if (updatedAt.isBefore(fetchBoundary)) return
@@ -122,7 +123,7 @@ exports.getRDF = (repo, lcRels) => {
         if (err) {
           resolve({
             'recordID': gutID,
-            'source': 'gutenberg'
+            'source': 'gutenberg',
             'data': err,
             'status': 500,
             'message': 'Could not parse Gutenberg Metadata'

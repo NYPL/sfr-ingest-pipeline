@@ -91,7 +91,7 @@ describe('GitHub Data [githubDataFetch.js]', () => {
 
       let repoResponse = await GithubFetch.getRDF(['Test_Repo_0000', '0000'], [['aut', 'author']])
       expect(repoResponse['status']).to.equal(500)
-      expect(repoResponse['gutenbergID']).to.equal('0000')
+      expect(repoResponse['recordID']).to.equal('0000')
       expect(repoResponse['message']).to.equal('Error in parsing Gutenberg Record')
     })
 
@@ -121,7 +121,7 @@ describe('GitHub Data [githubDataFetch.js]', () => {
 
       let repoResponse = await GithubFetch.getRDF(['Test_Repo_0000', '0000'], [['aut', 'author']])
       expect(repoResponse['status']).to.equal(200)
-      expect(repoResponse['gutenbergID']).to.equal('0000')
+      expect(repoResponse['recordID']).to.equal('0000')
       expect(repoResponse['message']).to.equal('Retrieved Gutenberg Metadata')
       parseStub.restore()
     })
@@ -149,7 +149,7 @@ describe('GitHub Data [githubDataFetch.js]', () => {
 
       let repoResponse = await GithubFetch.getRDF(['Test_Repo_0000', '0000'], [['aut', 'author']])
       expect(repoResponse['status']).to.equal(500)
-      expect(repoResponse['gutenbergID']).to.equal('0000')
+      expect(repoResponse['recordID']).to.equal('0000')
       expect(repoResponse['message']).to.equal('Could not parse Gutenberg Metadata')
       parseStub.restore()
     })
