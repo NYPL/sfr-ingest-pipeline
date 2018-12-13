@@ -139,8 +139,10 @@ class TestScripts(unittest.TestCase):
 
     @patch('yaml.load', return_value={'testing': True})
     def test_load_env_config_success(self, mock_yaml):
-        resDict, resLines = loadEnvFile('development', 'config/{}.yaml')
-        self.assertTrue(resDict['testing'])
+        m = mock_open()
+        with patch('builtins.open', m, create=True):
+            resDict, resLines = loadEnvFile('development', 'config/{}.yaml')
+            self.assertTrue(resDict['testing'])
 
     @patch('yaml.load', side_effect={'testing': True})
     def test_load_env_failure(self, mock_yaml):
