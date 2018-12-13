@@ -181,6 +181,8 @@ def createAWSClient(configDict):
 
 def loadEnvFile(runType, fileString):
 
+    envDict
+
     if fileString:
         openFile = fileString.format(runType)
     else:
@@ -198,8 +200,8 @@ def loadEnvFile(runType, fileString):
             fileLines = envStream.readlines()
 
     except FileNotFoundError as err:
-        logger.error('Missing config YAML file! Check directory')
-        raise err
+        logger.info('Missing config YAML file! Check directory')
+        logger.debug(err)
 
     if envDict is None:
         envDict = {}
