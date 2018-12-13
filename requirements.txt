@@ -1,0 +1,7 @@
+boto3
+coverage
+flake8
+lxml
+python-lambda
+python-levenshtein
+pyyaml
