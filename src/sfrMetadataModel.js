@@ -13,6 +13,7 @@ export class InstanceRecord {
     this.agents = []
     this.identifiers = []
     this.formats = []
+    this.measurements = []
   }
 
   addAgent(name, roles, aliases, birth, death, link){
@@ -54,7 +55,7 @@ export class Format {
     this.modified = modified
 
     if (link instanceof Link || link == null) this.link = link
-    else this.setLink(link)
+    else this.link = this.setLink(link)
 
     this.rightsURI = null
   }
@@ -95,6 +96,7 @@ export class Subject {
     this.identifier = null
     this.value = value
     this.weight = weight
+    this.measurements = []
   }
 }
 
@@ -104,7 +106,7 @@ export class Measurement {
     this.quantity = quantity
     this.value = value
     this.weight = weight
-    this.takenAt
+    this.takenAt = null
   }
 }
 
