@@ -23,7 +23,7 @@ class KinesisOutput():
         logger.info("Writing results to Kinesis")
         outputObject = {
             'status': 200,
-            'stage': 'oclc-lookup',
+            'stage': os.environ['OUTPUT_STAGE'],
             'data': record
         }
         # The default lambda function here converts all objects into dicts

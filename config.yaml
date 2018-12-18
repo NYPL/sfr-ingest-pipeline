@@ -1,6 +1,6 @@
 region: us-east-1
 
-function_name: sfr-oclc-enhancer
+function_name: sfr-oclc-frbrizer-development
 handler: service.handler
 description: Metadata harvester for the OCLC Classify service, which enhances data for the SFR project
 runtime: python3.6
@@ -20,9 +20,7 @@ memory_size: 256
 # time.  During an update all other tags will be removed except the tags
 # listed here.
 tags:
-  framework: framework
-  python: python3.6
-  lambda: lambda
+  sfr: sfr
 
 # Build options
 build:

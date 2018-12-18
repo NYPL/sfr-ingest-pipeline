@@ -11,7 +11,7 @@ from helpers.errorHelpers import KinesisError
 
 class TestKinesis(unittest.TestCase):
 
-    @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_SHARD': '0'})
+    @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_SHARD': '0', 'OUTPUT_STAGE': 'test'})
     def test_putRecord(self):
         kinesis = KinesisOutput()
         stubber = Stubber(kinesis.KINESIS_CLIENT)
@@ -24,7 +24,7 @@ class TestKinesis(unittest.TestCase):
 
         body = json.dumps({
             'status': 200,
-            'stage': 'oclc-lookup',
+            'stage': 'test',
             'data': record
         })
 
@@ -39,7 +39,7 @@ class TestKinesis(unittest.TestCase):
 
         kinesis.putRecord(record)
 
-    @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_SHARD': '0'})
+    @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_SHARD': '0', 'OUTPUT_STAGE': 'test'})
     def test_putRecord_err(self):
         kinesis = KinesisOutput()
         stubber = Stubber(kinesis.KINESIS_CLIENT)
@@ -48,7 +48,7 @@ class TestKinesis(unittest.TestCase):
 
         body = json.dumps({
             'status': 200,
-            'stage': 'oclc-lookup',
+            'stage': 'test',
             'data': record
         })
 

@@ -14,6 +14,7 @@ This code is based on the [Python Lambda Boilerplate](https://github.com/NYPL/py
 - OUTPUT_REGION: The region where your output Kinesis stream is deployed
 - OUTPUT_KINESIS: The Kinesis stream to be written to
 - OUTPUT_SHARD: The shard of the stream to be written to
+- OUTPUT_STAGE: The next step in the enhancement process that should receive this record. At the moment, with no other stages, this sets to `complete`, which marks the record ready for ingest
 
 ## Input
 Accepts a Metadata record generated either by harvesting records from one of the data contributors to the SFR project (such as Project Gutenberg) or from a newly digitized volume, and generating a Work record that can either be stored in the database or enhanced with further steps in a FRBR-ization process (such as with the OCLC Lookup service or other data normalization steps)
