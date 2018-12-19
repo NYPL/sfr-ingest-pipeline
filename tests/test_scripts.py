@@ -5,8 +5,10 @@ from yaml import YAMLError
 import json
 import sys
 
-from scripts.lambdaRun import main, setEnvVars, createEventMapping, loadEnvFile, createAWSClient  # noqa: E501
+from scripts.lambdaRun import main
 from helpers.errorHelpers import InvalidExecutionType
+from helpers.configHelpers import setEnvVars, loadEnvFile
+from helpers.clientHelpers import createEventMapping, createAWSClient
 
 # Disable logging while we are running tests
 logging.disable(logging.CRITICAL)
@@ -76,7 +78,7 @@ class TestScripts(unittest.TestCase):
         }, ['region: Snowdream\n', 'host: Rozelle'])
     ]
 
-    @patch('scripts.lambdaRun.loadEnvFile', side_effect=mockReturns)
+    @patch('helpers.configHelpers.loadEnvFile', side_effect=mockReturns)
     @patch('builtins.open', new_callable=mock_open, read_data='data')
     def test_envVar_success(self, mock_file, mock_env):
         setEnvVars('development')
@@ -86,7 +88,7 @@ class TestScripts(unittest.TestCase):
         ]
         mock_env.assert_has_calls(envCalls)
 
-    @patch('scripts.lambdaRun.loadEnvFile', return_value=({}, None))
+    @patch('helpers.configHelpers.loadEnvFile', return_value=({}, None))
     @patch('shutil.copyfile')
     def test_missing_block(self, mock_copy, mock_env):
         setEnvVars('development')
@@ -113,7 +115,7 @@ class TestScripts(unittest.TestCase):
         )
     ]
 
-    @patch('scripts.lambdaRun.loadEnvFile', side_effect=mockReturns)
+    @patch('helpers.configHelpers.loadEnvFile', side_effect=mockReturns)
     def test_envVar_parsing(self, mock_env):
         m = mock_open()
         with patch('builtins.open', m, create=True):
@@ -123,7 +125,7 @@ class TestScripts(unittest.TestCase):
                 call('environment_variables:\n  jerry: hello\n  test: world\n')
             ])
 
-    @patch('scripts.lambdaRun.loadEnvFile', side_effect=mockReturns)
+    @patch('helpers.configHelpers.loadEnvFile', side_effect=mockReturns)
     @patch('builtins.open', side_effect=IOError())
     def test_envVar_permissions(self, mock_file, mock_env):
         try:
@@ -181,8 +183,8 @@ class TestScripts(unittest.TestCase):
         )
     ]
 
-    @patch('scripts.lambdaRun.createAWSClient')
-    @patch('scripts.lambdaRun.loadEnvFile', side_effect=mockReturns)
+    @patch('helpers.clientHelpers.createAWSClient')
+    @patch('helpers.clientHelpers.loadEnvFile', side_effect=mockReturns)
     def test_create_event_mapping(self, mock_env, mock_client):
         jsonD = ('{"EventSourceMappings": [{"EventSourceArn": "test",'
                  '"Enabled": "test", "BatchSize": "test",'
@@ -203,9 +205,9 @@ class TestScripts(unittest.TestCase):
             )
         ])
 
-    @patch('scripts.lambdaRun.createAWSClient')
-    @patch('scripts.lambdaRun.loadEnvFile', side_effect=mockReturns)
-    def test_at_lastest_position_event(self, mock_env, mock_client):
+    @patch('helpers.clientHelpers.createAWSClient')
+    @patch('helpers.clientHelpers.loadEnvFile', side_effect=mockReturns)
+    def test_at_latest_position_event(self, mock_env, mock_client):
         jsonD = ('{"EventSourceMappings": [{"EventSourceArn": "test",'
                  '"Enabled": "test", "BatchSize": "test",'
                  '"StartingPosition": "AT_TIMESTAMP",'
@@ -255,7 +257,7 @@ class TestScripts(unittest.TestCase):
             pass
         self.assertRaises(FileNotFoundError)
 
-    @patch('scripts.lambdaRun.loadEnvFile')
+    @patch('helpers.configHelpers.loadEnvFile')
     def test_empty_mapping_json_err(self, mock_env):
         jsonD = '{"EventSourceMappings": []}'
 
@@ -266,21 +268,21 @@ class TestScripts(unittest.TestCase):
 
     @patch('boto3.client', return_value=True)
     def test_create_client(self, mock_boto):
-        result = createAWSClient({
+        result = createAWSClient('test_service', {
             'region': 'test'
         })
-        mock_boto.assert_called_once_with('lambda', region_name='test')
+        mock_boto.assert_called_once_with('test_service', region_name='test')
         self.assertTrue(result)
 
     @patch('boto3.client', return_value=True)
     def test_create_with_access(self, mock_boto):
-        result = createAWSClient({
+        result = createAWSClient('test_service', {
             'region': 'test',
             'aws_access_key_id': 1,
             'aws_secret_access_key': 'secret'
         })
         mock_boto.assert_called_once_with(
-            'lambda',
+            'test_service',
             region_name='test',
             aws_access_key_id=1,
             aws_secret_access_key='secret'

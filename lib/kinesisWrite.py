@@ -5,14 +5,12 @@ import os
 
 from helpers.errorHelpers import KinesisError
 from helpers.logHelpers import createLog
+from helpers.clientHelpers import createAWSClient
 
 logger = createLog('kinesis_write')
 
 class KinesisOutput():
-    KINESIS_CLIENT = boto3.client(
-        'kinesis',
-        region_name = os.environ['OUTPUT_REGION']
-    )
+    KINESIS_CLIENT = createAWSClient('kinesis')
 
     def __init__(self):
         pass
