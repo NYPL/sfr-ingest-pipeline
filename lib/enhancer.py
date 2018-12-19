@@ -28,11 +28,14 @@ def enhanceRecord(record):
         # This step also adds the oclc identifiers to the sourceData record
         classifyData, sourceData = classifyRecord(source, data, recID)
 
-        # Step 2: Parse the data recieved from Classify into the SFR data model
-        parsedData = readFromClassify(classifyData)
+        if classifyData is not None:
+            # Step 2: Parse the data recieved from Classify into the SFR data model
+            parsedData = readFromClassify(classifyData)
 
-        # Step 3: Merge this data with the source data
-        mergedData = mergeData(sourceData, parsedData)
+            # Step 3: Merge this data with the source data
+            mergedData = mergeData(sourceData, parsedData)
+        else:
+            mergedData = sourceData
 
         # Step 4: Output this block to kinesis
         KinesisOutput.putRecord(mergedData)

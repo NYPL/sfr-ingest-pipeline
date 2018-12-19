@@ -54,7 +54,7 @@ def parseClassify(rawXML, sourceData):
 
     storedWorks = []
     if responseCode == 102:
-        return None
+        return None, sourceData
     elif responseCode == 2:
         logger.debug('Got Single Work, parsing work and edition data')
         work = parseXML.find('.//work', namespaces=NAMESPACE)
