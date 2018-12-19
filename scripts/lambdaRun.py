@@ -7,6 +7,7 @@ import yaml
 import json
 
 import boto3
+import botocore
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import InvalidExecutionType
@@ -154,7 +155,30 @@ def createEventMapping(runType):
         if mapping['StartingPosition'] == 'AT_TIMESTAMP':
             createKwargs['StartingPositionTimestamp'] = mapping['StartingPositionTimestamp']  # noqa: E501
 
-        lambdaClient.create_event_source_mapping(**createKwargs)
+        try:
+            lambdaClient.create_event_source_mapping(**createKwargs)
+        except lambdaClient.exceptions.ResourceConflictException as err:
+            logger.info('Event Mapping already exists, update')
+            updateEventMapping(lambdaClient, mapping, configDict)
+
+
+def updateEventMapping(client, mapping, configDict):
+
+    listSourceKwargs = {
+        'EventSourceArn': mapping['EventSourceArn'],
+        'FunctionName': configDict['function_name'],
+        'MaxItems': 1
+    }
+    sourceMappings = client.list_event_source_mappings(**listSourceKwargs)
+    mappingMeta = sourceMappings['EventSourceMappings'][0]
+
+    updateKwargs = {
+        'UUID': mappingMeta['UUID'],
+        'FunctionName': configDict['function_name'],
+        'Enabled': mapping['Enabled'],
+        'BatchSize': mapping['BatchSize'],
+    }
+    client.update_event_source_mapping(**updateKwargs)
 
 
 def createAWSClient(configDict):
