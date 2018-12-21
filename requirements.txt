@@ -1,0 +1,5 @@
+python-lambda
+coverage
+flake8
+pyyaml
+SQLAlchemy
