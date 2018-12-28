@@ -10,6 +10,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 
 from model.core import Base, Core
+from model.measurement import SUBJECT_MEASUREMENTS, Measurement
 
 SUBJECT_WORKS = Table('subject_works', Base.metadata,
     Column('work_id', Integer, ForeignKey('works.id')),
@@ -28,6 +29,7 @@ class Subject(Core, Base):
     weight = Column(Float)
 
     work = relationship('Work', secondary=SUBJECT_WORKS, back_populates='subjects')
+    measurements = relationship('Measurement', secondary=SUBJECT_MEASUREMENTS, back_populates='subject')
 
     def __repr__(self):
         return '<Subject(subject={}, uri={}, authority={})'.format(self.subject, self.uri, self.authority)
@@ -36,31 +38,58 @@ class Subject(Core, Base):
     @classmethod
     def updateOrInsert(cls, session, subject):
 
+        measurements = subject.pop('measurements', None)
+
         existingSubject = Subject.lookupSubject(session, subject)
 
         if existingSubject is not None:
-            return 'update', Subject.update(session, existingSubject, subject)
+            return 'update', Subject.update(
+                existingSubject,
+                subject,
+                measurements=measurements
+            )
 
-        return 'insert', Subject.insert(subject)
+        return 'insert', Subject.insert(
+            subject,
+            measurements=measurements
+        )
 
 
     @classmethod
-    def update(cls, existing, subject):
+    def update(cls, existing, subject, **kwargs):
+
+        measurements = kwargs.get('measurements', [])
+
         for field, value in subject.items():
             if(value is not None and value.strip() != ''):
                 setField = getattr(existing, field)
                 setField = value
 
+        for measurement in measurements:
+            measurementRec = Measurement.insert(measurement)
+            existing.measurements.append(measurementRec)
+
+        return existing
+
 
     @classmethod
-    def insert(cls, subject):
-        return Subject(**subject)
+    def insert(cls, subject, **kwargs):
+
+        measurements = kwargs.get('measurements', [])
+
+        newSubject = Subject(**subject)
+
+        for measurement in measurements:
+            measurementRec = Measurement.insert(measurement)
+            newSubject.measurements.append(measurementRec)
+
+        return newSubject
 
     @classmethod
     def lookupSubject(cls, session, subject):
         sbjs = session.query(Subject)\
-            .filter(Subject.authority == subject.authority)\
-            .filter(Subject.subject == subject.subject)\
+            .filter(Subject.authority == subject['authority'])\
+            .filter(Subject.subject == subject['subject'])\
             .all()
         if len(sbjs) == 1:
             return sbjs[0]

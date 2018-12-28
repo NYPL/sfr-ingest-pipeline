@@ -36,6 +36,10 @@ REPORT_MEASUREMENTS = Table('report_measurements', Base.metadata,
     Column('measurement_id', Integer, ForeignKey('measurements.id'))
 )
 
+SUBJECT_MEASUREMENTS = Table('subject_measurements', Base.metadata,
+    Column('subject_id', Integer, ForeignKey('subjects.id')),
+    Column('measurement_id', Integer, ForeignKey('measurements.id'))
+)
 
 class Measurement(Core, Base):
 
@@ -50,6 +54,7 @@ class Measurement(Core, Base):
     instance = relationship('Instance', secondary=INSTANCE_MEASUREMENTS, back_populates='measurements')
     item = relationship('Item', secondary=ITEM_MEASUREMENTS, back_populates='measurements')
     report = relationship('AccessReport', secondary=REPORT_MEASUREMENTS, back_populates='measurements')
+    subject = relationship('Subject', secondary=SUBJECT_MEASUREMENTS, back_populates='measurements')
 
 
     def __repr__(self):

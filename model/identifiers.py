@@ -114,6 +114,34 @@ class ISSN(Core, Base):
         return '<ISSN(value={})>'.format(self.value)
 
 
+class LCC(Core, Base):
+
+    __tablename__ = 'lcc'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='lcc')
+
+    def __repr__(self):
+        return '<LCC(value={})>'.format(self.value)
+
+
+class DDC(Core, Base):
+
+    __tablename__ = 'ddc'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='ddc')
+
+    def __repr__(self):
+        return '<DDC(value={})>'.format(self.value)
+
+
 class Identifier(Base):
 
     __tablename__ = 'identifiers'
@@ -131,6 +159,8 @@ class Identifier(Base):
     isbn = relationship('ISBN', back_populates='identifier')
     issn = relationship('ISSN', back_populates='identifier')
     owi = relationship('OWI', back_populates='identifier')
+    lcc = relationship('LCC', back_populates='identifier')
+    ddc = relationship('DDC', back_populates='identifier')
 
     identifierTypes = {
         'gutenberg': Gutenberg,
@@ -138,7 +168,9 @@ class Identifier(Base):
         'owi': OWI,
         'lccn': LCCN,
         'isbn': ISBN,
-        'issn': ISSN
+        'issn': ISSN,
+        'lcc': LCC,
+        'ddc': DDC
     }
 
 
@@ -148,7 +180,6 @@ class Identifier(Base):
 
     @classmethod
     def returnOrInsert(cls, session, identifier, model, recordID):
-
         existingIden = Identifier.lookupIdentifier(session, identifier, model, recordID)
         if existingIden is not None:
             return 'existing', existingIden

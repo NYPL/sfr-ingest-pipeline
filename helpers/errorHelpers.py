@@ -8,3 +8,7 @@ class NoRecordsReceived(Exception):
 class InvalidExecutionType(Exception):
     def __init__(self, message):
         self.message = message
+
+class OutputError(Exception):
+    def __init__(self, message):
+        self.message = message

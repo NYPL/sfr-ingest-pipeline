@@ -1,4 +1,5 @@
 import uuid
+import babelfish
 from sqlalchemy import (
     Column,
     Date,
@@ -13,7 +14,7 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from model.core import Base, Core
-from model.measurement import INSTANCE_MEASUREMENTS
+from model.measurement import INSTANCE_MEASUREMENTS, Measurement
 from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
 from model.link import INSTANCE_LINKS
 from model.item import Item
@@ -26,6 +27,7 @@ class Instance(Core, Base):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
+    alt_title = Column(Unicode, index=True)
     pub_place = Column(Unicode, index=True)
     pub_date = Column(Date, index=True)
     edition = Column(Unicode)
@@ -38,7 +40,7 @@ class Instance(Core, Base):
 
     work = relationship('Work', back_populates='instances')
     items = relationship('Item', back_populates='instance')
-    agents = association_proxy('agent_instances', 'agents')
+    agents = association_proxy('agent_instances', 'agent')
     measurements = relationship('Measurement', secondary=INSTANCE_MEASUREMENTS, back_populates='instance')
     identifiers = relationship('Identifier', secondary=INSTANCE_IDENTIFIERS, back_populates='instance')
     links = relationship('Link', secondary=INSTANCE_LINKS, back_populates='instances')
@@ -64,7 +66,7 @@ class Instance(Core, Base):
                 identifiers=identifiers,
                 measurements=measurements
             )
-            return False
+            return None
 
         newInstance = Instance.insert(
             session,
@@ -74,7 +76,7 @@ class Instance(Core, Base):
             identifiers=identifiers,
             measurements=measurements
         )
-
+        print("direct", newInstance)
         return newInstance
 
 
@@ -102,14 +104,21 @@ class Instance(Core, Base):
 
         for item in items:
             # TODO This should defer and put this into a stream for processing/storage
-            itemRec = Item.updateOrInsert(session, item)
-            existing.items.append(itemRec)
+            Item.createLocalEpub(item, existing.id)
+            #itemRec = Item.updateOrInsert(session, item)
+            #existing.items.append(itemRec)
 
         return existing
 
 
     @classmethod
     def insert(cls, session, instanceData, **kwargs):
+
+        # Check if language codes are too long and convert if necessary
+        if len(instanceData['language']) != 2:
+            lang = babelfish.Language(instanceData['language'])
+            instanceData['language'] = lang.alpha2
+
         instance = Instance(**instanceData)
 
         identifiers = kwargs.get('identifiers', [])
@@ -117,14 +126,16 @@ class Instance(Core, Base):
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
 
-        for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            for role in roles:
-                AgentInstances(
-                    agent=agentRec,
-                    instance=instance,
-                    role=role
-                )
+        if agents is not None:
+            for agent in agents:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                for role in roles:
+                    print(agentRec, instance, role)
+                    AgentInstances(
+                        agent=agentRec,
+                        instance=instance,
+                        role=role
+                    )
 
         for iden in identifiers:
             idenRec = Identifier.insert(iden)
@@ -134,10 +145,17 @@ class Instance(Core, Base):
             measurementRec = Measurement.insert(measurement)
             instance.measurements.append(measurementRec)
 
-        for item in items:
-            itemRec = Item.updateOrInsert(session, item)
-            instance.items.append(itemRec)
+        # We need to get the ID of the instance to allow for asynchronously
+        # storing the ePub file, so instance is added and flushed here
+        # TODO evaluate if this is a good idea, or can be handled better elsewhere
+        session.add(instance)
+        session.flush()
 
+        for item in items:
+            Item.createLocalEpub(item, instance.id)
+            #itemRec = Item.updateOrInsert(session, item)
+            #instance.items.append(itemRec)
+        print("inserting", instance)
         return instance
 
 

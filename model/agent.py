@@ -50,7 +50,6 @@ class Agent(Core, Base):
         link = agent.pop('link', [])
 
         existingAgent = Agent.lookupAgent(session, agent)
-
         if existingAgent is not None:
             updated = Agent.update(
                 session,
@@ -81,7 +80,7 @@ class Agent(Core, Base):
                 setField = value
 
         if aliases is not None:
-            for alias in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Agent, existing.id), aliases)):
+            for alias in list(filter(lambda x: Alias.insertOrSkip(session, x, Agent, existing.id), aliases)):
                 existing.aliases.append(alias)
 
         if link is not None:
@@ -133,8 +132,8 @@ class Agent(Core, Base):
     def lookupAgent(cls, session, agent):
         if agent['viaf'] is not None and agent['lcnaf'] is not None:
             logger.debug('Matching agent on VIAF/LCNAF')
-            agnts = session.query(Agent)\
-                .filter(or_(Agent.viaf == agent['viaf'], Agent.lcnaf == agent['lcnaf']))\
+            agnts = session.query(cls)\
+                .filter(or_(cls.viaf == agent['viaf'], cls.lcnaf == agent['lcnaf']))\
                 .all()
             if len(agnts) == 1:
                 return agnts[0]
@@ -144,9 +143,11 @@ class Agent(Core, Base):
 
         logger.debug('Matching agent based off jaro_winkler score')
         jaroWinklerQ = text(
-            "SELECT * FROM {} WHERE jarowinkler({}, '{}') > {}".format('agents', 'name', agent['name'], 0.95)
+            "jarowinkler({}, '{}') > {}".format('name', agent['name'], 0.95)
         )
-        agnts = session.execute(jaroWinklerQ).fetchall()
+        agnts = session.query(cls)\
+            .filter(jaroWinklerQ)\
+            .all()
         if len(agnts) == 1:
             return agnts[0]
         elif len(agnts) > 1:

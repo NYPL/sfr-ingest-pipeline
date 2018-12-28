@@ -25,10 +25,11 @@ from model.identifiers import (
 )
 from model.altTitle import AltTitle
 from model.rawData import RawData
-from model.measurement import WORK_MEASUREMENTS
+from model.measurement import WORK_MEASUREMENTS, Measurement
 from model.link import WORK_LINKS
 from model.instance import Instance
 from model.agent import Agent
+from model.subject import Subject
 
 from helpers.logHelpers import createLog
 
@@ -86,7 +87,7 @@ class Work(Core, Base):
         measurements = workData.pop('measurements', None)
         links = workData.pop('links', None)
 
-        existing = Work.lookupWork(session, identifiers, primaryIdentifier)
+        existing = cls.lookupWork(session, identifiers, primaryIdentifier)
         if existing is not None:
             updated = Work.update(
                 session,
@@ -104,7 +105,7 @@ class Work(Core, Base):
             return 'update', updated
 
         # Insert a new work
-        newWork = Work.insert(
+        newWork = cls.insert(
             session,
             workData,
             instances=instances,
@@ -127,7 +128,7 @@ class Work(Core, Base):
         instances = kwargs.get('instances', [])
         identifiers = kwargs.get('identifiers', [])
         agents = kwargs.get('agents', [])
-        altTitles = kwargs.get('altTitles', [])
+        altTitles = kwargs.get('alt_titles', [])
         subjects = kwargs.get('subjects', [])
         measurements = kwargs.get('measurements', [])
         links = kwargs.get('links', [])
@@ -141,8 +142,24 @@ class Work(Core, Base):
                 setField = getattr(existing, field)
                 setField = value
 
-        for instance in list(filter(lambda x: Instance.updateOrInsert(session, x), instances)):
-            existing.instances.append(instanceRec)
+        newTitle = work.get('title')
+        # The "canonical title" should be set to the record with the most holdings
+        if newTitle.lower() != existing.title.lower():
+            newHoldings = list(filter(lambda x: x['quantity'] == 'holdings', measurements))[0]
+            oldHoldings = list(filter(lambda x: x.quantity == 'holdings', existing.measurements))
+
+            for holding in oldHoldings:
+                if newHoldings.value > holding.value:
+                    existing.title = newTitle
+                    break
+            else:
+                existing.altTitle.append(AltTitle(title=newTitle))
+
+
+        for instance in instances:
+            instanceRec = Instance.updateOrInsert(session, instance)
+            if instanceRec is not None:
+                existing.instances.append(instanceRec)
 
         for iden in identifiers:
             status, idenRec = Identifier.returnOrInsert(session, iden, Work, existing.id)
@@ -151,6 +168,8 @@ class Work(Core, Base):
 
         for agent in agents:
             agentRec, roles = Agent.updateOrInsert(session, agent)
+            if roles is None:
+                roles = ['author']
             for role in roles:
                 if AgentWorks.roleExists(session, agentRec, role, Work, existing.id) is None:
                     AgentWorks(
@@ -164,7 +183,7 @@ class Work(Core, Base):
 
         for subject in subjects:
             op, subjectRec = Subject.updateOrInsert(session, subject)
-            relExists = Work.lookupSubjectRel(session, subjectRec, workID)
+            relExists = Work.lookupSubjectRel(session, subjectRec, existing.id)
             if relExists is None:
                 existing.subjects.append(subjectRec)
 
@@ -185,9 +204,8 @@ class Work(Core, Base):
 
         # TODO Remove prepositions, etc from the start of the sort title
         workData['sort_title'] = workData.get('sort_title', workData['title'])
-
-        work = Work(**workData)
-
+        print(workData)
+        work = cls(**workData)
         #
         # === IMPORTANT ===
         # This inserts a uuid value for the db row
@@ -199,7 +217,7 @@ class Work(Core, Base):
         instances = kwargs.get('instances', [])
         identifiers = kwargs.get('identifiers', [])
         agents = kwargs.get('agents', [])
-        altTitles = kwargs.get('altTitles', [])
+        altTitles = kwargs.get('alt_titles', [])
         subjects = kwargs.get('subjects', [])
         measurements = kwargs.get('measurements', [])
         links = kwargs.get('links', [])
@@ -241,16 +259,17 @@ class Work(Core, Base):
 
     @classmethod
     def lookupWork(cls, session, identifiers, primaryIdentifier=None):
-        if primaryIdentifier is not None and primaryIdentifier['type'] == 'UUID':
+        if primaryIdentifier is not None and primaryIdentifier['type'] == 'uuid':
             return Work.getByUUID(session, primaryIdentifier['identifier'])
 
         return Identifier.getByIdentifier(Work, session, identifiers)
 
 
     @classmethod
-    def getByUUID(cls, session, uuid):
+    def getByUUID(cls, session, recUUID):
+        qUUID = uuid.UUID(recUUID)
         existing = session.query(Work)\
-            .filter(Work.uuid == uuid)\
+            .filter(Work.uuid == qUUID)\
             .one()
         return existing
 

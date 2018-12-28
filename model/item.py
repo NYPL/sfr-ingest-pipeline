@@ -1,4 +1,5 @@
 import uuid
+import os
 from sqlalchemy import (
     Column,
     Date,
@@ -19,6 +20,8 @@ from model.core import Base, Core
 from model.measurement import ITEM_MEASUREMENTS, REPORT_MEASUREMENTS, Measurement
 from model.identifiers import ITEM_IDENTIFIERS
 from model.link import ITEM_LINKS, Link
+
+from lib.outputManager import OutputManager
 
 class Item(Core, Base):
 
@@ -42,6 +45,22 @@ class Item(Core, Base):
     def __repr__(self):
         return '<Item(source={}, instance={})>'.format(self.source, self.instance)
 
+
+    @classmethod
+    def createLocalEpub(cls, item, instanceID):
+        epubPayload = {
+            'url': item['link']['url'],
+            'id': instanceID,
+            'updated': item['modified'],
+            'data': item
+        }
+
+        for measure in item['measurements']:
+            if measure['quantity'] == 'bytes':
+                epubPayload['size'] = measure['value']
+                break
+
+        OutputManager.putKinesis(epubPayload, os.environ['EPUB_STREAM'])
 
     @classmethod
     def updateOrInsert(cls, session, item):
@@ -84,9 +103,6 @@ class AccessReport(Core, Base):
     ace_version = Column(String(25))
     score = Column(Float, index=True)
     report_json = Column(JSON, nullable=False)
-    critical_errs = Column(Integer)
-    serious_errs = Column(Integer)
-    moderate_errs = Column(Integer)
     item_id = Column(Integer, ForeignKey('items.id'))
 
     item = relationship('Item', back_populates='access_reports')

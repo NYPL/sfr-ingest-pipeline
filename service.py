@@ -70,11 +70,12 @@ def parseRecord(encodedRec):
 
     try:
         result = importRecord(session, record)
+        session.flush()
         session.commit()
     except:
         session.rollback()
         raise
     finally:
+        logger.debug('Closing Session')
         session.close()
-    
     return result
