@@ -125,7 +125,7 @@ def createEventMapping(runType):
             except json.decoder.JSONDecodeError as err:
                 logger.error('Unable to parse JSON file')
                 raise err
-    except FileNotFoundError as err:
+    except FileNotFoundError:
         logger.info('No Event Source mapping provided')
         return
     except IOError as err:

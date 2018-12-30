@@ -3,14 +3,15 @@ import os
 from lib.outputManager import OutputManager
 
 LOOKUP_IDENTIFIERS = [
-    'oclc', # OCLC Number
-    'isbn', # ISBN (10 or 13)
-    'issn', # ISSN
-    'upc',  # UPC (Probably unused)
-    'lccn', # LCCN
-    'swid', # OCLC Work Identifier
-    'stdnbr'# Sandard Number (unclear)
+    'oclc',   # OCLC Number
+    'isbn',   # ISBN (10 or 13)
+    'issn',   # ISSN
+    'upc',    # UPC (Probably unused)
+    'lccn',   # LCCN
+    'swid',   # OCLC Work Identifier
+    'stdnbr'  # Sandard Number (unclear)
 ]
+
 
 def queryWork(work, workUUID):
     lookupIDs = getIdentifiers(work.identifiers)
@@ -52,6 +53,7 @@ def getIdentifiers(identifiers):
                 pass
 
     return lookupIDs
+
 
 def getAuthors(agentWorks):
     agents = []

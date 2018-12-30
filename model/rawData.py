@@ -1,17 +1,14 @@
 from sqlalchemy import (
     Column,
-    Date,
-    Enum,
     ForeignKey,
-    Index,
     Integer,
-    String,
-    Unicode,
 )
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import relationship
 
 from model.core import Base, Core
+
+
 #
 # A that holds version-controlled raw copies of the import JSON blocks
 #

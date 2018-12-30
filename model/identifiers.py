@@ -1,34 +1,35 @@
-import uuid
 from sqlalchemy import (
     Column,
-    Date,
-    Enum,
     ForeignKey,
-    Index,
     Integer,
-    String,
     Unicode,
-    DateTime,
     Table
 )
 from sqlalchemy.orm import relationship
 
 from model.core import Base, Core
 
-WORK_IDENTIFIERS = Table('work_identifiers', Base.metadata,
+WORK_IDENTIFIERS = Table(
+    'work_identifiers',
+    Base.metadata,
     Column('work_id', Integer, ForeignKey('works.id')),
     Column('identifier_id', Integer, ForeignKey('identifiers.id'))
 )
 
-INSTANCE_IDENTIFIERS = Table('instance_identifiers', Base.metadata,
+INSTANCE_IDENTIFIERS = Table(
+    'instance_identifiers',
+    Base.metadata,
     Column('instance_id', Integer, ForeignKey('instances.id')),
     Column('identifier_id', Integer, ForeignKey('identifiers.id'))
 )
 
-ITEM_IDENTIFIERS = Table('item_identifiers', Base.metadata,
+ITEM_IDENTIFIERS = Table(
+    'item_identifiers',
+    Base.metadata,
     Column('item_id', Integer, ForeignKey('items.id')),
     Column('identifier_id', Integer, ForeignKey('identifiers.id'))
 )
+
 
 class Gutenberg(Core, Base):
 
@@ -148,9 +149,21 @@ class Identifier(Base):
     id = Column(Integer, primary_key=True)
     type = Column(Unicode, index=True)
 
-    work = relationship('Work', secondary=WORK_IDENTIFIERS, back_populates='identifiers')
-    instance = relationship('Instance', secondary=INSTANCE_IDENTIFIERS, back_populates='identifiers')
-    item = relationship('Item', secondary=ITEM_IDENTIFIERS, back_populates='identifiers')
+    work = relationship(
+        'Work',
+        secondary=WORK_IDENTIFIERS,
+        back_populates='identifiers'
+    )
+    instance = relationship(
+        'Instance',
+        secondary=INSTANCE_IDENTIFIERS,
+        back_populates='identifiers'
+    )
+    item = relationship(
+        'Item',
+        secondary=ITEM_IDENTIFIERS,
+        back_populates='identifiers'
+    )
 
     # Related tables for specific identifier types
     gutenberg = relationship('Gutenberg', back_populates='identifier')
@@ -173,19 +186,21 @@ class Identifier(Base):
         'ddc': DDC
     }
 
-
-
     def __repr__(self):
         return '<Identifier(type={})>'.format(self.type)
 
     @classmethod
     def returnOrInsert(cls, session, identifier, model, recordID):
-        existingIden = Identifier.lookupIdentifier(session, identifier, model, recordID)
+        existingIden = Identifier.lookupIdentifier(
+            session,
+            identifier,
+            model,
+            recordID
+        )
         if existingIden is not None:
             return 'existing', existingIden
 
         return 'new', Identifier.insert(identifier)
-
 
     @classmethod
     def insert(cls, identifier):
@@ -196,12 +211,11 @@ class Identifier(Base):
         idenField.append(idenRec)
         return coreIden
 
-
     @classmethod
     def lookupIdentifier(cls, session, identifier, model, recordID):
         idenType = identifier['type']
         existing = session.query(model) \
-            .join("identifiers", idenType) \
+            .join('identifiers', idenType) \
             .filter(cls.identifierTypes[idenType].value == identifier['identifier']) \
             .filter(model.id == recordID) \
             .all()
@@ -209,7 +223,7 @@ class Identifier(Base):
         if len(existing) == 1:
             return existing[0]
         elif len(existing) > 1:
-            print("Found multiple identifiers for this!")
+            print('Found multiple identifiers for this!')
             raise
         else:
             return None
@@ -219,14 +233,14 @@ class Identifier(Base):
         for ident in identifiers:
             idenType = ident['type']
             existing = session.query(model)\
-                .join("identifiers", idenType)\
+                .join('identifiers', idenType)\
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
                 .all()
 
             if len(existing) == 1:
                 return existing[0]
             elif len(existing) > 1:
-                print("Found multiple references!")
+                print('Found multiple references!')
                 raise
         else:
             return None

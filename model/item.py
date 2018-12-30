@@ -1,27 +1,29 @@
-import uuid
 import os
 from sqlalchemy import (
     Column,
-    Date,
-    Enum,
     ForeignKey,
-    Index,
     Integer,
     Float,
     String,
     Unicode,
     DateTime,
 )
+
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.associationproxy import association_proxy
 
 from model.core import Base, Core
-from model.measurement import ITEM_MEASUREMENTS, REPORT_MEASUREMENTS, Measurement
+from model.measurement import (
+    ITEM_MEASUREMENTS,
+    REPORT_MEASUREMENTS,
+    Measurement
+)
 from model.identifiers import ITEM_IDENTIFIERS
 from model.link import ITEM_LINKS, Link
 
 from lib.outputManager import OutputManager
+
 
 class Item(Core, Base):
 
@@ -35,16 +37,39 @@ class Item(Core, Base):
 
     instance_id = Column(Integer, ForeignKey('instances.id'))
 
-    instance = relationship('Instance', back_populates='items')
-    measurements = relationship('Measurement', secondary=ITEM_MEASUREMENTS, back_populates='item')
-    identifiers = relationship('Identifier', secondary=ITEM_IDENTIFIERS, back_populates='item')
-    agents = association_proxy('agent_items', 'agents')
-    access_reports = relationship('AccessReport', back_populates='item')
-    links = relationship('Link', secondary=ITEM_LINKS, back_populates='items')
+    instance = relationship(
+        'Instance',
+        back_populates='items'
+    )
+    measurements = relationship(
+        'Measurement',
+        secondary=ITEM_MEASUREMENTS,
+        back_populates='item'
+    )
+    identifiers = relationship(
+        'Identifier',
+        secondary=ITEM_IDENTIFIERS,
+        back_populates='item'
+    )
+    agents = association_proxy(
+        'agent_items',
+        'agents'
+    )
+    access_reports = relationship(
+        'AccessReport',
+        back_populates='item'
+    )
+    links = relationship(
+        'Link',
+        secondary=ITEM_LINKS,
+        back_populates='items'
+    )
 
     def __repr__(self):
-        return '<Item(source={}, instance={})>'.format(self.source, self.instance)
-
+        return '<Item(source={}, instance={})>'.format(
+            self.source,
+            self.instance
+        )
 
     @classmethod
     def createLocalEpub(cls, item, instanceID):
@@ -76,7 +101,6 @@ class Item(Core, Base):
 
         return itemRec
 
-
     @classmethod
     def insert(cls, itemData, **kwargs):
 
@@ -105,11 +129,21 @@ class AccessReport(Core, Base):
     report_json = Column(JSON, nullable=False)
     item_id = Column(Integer, ForeignKey('items.id'))
 
-    item = relationship('Item', back_populates='access_reports')
-    measurements = relationship('Measurement', secondary=REPORT_MEASUREMENTS, back_populates='report')
+    item = relationship(
+        'Item',
+        back_populates='access_reports'
+    )
+    measurements = relationship(
+        'Measurement',
+        secondary=REPORT_MEASUREMENTS,
+        back_populates='report'
+    )
 
     def __repr__(self):
-        return '<AccessReport(score={}, item={})>'.format(self.score, self.item)
+        return '<AccessReport(score={}, item={})>'.format(
+            self.score,
+            self.item
+        )
 
 
 class AgentItems(Core, Base):
@@ -119,5 +153,8 @@ class AgentItems(Core, Base):
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
     role = Column(String(64))
 
-    item = relationship(Item, backref=backref('agent_items', cascade='all, delete-orphan'))
+    item = relationship(
+        Item,
+        backref=backref('agent_items', cascade='all, delete-orphan')
+    )
     agent = relationship('Agent')

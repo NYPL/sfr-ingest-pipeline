@@ -1,19 +1,14 @@
-import uuid
 from dateutil.parser import parse
 from sqlalchemy import (
     Column,
     Date,
-    Enum,
     ForeignKey,
-    Index,
     Integer,
     String,
     Unicode,
-    DateTime,
-    Table,
     or_
 )
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
 
 from model.core import Base, Core
@@ -22,6 +17,7 @@ from model.link import AGENT_LINKS, Link
 from helpers.logHelpers import createLog
 
 logger = createLog('agentModel')
+
 
 class Agent(Core, Base):
 
@@ -35,13 +31,23 @@ class Agent(Core, Base):
     birth_date = Column(Date, default=None)
     death_date = Column(Date, default=None)
 
-    aliases = relationship('Alias', back_populates='agent')
-    links = relationship('Link', secondary=AGENT_LINKS, back_populates='agents')
-
+    aliases = relationship(
+        'Alias',
+        back_populates='agent'
+    )
+    links = relationship(
+        'Link',
+        secondary=AGENT_LINKS,
+        back_populates='agents'
+    )
 
     def __repr__(self):
-        return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(self.name, self.sort_name, self.lcnaf, self.viaf)
-
+        return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(
+            self.name,
+            self.sort_name,
+            self.lcnaf,
+            self.viaf
+        )
 
     @classmethod
     def updateOrInsert(cls, session, agent):
@@ -67,7 +73,6 @@ class Agent(Core, Base):
         )
         return newAgent, roles
 
-
     @classmethod
     def update(cls, session, existing, agent, **kwargs):
 
@@ -76,8 +81,7 @@ class Agent(Core, Base):
 
         for field, value in agent.items():
             if(value is not None and value.strip() != ''):
-                setField = getattr(existing, field)
-                setField = value
+                setattr(existing, field, value)
 
         if aliases is not None:
             for alias in list(filter(lambda x: Alias.insertOrSkip(session, x, Agent, existing.id), aliases)):
@@ -86,10 +90,9 @@ class Agent(Core, Base):
         if link is not None:
             updateLink = Link.updateOrInsert(session, link, Agent, existing.id)
             if updateLink is not None:
-                existing.links.append(newLink)
+                existing.links.append(updateLink)
 
         return existing
-
 
     @classmethod
     def insert(cls, agentData, **kwargs):
@@ -114,7 +117,6 @@ class Agent(Core, Base):
             setattr(agent, dateField, agentField)
 
         aliases = kwargs.get('aliases', [])
-        roles = kwargs.get('roles', ['author'])
         link = kwargs.get('link', [])
 
         if aliases is not None:
@@ -127,13 +129,17 @@ class Agent(Core, Base):
 
         return agent
 
-
     @classmethod
     def lookupAgent(cls, session, agent):
         if agent['viaf'] is not None and agent['lcnaf'] is not None:
             logger.debug('Matching agent on VIAF/LCNAF')
             agnts = session.query(cls)\
-                .filter(or_(cls.viaf == agent['viaf'], cls.lcnaf == agent['lcnaf']))\
+                .filter(
+                    or_(
+                        cls.viaf == agent['viaf'],
+                        cls.lcnaf == agent['lcnaf']
+                    )
+                )\
                 .all()
             if len(agnts) == 1:
                 return agnts[0]
@@ -143,7 +149,7 @@ class Agent(Core, Base):
 
         logger.debug('Matching agent based off jaro_winkler score')
         jaroWinklerQ = text(
-            "jarowinkler({}, '{}') > {}".format('name', agent['name'], 0.95)
+            "jarowinkler({}, '{}') > {}".format('name', agent['name'], 0.9)
         )
         agnts = session.query(cls)\
             .filter(jaroWinklerQ)\
@@ -156,9 +162,10 @@ class Agent(Core, Base):
 
         return None
 
+
 class Alias(Core, Base):
 
-    __tablename__  = 'aliases'
+    __tablename__ = 'aliases'
     id = Column(Integer, primary_key=True)
     alias = Column(Unicode, index=True)
     agent_id = Column(Integer, ForeignKey('agents.id'))

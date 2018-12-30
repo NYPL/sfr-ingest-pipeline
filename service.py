@@ -5,29 +5,22 @@ from helpers.errorHelpers import NoRecordsReceived
 from helpers.logHelpers import createLog
 from lib.dbManager import dbGenerateConnection, importRecord, createSession
 
-from model.work import Work
-from model.altTitle import AltTitle
-from model.subject import Subject
-from model.instance import Instance
-from model.item import Item, AccessReport
-from model.link import Link
-from model.measurement import Measurement
-from model.agent import Agent, Alias
-from model.identifiers import Identifier, OCLC, Gutenberg, LCCN, ISBN, ISSN, OWI
-
-# Logger can be passed name of current module
-# Can also be instantiated on a class/method basis using dot notation
+"""Logger can be passed name of current module
+Can also be instantiated on a class/method basis using dot notation
+"""
 logger = createLog('handler')
 
-# This method will create the database if necessary and otherwise run any
-# new migrations. This is placed here because Lambdas will "freeze" any methods
-# that are executed before the main handler block, meaning that we can run
-# migrations and generate a db connection for multiple invocations, at least
-# until AWS decides to regenerate the container
+"""This method will create the database if necessary and otherwise run any
+new migrations. This is placed here because Lambdas will "freeze" any methods
+that are executed before the main handler block, meaning that we can run
+migrations and generate a db connection for multiple invocations, at least
+until AWS decides to regenerate the container
+"""
 engine = dbGenerateConnection()
 
-def handler(event, context):
 
+def handler(event, context):
+    """Central handler invoked by Lambda trigger"""
     logger.debug('Starting Lambda Execution')
 
     records = event.get('Records')
@@ -49,12 +42,18 @@ def handler(event, context):
 
 
 def parseRecords(records):
-    logger.debug("Parsing Messages")
+    """Iterator for handling multiple incoming messages"""
+    logger.debug('Parsing Messages')
     results = list(map(parseRecord, records))
     return results
 
 
 def parseRecord(encodedRec):
+    """Handles each individual record by parsing JSON from the base64 encoded
+    string recieved from the Kinesis stream, creating a database session and
+    inserting/updating the database to reflect this new data source. It will
+    rollback changes if an error is encountered
+    """
     try:
         record = json.loads(base64.b64decode(encodedRec['kinesis']['data']))
     except json.decoder.JSONDecodeError as jsonErr:
@@ -72,7 +71,10 @@ def parseRecord(encodedRec):
         result = importRecord(session, record)
         session.flush()
         session.commit()
-    except:
+    except:  # noqa: Q000
+        # There are a large number of SQLAlchemy errors that can be thrown
+        # These should be handled elsewhere, but this should catch anything
+        # and rollback the session if we encounter something unexpected
         session.rollback()
         raise
     finally:

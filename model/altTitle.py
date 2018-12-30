@@ -1,18 +1,14 @@
-import uuid
 from sqlalchemy import (
     Column,
-    Date,
-    Enum,
     ForeignKey,
-    Index,
     Integer,
-    String,
     Unicode,
 )
-from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
 from model.core import Base, Core
+
+
 #
 # A simple table to hold alternate titles
 #
@@ -37,4 +33,4 @@ class AltTitle(Core, Base):
             .one_or_none()
         if existing is not None:
             return False
-        return cls(alias=alias)
+        return cls(title=title)

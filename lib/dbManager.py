@@ -1,7 +1,5 @@
 import os
-import uuid
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 from model.core import Base
@@ -19,14 +17,15 @@ database = os.environ['DB_NAME']
 
 
 LOOKUP_IDENTIFIERS = [
-    'oclc', # OCLC Number
-    'isbn', # ISBN (10 or 13)
-    'issn', # ISSN
-    'upc',  # UPC (Probably unused)
-    'lccn', # LCCN
-    'swid', # OCLC Work Identifier
-    'stdnbr'# Sandard Number (unclear)
+    'oclc',   # OCLC Number
+    'isbn',   # ISBN (10 or 13)
+    'issn',   # ISSN
+    'upc',    # UPC (Probably unused)
+    'lccn',   # LCCN
+    'swid',   # OCLC Work Identifier
+    'stdnbr'  # Sandard Number (unclear)
 ]
+
 
 def dbGenerateConnection():
 
@@ -49,6 +48,7 @@ def dbGenerateConnection():
 def createSession(engine):
     Session = sessionmaker(bind=engine)
     return Session()
+
 
 def importRecord(session, record):
 

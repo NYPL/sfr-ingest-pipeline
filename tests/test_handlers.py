@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import patch, mock_open, call
-
+from unittest.mock import patch
 import os
+
+from helpers.errorHelpers import NoRecordsReceived
 
 os.environ['DB_USER'] = 'test'
 os.environ['DB_PASS'] = 'test'
@@ -14,8 +15,6 @@ os.environ['DB_NAME'] = 'test'
 # little testing weirdness, e.g. we need to mock it on import to prevent errors
 with patch('lib.dbManager.dbGenerateConnection') as mock_db:
     from service import handler
-
-from helpers.errorHelpers import NoRecordsReceived
 
 
 class TestHandler(unittest.TestCase):

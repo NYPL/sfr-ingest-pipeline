@@ -1,10 +1,10 @@
 import yaml
-import shutil
 
 from helpers.logHelpers import createLog
-from helpers.errorHelpers import InvalidExecutionType
+
 
 logger = createLog('configHelpers')
+
 
 def loadEnvFile(runType, fileString):
 

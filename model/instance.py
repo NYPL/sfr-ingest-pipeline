@@ -1,11 +1,8 @@
-import uuid
 import babelfish
 from sqlalchemy import (
     Column,
     Date,
-    Enum,
     ForeignKey,
-    Index,
     Integer,
     String,
     Unicode,
@@ -38,16 +35,40 @@ class Instance(Core, Base):
 
     work_id = Column(Integer, ForeignKey('works.id'))
 
-    work = relationship('Work', back_populates='instances')
-    items = relationship('Item', back_populates='instance')
-    agents = association_proxy('agent_instances', 'agent')
-    measurements = relationship('Measurement', secondary=INSTANCE_MEASUREMENTS, back_populates='instance')
-    identifiers = relationship('Identifier', secondary=INSTANCE_IDENTIFIERS, back_populates='instance')
-    links = relationship('Link', secondary=INSTANCE_LINKS, back_populates='instances')
+    work = relationship(
+        'Work',
+        back_populates='instances'
+    )
+    items = relationship(
+        'Item',
+        back_populates='instance'
+    )
+    agents = association_proxy(
+        'agent_instances',
+        'agent'
+    )
+    measurements = relationship(
+        'Measurement',
+        secondary=INSTANCE_MEASUREMENTS,
+        back_populates='instance'
+    )
+    identifiers = relationship(
+        'Identifier',
+        secondary=INSTANCE_IDENTIFIERS,
+        back_populates='instance'
+    )
+    links = relationship(
+        'Link',
+        secondary=INSTANCE_LINKS,
+        back_populates='instances'
+    )
 
     def __repr__(self):
-        return '<Instance(title={}, edition={}, work={})>'.format(self.title, self.edition, self.work)
-
+        return '<Instance(title={}, edition={}, work={})>'.format(
+            self.title,
+            self.edition,
+            self.work
+        )
 
     @classmethod
     def updateOrInsert(cls, session, instance):
@@ -57,7 +78,7 @@ class Instance(Core, Base):
         measurements = instance.pop('measurements', None)
         existing = Identifier.getByIdentifier(Instance, session, identifiers)
         if existing is not None:
-            updated = Instance.update(
+            Instance.update(
                 session,
                 existing,
                 instance,
@@ -76,9 +97,7 @@ class Instance(Core, Base):
             identifiers=identifiers,
             measurements=measurements
         )
-        print("direct", newInstance)
         return newInstance
-
 
     @classmethod
     def update(cls, session, existing, instance, **kwargs):
@@ -90,11 +109,17 @@ class Instance(Core, Base):
 
         for field, value in instance.items():
             if(value is not None and value.strip() != ''):
-                setField = getattr(existing, field)
-                setField = value
+                setattr(existing, field, value)
 
         for iden in identifiers:
-            status, idenRec = Identifier.returnOrInsert(session, iden, Instance, existing.id)
+
+            status, idenRec = Identifier.returnOrInsert(
+                session,
+                iden,
+                Instance,
+                existing.id
+            )
+
             if status == 'new':
                 existing.identifiers.append(idenRec)
 
@@ -105,11 +130,22 @@ class Instance(Core, Base):
         for item in items:
             # TODO This should defer and put this into a stream for processing/storage
             Item.createLocalEpub(item, existing.id)
-            #itemRec = Item.updateOrInsert(session, item)
-            #existing.items.append(itemRec)
+            # itemRec = Item.updateOrInsert(session, item)
+            # existing.items.append(itemRec)
+
+        for agent in agents:
+            agentRec, roles = Agent.updateOrInsert(session, agent)
+            if roles is None:
+                roles = ['author']
+            for role in roles:
+                if AgentInstances.roleExists(session, agentRec, role, Instance, existing.id) is None:
+                    AgentInstances(
+                        agent=agentRec,
+                        work=existing,
+                        role=role
+                    )
 
         return existing
-
 
     @classmethod
     def insert(cls, session, instanceData, **kwargs):
@@ -153,9 +189,9 @@ class Instance(Core, Base):
 
         for item in items:
             Item.createLocalEpub(item, instance.id)
-            #itemRec = Item.updateOrInsert(session, item)
-            #instance.items.append(itemRec)
-        print("inserting", instance)
+            # itemRec = Item.updateOrInsert(session, item)
+            # instance.items.append(itemRec)
+
         return instance
 
 
@@ -166,5 +202,18 @@ class AgentInstances(Core, Base):
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
     role = Column(String(64))
 
-    instance = relationship(Instance, backref=backref('agent_instances', cascade='all, delete-orphan'))
+    instance = relationship(
+        Instance,
+        backref=backref('agent_instances', cascade='all, delete-orphan')
+    )
     agent = relationship('Agent')
+
+    @classmethod
+    def roleExists(cls, session, agent, role, model, recordID):
+        return session.query(cls)\
+            .join(Agent)\
+            .join(model)\
+            .filter(Agent.id == agent.id)\
+            .filter(model.id == recordID)\
+            .filter(cls.role == role)\
+            .one_or_none()

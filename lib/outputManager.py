@@ -1,6 +1,4 @@
-import boto3
 import json
-import datetime
 import os
 
 from helpers.errorHelpers import OutputError
@@ -8,6 +6,7 @@ from helpers.logHelpers import createLog
 from helpers.clientHelpers import createAWSClient
 
 logger = createLog('output_write')
+
 
 class OutputManager():
     KINESIS_CLIENT = createAWSClient('kinesis')
@@ -19,7 +18,7 @@ class OutputManager():
     @classmethod
     def putKinesis(cls, data, stream):
 
-        logger.info("Writing results to Kinesis")
+        logger.info('Writing results to Kinesis')
         outputObject = {
             'status': 200,
             'data': data
@@ -31,7 +30,7 @@ class OutputManager():
             default=lambda x: vars(x)
         )
         try:
-            kinesisResp = cls.KINESIS_CLIENT.put_record(
+            cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
                 Data=kinesisStream,
                 PartitionKey='0'
@@ -41,11 +40,10 @@ class OutputManager():
             logger.error('Kinesis Write error!')
             raise OutputError('Failed to write result to output stream!')
 
-
     @classmethod
     def putQueue(cls, data):
 
-        logger.info("Writing results to SQS")
+        logger.info('Writing results to SQS')
         outputObject = {
             'type': data['type'],
             'identifier': data['identifier']
@@ -57,7 +55,7 @@ class OutputManager():
             default=lambda x: vars(x)
         )
         try:
-            sqsResp = cls.SQS_CLIENT.send_message(
+            cls.SQS_CLIENT.send_message(
                 QueueUrl=os.environ['OUTPUT_SQS'],
                 MessageBody=messageData
             )

@@ -12,7 +12,8 @@ from sqlalchemy.orm import relationship
 from model.core import Base, Core
 from model.measurement import SUBJECT_MEASUREMENTS, Measurement
 
-SUBJECT_WORKS = Table('subject_works', Base.metadata,
+SUBJECT_WORKS = Table(
+    'subject_works', Base.metadata,
     Column('work_id', Integer, ForeignKey('works.id')),
     Column('subject_id', Integer, ForeignKey('subjects.id')),
     Column('weight', Float)
@@ -21,19 +22,30 @@ SUBJECT_WORKS = Table('subject_works', Base.metadata,
 
 class Subject(Core, Base):
 
-    __tablename__= 'subjects'
+    __tablename__ = 'subjects'
     id = Column(Integer, primary_key=True)
     authority = Column(Unicode)
     uri = Column(String(50))
     subject = Column(Unicode, index=True)
     weight = Column(Float)
 
-    work = relationship('Work', secondary=SUBJECT_WORKS, back_populates='subjects')
-    measurements = relationship('Measurement', secondary=SUBJECT_MEASUREMENTS, back_populates='subject')
+    work = relationship(
+        'Work',
+        secondary=SUBJECT_WORKS,
+        back_populates='subjects'
+    )
+    measurements = relationship(
+        'Measurement',
+        secondary=SUBJECT_MEASUREMENTS,
+        back_populates='subject'
+    )
 
     def __repr__(self):
-        return '<Subject(subject={}, uri={}, authority={})'.format(self.subject, self.uri, self.authority)
-
+        return '<Subject(subject={}, uri={}, authority={})'.format(
+            self.subject,
+            self.uri,
+            self.authority
+        )
 
     @classmethod
     def updateOrInsert(cls, session, subject):
@@ -54,7 +66,6 @@ class Subject(Core, Base):
             measurements=measurements
         )
 
-
     @classmethod
     def update(cls, existing, subject, **kwargs):
 
@@ -62,15 +73,13 @@ class Subject(Core, Base):
 
         for field, value in subject.items():
             if(value is not None and value.strip() != ''):
-                setField = getattr(existing, field)
-                setField = value
+                setattr(existing, field, value)
 
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
             existing.measurements.append(measurementRec)
 
         return existing
-
 
     @classmethod
     def insert(cls, subject, **kwargs):
@@ -94,7 +103,7 @@ class Subject(Core, Base):
         if len(sbjs) == 1:
             return sbjs[0]
         elif len(sbjs) > 1:
-            print("Too many subjects found, should only be one!")
+            print('Too many subjects found, should only be one!')
             raise
 
         # TODO Implement matching based on jaro_winkler scores

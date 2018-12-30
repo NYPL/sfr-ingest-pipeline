@@ -3,9 +3,7 @@ import json
 from sqlalchemy import (
     Column,
     Date,
-    Enum,
     ForeignKey,
-    Index,
     Integer,
     String,
     Unicode,
@@ -16,17 +14,11 @@ from sqlalchemy.ext.associationproxy import association_proxy
 
 from model.core import Base, Core
 from model.subject import SUBJECT_WORKS
-from model.identifiers import (
-    WORK_IDENTIFIERS,
-    Identifier,
-    Gutenberg,
-    OCLC,
-    OWI
-)
+from model.identifiers import WORK_IDENTIFIERS, Identifier
 from model.altTitle import AltTitle
 from model.rawData import RawData
 from model.measurement import WORK_MEASUREMENTS, Measurement
-from model.link import WORK_LINKS
+from model.link import WORK_LINKS, Link
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
@@ -61,17 +53,45 @@ class Work(Core, Base):
     # Relationships
     #
 
-    alt_titles = relationship('AltTitle', back_populates='work')
-    subjects = relationship('Subject', secondary=SUBJECT_WORKS, back_populates='work')
-    instances = relationship('Instance', back_populates='work')
-    agents = association_proxy('agent_works', 'agent')
-    measurements = relationship('Measurement', secondary=WORK_MEASUREMENTS, back_populates='work')
-    identifiers = relationship('Identifier', secondary=WORK_IDENTIFIERS, back_populates='work')
-    links = relationship('Link', secondary=WORK_LINKS, back_populates='works')
-    import_json = relationship('RawData', back_populates='work')
+    alt_titles = relationship(
+        'AltTitle',
+        back_populates='work'
+    )
+    subjects = relationship(
+        'Subject',
+        secondary=SUBJECT_WORKS,
+        back_populates='work'
+    )
+    instances = relationship(
+        'Instance',
+        back_populates='work'
+    )
+    agents = association_proxy(
+        'agent_works',
+        'agent'
+    )
+    measurements = relationship(
+        'Measurement',
+        secondary=WORK_MEASUREMENTS,
+        back_populates='work'
+    )
+    identifiers = relationship(
+        'Identifier',
+        secondary=WORK_IDENTIFIERS,
+        back_populates='work'
+    )
+    links = relationship(
+        'Link',
+        secondary=WORK_LINKS,
+        back_populates='works'
+    )
+    import_json = relationship(
+        'RawData',
+        back_populates='work'
+    )
 
     def __repr__(self):
-        return "<Work(title={})>".format(self.title)
+        return '<Work(title={})>'.format(self.title)
 
     @classmethod
     def updateOrInsert(cls, session, workData):
@@ -133,14 +153,17 @@ class Work(Core, Base):
         measurements = kwargs.get('measurements', [])
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
+
+        jsonRec = RawData(data=storeJson)
+        work.import_json.append(jsonRec)
+
         for field, value in work.items():
             if (
-                value is not None and
-                value.strip() != '' and
-                field != 'title'
+                value is not None
+                and value.strip() != ''
+                and field != 'title'
             ):
-                setField = getattr(existing, field)
-                setField = value
+                setattr(existing, field, value)
 
         newTitle = work.get('title')
         # The "canonical title" should be set to the record with the most holdings
@@ -154,7 +177,6 @@ class Work(Core, Base):
                     break
             else:
                 existing.altTitle.append(AltTitle(title=newTitle))
-
 
         for instance in instances:
             instanceRec = Instance.updateOrInsert(session, instance)
@@ -193,9 +215,12 @@ class Work(Core, Base):
             measurementRec = Measurement.insert(measurement)
             existing.measurements.append(measurementRec)
 
+        for link in links:
+            updateLink = Link.updateOrInsert(session, link, Work, existing.id)
+            if updateLink is not None:
+                existing.links.append(updateLink)
+
         return existing
-
-
 
     @classmethod
     def insert(cls, session, workData, **kwargs):
@@ -254,8 +279,11 @@ class Work(Core, Base):
             measurementRec = Measurement.insert(measurement)
             work.measurements.append(measurementRec)
 
-        return work
+        for link in links:
+            newLink = Link(**link)
+            work.links.append(newLink)
 
+        return work
 
     @classmethod
     def lookupWork(cls, session, identifiers, primaryIdentifier=None):
@@ -263,7 +291,6 @@ class Work(Core, Base):
             return Work.getByUUID(session, primaryIdentifier['identifier'])
 
         return Identifier.getByIdentifier(Work, session, identifiers)
-
 
     @classmethod
     def getByUUID(cls, session, recUUID):
@@ -276,7 +303,7 @@ class Work(Core, Base):
     @classmethod
     def lookupSubjectRel(cls, session, subject, workID):
         return session.query(cls)\
-            .join("subjects")\
+            .join('subjects')\
             .filter(Subject.subject == subject.subject)\
             .filter(cls.id == workID)\
             .one_or_none()
@@ -289,11 +316,18 @@ class AgentWorks(Core, Base):
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
     role = Column(String(64))
 
-    work = relationship(Work, backref=backref('agent_works', cascade='all, delete-orphan'))
+    work = relationship(
+        Work,
+        backref=backref('agent_works', cascade='all, delete-orphan')
+    )
     agent = relationship('Agent')
 
     def __repr__(self):
-        return '<AgentWorks(work={}, agent={}, role={})>'.format(self.work_id, self.agent_id, self.role)
+        return '<AgentWorks(work={}, agent={}, role={})>'.format(
+            self.work_id,
+            self.agent_id,
+            self.role
+        )
 
     @classmethod
     def roleExists(cls, session, agent, role, model, recordID):

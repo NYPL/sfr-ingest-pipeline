@@ -1,11 +1,10 @@
 import boto3
-import json
 
 from helpers.logHelpers import createLog
-from helpers.errorHelpers import InvalidExecutionType
 from helpers.configHelpers import loadEnvFile
 
 logger = createLog('clientHelpers')
+
 
 def createAWSClient(service, configDict=None):
 
