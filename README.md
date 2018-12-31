@@ -23,13 +23,13 @@ A relatively large number of environment variables should be set to manage the v
 ## Data Model and Message Formats
 With multiple interfaces, this function communicates in several different ways. It also contains the overall data model for the Postgresql database. Each of these is detailed at the links below
 
+
+### Internal Formats
 [Data Model](docs/datamodel.md)
 
-Input Message Formats
-- Work
-- Instance (TODO)
-- Item (TODO)
+### Input/Output Formats
+[Input Message Format](docs/inputformats.md)
 
-Output Message Format
+[Output Message Format](docs/outputformat.md)
 
-ePub Ingest Message Format
+[ePub Ingest Message Format](docs/epubmessageformat.md)
