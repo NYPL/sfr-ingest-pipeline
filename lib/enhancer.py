@@ -10,13 +10,22 @@ from lib.kinesisWrite import KinesisOutput
 logger = createLog('enhancer')
 
 def enhanceRecord(record):
-    sourceData = record['data']
+    try:
+        sourceData = record['data']
+    except KeyError:
+        logger.error('Missing data from input event')
+        return False
+
     try:
         workUUID = sourceData['uuid']
         searchType = sourceData['type']
         searchFields = sourceData['fields']
     except KeyError as e:
         logger.error('Missing attribute in data block!')
+        logger.debug(e)
+        return False
+    except TypeError as e:
+        logger.error('Could not read data from source')
         logger.debug(e)
         return False
 
@@ -40,7 +49,6 @@ def enhanceRecord(record):
         parsedData.primary_identifier = Identifier('uuid', workUUID, 1)
 
         # Step 3: Output this block to kinesis
-        print(parsedData.uuid, parsedData)
         KinesisOutput.putRecord(parsedData, os.environ['OUTPUT_KINESIS'])
 
     except OCLCError as err:
