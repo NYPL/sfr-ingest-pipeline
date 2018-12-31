@@ -9,36 +9,28 @@ from model.item import Item
 from lib.queryManager import queryWork
 from lib.outputManager import OutputManager
 
-username = os.environ['DB_USER']
-password = os.environ['DB_PASS']
-host = os.environ['DB_HOST']
-port = os.environ['DB_PORT']
-database = os.environ['DB_NAME']
-
-
-LOOKUP_IDENTIFIERS = [
-    'oclc',   # OCLC Number
-    'isbn',   # ISBN (10 or 13)
-    'issn',   # ISSN
-    'upc',    # UPC (Probably unused)
-    'lccn',   # LCCN
-    'swid',   # OCLC Work Identifier
-    'stdnbr'  # Sandard Number (unclear)
-]
+# Load environemnt variables for database connection
+USERNAME = os.environ['DB_USER']
+PASSWORD = os.environ['DB_PASS']
+HOST = os.environ['DB_HOST']
+PORT = os.environ['DB_PORT']
+DATABASE = os.environ['DB_NAME']
 
 
 def dbGenerateConnection():
-
+    """Helper function that generates sqlAlchemy engine from database details
+    provided in configuration files and loaded as environment variables"""
     engine = create_engine(
         'postgresql://{}:{}@{}:{}/{}'.format(
-            username,
-            password,
-            host,
-            port,
-            database
+            USERNAME,
+            PASSWORD,
+            HOST,
+            PORT,
+            DATABASE
         )
     )
 
+    # If the database does not exist yet, create database from the local model
     if not engine.dialect.has_table(engine, 'works'):
         Base.metadata.create_all(engine)
 
@@ -46,12 +38,20 @@ def dbGenerateConnection():
 
 
 def createSession(engine):
+    """Create a single database session"""
     Session = sessionmaker(bind=engine)
     return Session()
 
 
 def importRecord(session, record):
-
+    """Import a generic record. Fields within the record, type and method
+    control exactly what methods are invoked. Specifically this process will be
+    implemented to insert and update:
+    - works
+    - instances
+    - items
+    - agents
+    - subjects"""
     if 'type' not in record:
         record['type'] = 'work'
 
@@ -63,6 +63,10 @@ def importRecord(session, record):
             session.add(dbWork)
             session.flush()
 
+        # If this is a newly fetched record, retrieve additional data from the
+        # enhancement process. Specifically pass identifying information to
+        # a Kinesis stream that will processed by the OCLC Classify service
+        # and others
         if record['method'] == 'insert':
             queryWork(dbWork, dbWork.uuid.hex)
 

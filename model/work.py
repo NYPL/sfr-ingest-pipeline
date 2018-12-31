@@ -11,6 +11,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
+from sqlalchemy.orm.exc import NoResultFound
 
 from model.core import Base, Core
 from model.subject import SUBJECT_WORKS
@@ -23,6 +24,7 @@ from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
 
+from helpers.errorHelpers import DBError
 from helpers.logHelpers import createLog
 
 logger = createLog('workModel')
@@ -33,7 +35,11 @@ logger = createLog('workModel')
 # concepts at the same level.
 #
 class Work(Core, Base):
-
+    """The highest level FRBR entity, a work encodes the data about the
+    intellectual content of an entity. This includes things such as title,
+    author and, importantly, copyright data. The work also includes
+    relationships to agents, instances, alternate titles, links and
+    measurements"""
     __tablename__ = 'works'
     id = Column(Integer, primary_key=True)
     uuid = Column(UUID(as_uuid=True), unique=True, nullable=False)
@@ -95,6 +101,8 @@ class Work(Core, Base):
 
     @classmethod
     def updateOrInsert(cls, session, workData):
+        """Search for an existing work, if found update it, if not create
+        a new work record"""
         logger.info('Ingesting record, checking if update or insert')
         storeJson = json.dumps(workData)
 
@@ -142,7 +150,7 @@ class Work(Core, Base):
 
     @classmethod
     def update(cls, session, existing, work, **kwargs):
-
+        """Update an existing work record"""
         logger.debug('Updating existing work record {}'.format(existing.id))
 
         instances = kwargs.get('instances', [])
@@ -155,7 +163,7 @@ class Work(Core, Base):
         storeJson = kwargs.get('json')
 
         jsonRec = RawData(data=storeJson)
-        work.import_json.append(jsonRec)
+        existing.import_json.append(jsonRec)
 
         for field, value in work.items():
             if (
@@ -224,7 +232,7 @@ class Work(Core, Base):
 
     @classmethod
     def insert(cls, session, workData, **kwargs):
-
+        """Insert a new work record"""
         logger.info('Inserting new work record')
 
         # TODO Remove prepositions, etc from the start of the sort title
@@ -287,6 +295,7 @@ class Work(Core, Base):
 
     @classmethod
     def lookupWork(cls, session, identifiers, primaryIdentifier=None):
+        """Lookup a work either by UUID or by another identifier"""
         if primaryIdentifier is not None and primaryIdentifier['type'] == 'uuid':
             return Work.getByUUID(session, primaryIdentifier['identifier'])
 
@@ -294,14 +303,21 @@ class Work(Core, Base):
 
     @classmethod
     def getByUUID(cls, session, recUUID):
+        """Query the database for a work by UUID. Returns only one record or
+        errors. (If duplicate UUIDs exist, a serious error has occured)"""
         qUUID = uuid.UUID(recUUID)
-        existing = session.query(Work)\
-            .filter(Work.uuid == qUUID)\
-            .one()
+        try:
+            existing = session.query(Work)\
+                .filter(Work.uuid == qUUID)\
+                .one()
+        except NoResultFound:
+            logger.error('Multiple entries for UUID {} found!'.format(recUUID))
+            raise DBError('work', 'Multiple entries found for single UUID')
         return existing
 
     @classmethod
     def lookupSubjectRel(cls, session, subject, workID):
+        """Query database for a subject record related to the current work"""
         return session.query(cls)\
             .join('subjects')\
             .filter(Subject.subject == subject.subject)\
@@ -310,6 +326,9 @@ class Work(Core, Base):
 
 
 class AgentWorks(Core, Base):
+    """Table relating agents and works. Is instantiated as a class to
+    allow the assigning of a 'role' to each relationship.
+    (e.g. author, editor)"""
 
     __tablename__ = 'agent_works'
     work_id = Column(Integer, ForeignKey('works.id'), primary_key=True)
@@ -331,6 +350,8 @@ class AgentWorks(Core, Base):
 
     @classmethod
     def roleExists(cls, session, agent, role, model, recordID):
+        """Query database to check if a role exists between a specific work and
+        agent"""
         return session.query(cls)\
             .join(Agent)\
             .join(model)\

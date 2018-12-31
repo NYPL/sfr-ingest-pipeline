@@ -9,11 +9,10 @@ from sqlalchemy.orm import relationship
 from model.core import Base, Core
 
 
-#
-# A that holds version-controlled raw copies of the import JSON blocks
-#
 class RawData(Core, Base):
-
+    """This table holds the raw JSON objects received through the import
+    process. Each successive JSON block is stored, timestamped and associated
+    with the relevant work record"""
     __tablename__ = 'import_json'
     id = Column(Integer, primary_key=True)
     data = Column(JSON)

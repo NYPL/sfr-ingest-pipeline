@@ -48,7 +48,9 @@ SUBJECT_MEASUREMENTS = Table(
 
 
 class Measurement(Core, Base):
-
+    """A generic table for recording numerical/quantitative data about a
+    record. This can include things such as file size and number of library
+    holdings for a work"""
     __tablename__ = 'measurements'
     id = Column(Integer, primary_key=True)
     quantity = Column(Unicode, index=True)
@@ -88,6 +90,8 @@ class Measurement(Core, Base):
             self.value
         )
 
+    # TODO Update methods below to handle updating on ALL tables/models, not
+    # just for works
     @classmethod
     def updateOrInsert(cls, session, measure, workID):
 

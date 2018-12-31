@@ -41,7 +41,7 @@ AGENT_LINKS = Table(
 
 
 class Link(Core, Base):
-
+    """A generic class for describing a reference to an external resource"""
     __tablename__ = 'links'
     id = Column(Integer, primary_key=True)
     url = Column(String(125), index=True)
@@ -80,7 +80,8 @@ class Link(Core, Base):
 
     @classmethod
     def updateOrInsert(cls, session, link, model, recordID):
-
+        """Query the database for a link on the current record. If found,
+        update the existing link, if not, insert new row"""
         existing = Link.lookupLink(session, link, model, recordID)
         if existing is not None:
             Link.update(existing, link)
@@ -90,12 +91,15 @@ class Link(Core, Base):
 
     @classmethod
     def update(cls, existing, link):
+        """Update fields on existing link"""
         for field, value in link.items():
             if(value is not None and value.strip() != ''):
                 setattr(existing, field, value)
 
     @classmethod
     def lookupLink(cls, session, link, model, recordID):
+        """Query database for link related to current record. Return link
+        if found, otherwise return None"""
         return session.query(cls)\
             .join(model.__tablename__)\
             .filter(model.id == recordID)\

@@ -7,7 +7,12 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 
+from helpers.logHelpers import createLog
+from helpers.errorHelpers import DBError
+
 from model.core import Base, Core
+
+logger = createLog('identifiers')
 
 WORK_IDENTIFIERS = Table(
     'work_identifiers',
@@ -32,7 +37,7 @@ ITEM_IDENTIFIERS = Table(
 
 
 class Gutenberg(Core, Base):
-
+    """Table for Gutenberg Identifiers"""
     __tablename__ = 'gutenberg'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -46,7 +51,7 @@ class Gutenberg(Core, Base):
 
 
 class OCLC(Core, Base):
-
+    """Table for OCLC Identifiers"""
     __tablename__ = 'oclc'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -60,7 +65,7 @@ class OCLC(Core, Base):
 
 
 class LCCN(Core, Base):
-
+    """Table for Library of Congress Control Numbers"""
     __tablename__ = 'lccn'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -74,7 +79,7 @@ class LCCN(Core, Base):
 
 
 class ISBN(Core, Base):
-
+    """Table for ISBNs (10 and 13 digits)"""
     __tablename__ = 'isbn'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -88,7 +93,7 @@ class ISBN(Core, Base):
 
 
 class OWI(Core, Base):
-
+    """Table for OCLC Work Identifiers"""
     __tablename__ = 'owi'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -102,7 +107,7 @@ class OWI(Core, Base):
 
 
 class ISSN(Core, Base):
-
+    """Table for ISSNs"""
     __tablename__ = 'issn'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -116,7 +121,7 @@ class ISSN(Core, Base):
 
 
 class LCC(Core, Base):
-
+    """Table for Library of Congress Cataloging Numbers"""
     __tablename__ = 'lcc'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -130,7 +135,7 @@ class LCC(Core, Base):
 
 
 class DDC(Core, Base):
-
+    """Table for Dewey Decimal Control Numbers"""
     __tablename__ = 'ddc'
     id = Column(Integer, primary_key=True)
     value = Column(Unicode, index=True)
@@ -144,7 +149,10 @@ class DDC(Core, Base):
 
 
 class Identifier(Base):
-
+    """Core table for Identifiers. This relates specific identifiers, each
+    contained within their own table, to FRBR entities. This structure allows
+    for independent validation of different identifier types while maintaining
+    a simple relationship model between identifiers and the FRBR entities."""
     __tablename__ = 'identifiers'
     id = Column(Integer, primary_key=True)
     type = Column(Unicode, index=True)
@@ -191,6 +199,7 @@ class Identifier(Base):
 
     @classmethod
     def returnOrInsert(cls, session, identifier, model, recordID):
+        """Manages either the creation or return of an existing identifier"""
         existingIden = Identifier.lookupIdentifier(
             session,
             identifier,
@@ -204,15 +213,28 @@ class Identifier(Base):
 
     @classmethod
     def insert(cls, identifier):
+        """Inserts a new identifier"""
+
+        # Create a new entry in the core Identifier table
         coreIden = Identifier(type=identifier['type'])
+
+        # Load the model for the identifier type being stored
         specificIden = cls.identifierTypes[identifier['type']]
+
+        # Create new entry in that specific identifiers table
         idenRec = specificIden(value=identifier['identifier'])
+
+        # Add new identifier entry to the core table record
         idenField = getattr(coreIden, identifier['type'])
         idenField.append(idenRec)
+
         return coreIden
 
     @classmethod
     def lookupIdentifier(cls, session, identifier, model, recordID):
+        """Query database for a specific identifier. Return if found and
+        raise an error if duplicate identifiers are found for a single
+        type."""
         idenType = identifier['type']
         existing = session.query(model) \
             .join('identifiers', idenType) \
@@ -223,13 +245,18 @@ class Identifier(Base):
         if len(existing) == 1:
             return existing[0]
         elif len(existing) > 1:
-            print('Found multiple identifiers for this!')
-            raise
+            logger.error('Found multiple identifiers for {} ({})'.format(
+                identifier['identifier'],
+                identifier['type']
+            ))
+            raise DBError(identifier['type'], 'Found duplicate identifiers')
         else:
             return None
 
     @classmethod
     def getByIdentifier(cls, model, session, identifiers):
+        """Query database for a record related to a specific identifier. Return
+        if found and raise an error if multiple matching records are found."""
         for ident in identifiers:
             idenType = ident['type']
             existing = session.query(model)\
@@ -240,7 +267,12 @@ class Identifier(Base):
             if len(existing) == 1:
                 return existing[0]
             elif len(existing) > 1:
-                print('Found multiple references!')
-                raise
+                logger.error('Found multiple references from {}'.format(
+                    identifier['identifier']
+                ))
+                raise DBError(
+                    identifier['type'],
+                    'Found multiple references to identifier'
+                )
         else:
             return None

@@ -19,7 +19,9 @@ from model.agent import Agent
 
 
 class Instance(Core, Base):
-
+    """Instances describe specific versions (e.g. editions) of a work in the
+    FRBR model. Each of these instance can have multiple items and be
+    associated with various agents, measurements, links and identifiers."""
     __tablename__ = 'instances'
     id = Column(Integer, primary_key=True)
     title = Column(Unicode, index=True)
@@ -72,6 +74,8 @@ class Instance(Core, Base):
 
     @classmethod
     def updateOrInsert(cls, session, instance):
+        """Check for existing instance, if found update that instance. If not
+        found, create a new record."""
         items = instance.pop('formats', None)
         agents = instance.pop('agents', None)
         identifiers = instance.pop('identifiers', None)
@@ -101,11 +105,15 @@ class Instance(Core, Base):
 
     @classmethod
     def update(cls, session, existing, instance, **kwargs):
-
+        """Update an existing instance"""
         identifiers = kwargs.get('identifiers', [])
         measurements = kwargs.get('measurements', [])
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
+
+        if len(instance['language']) != 2:
+            lang = babelfish.Language(instance['language'])
+            instance['language'] = lang.alpha2
 
         for field, value in instance.items():
             if(value is not None and value.strip() != ''):
@@ -128,7 +136,8 @@ class Instance(Core, Base):
             existing.measurements.append(measurementRec)
 
         for item in items:
-            # TODO This should defer and put this into a stream for processing/storage
+            # TODO This should defer and put this into a stream for
+            # processing/storage
             Item.createLocalEpub(item, existing.id)
             # itemRec = Item.updateOrInsert(session, item)
             # existing.items.append(itemRec)
@@ -149,7 +158,7 @@ class Instance(Core, Base):
 
     @classmethod
     def insert(cls, session, instanceData, **kwargs):
-
+        """Insert a new instance record"""
         # Check if language codes are too long and convert if necessary
         if len(instanceData['language']) != 2:
             lang = babelfish.Language(instanceData['language'])
@@ -196,6 +205,9 @@ class Instance(Core, Base):
 
 
 class AgentInstances(Core, Base):
+    """Table relating agents and instances. Is instantiated as a class to
+    allow the assigning of a 'role' to each relationship.
+    (e.g. author, editor)"""
 
     __tablename__ = 'agent_instances'
     instance_id = Column(Integer, ForeignKey('instances.id'), primary_key=True)
@@ -210,6 +222,9 @@ class AgentInstances(Core, Base):
 
     @classmethod
     def roleExists(cls, session, agent, role, model, recordID):
+        """Query database to see if relationship with role exists between
+        agent and instance. Returns model instance if it does or None if it
+        does not"""
         return session.query(cls)\
             .join(Agent)\
             .join(model)\

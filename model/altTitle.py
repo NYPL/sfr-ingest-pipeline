@@ -5,15 +5,13 @@ from sqlalchemy import (
     Unicode,
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.exc import NoResultFound
 
 from model.core import Base, Core
 
 
-#
-# A simple table to hold alternate titles
-#
 class AltTitle(Core, Base):
-
+    """Contains alternate titles for works"""
     __tablename__ = 'alt_titles'
     id = Column(Integer, primary_key=True)
     title = Column(Unicode, index=True)
@@ -26,11 +24,17 @@ class AltTitle(Core, Base):
 
     @classmethod
     def insertOrSkip(cls, session, title, model, recordID):
-        existing = session.query(cls)\
-            .join(model)\
-            .filter(cls.title == title)\
-            .filter(model.id == recordID)\
-            .one_or_none()
-        if existing is not None:
-            return False
-        return cls(title=title)
+        """Queries database for alt title associated with current work. If
+        found, returns false. Otherwise it creates a new alt title entry and
+        returns it"""
+
+        try:
+            session.query(cls)\
+                .join(model)\
+                .filter(cls.title == title)\
+                .filter(model.id == recordID)\
+                .one()
+        except NoResultFound:
+            return cls(title=title)
+
+        return False

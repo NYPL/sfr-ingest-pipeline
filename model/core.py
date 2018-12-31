@@ -7,7 +7,8 @@ Base = declarative_base()
 
 
 class Core(object):
-
+    """A mixin for other SQLAlchemy ORM classes. Includes a date_craeted and
+    date_updated field for all database tables."""
     date_created = Column(
         DateTime,
         default=datetime.now()

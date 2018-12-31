@@ -26,7 +26,8 @@ from lib.outputManager import OutputManager
 
 
 class Item(Core, Base):
-
+    """An item is an individual copy of a work in the FRBR model. In the
+    digital realm this refers to a specifically stored copy of the work"""
     __tablename__ = 'items'
     id = Column(Integer, primary_key=True)
     source = Column(Unicode, index=True)
@@ -73,6 +74,15 @@ class Item(Core, Base):
 
     @classmethod
     def createLocalEpub(cls, item, instanceID):
+        """Pass new item to epub storage pipeline. Does not store item record
+        at this time, but defers until epub has been processed.
+
+        The payload object takes several parameters:
+        url: The URL of the ebook to be accessed
+        id: The ID of the parent row of the item to be stored
+        updated: Date the ebook was last updated at the source
+        data: A raw block of the metadata associated with this item"""
+
         epubPayload = {
             'url': item['link']['url'],
             'id': instanceID,
@@ -89,7 +99,8 @@ class Item(Core, Base):
 
     @classmethod
     def updateOrInsert(cls, session, item):
-
+        """Will query for existing items and either update or insert an item
+        record pending the outcome of that query"""
         link = item.pop('link', None)
         measurements = item.pop('measurements', [])
 
@@ -103,7 +114,7 @@ class Item(Core, Base):
 
     @classmethod
     def insert(cls, itemData, **kwargs):
-
+        """Insert a new item record"""
         item = Item(**itemData)
 
         link = kwargs.get('link', None)
@@ -121,7 +132,9 @@ class Item(Core, Base):
 
 
 class AccessReport(Core, Base):
-
+    """Accessibility Reports are generated reports/scores of the
+    accessbility of an epub file. These are used to provide general guidance
+    on the readability of specific items"""
     __tablename__ = 'access_reports'
     id = Column(Integer, primary_key=True)
     ace_version = Column(String(25))
@@ -147,7 +160,10 @@ class AccessReport(Core, Base):
 
 
 class AgentItems(Core, Base):
-
+    """Describes the relationship between an item and an agent, with the
+    additional field of 'role' being added, allowing for multiple distinct
+    relationships between an agent and an item. Identical to AgentInstances
+    and AgentWorks"""
     __tablename__ = 'agent_items'
     item_id = Column(Integer, ForeignKey('items.id'), primary_key=True)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)

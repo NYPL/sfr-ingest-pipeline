@@ -20,7 +20,9 @@ engine = dbGenerateConnection()
 
 
 def handler(event, context):
-    """Central handler invoked by Lambda trigger"""
+    """Central handler invoked by Lambda trigger. Begins processing of kinesis
+    stream.
+    """
     logger.debug('Starting Lambda Execution')
 
     records = event.get('Records')
