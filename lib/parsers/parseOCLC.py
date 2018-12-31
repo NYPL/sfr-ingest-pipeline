@@ -21,19 +21,10 @@ MARC_FIELDS = {
 }
 
 
-def readFromClassify(classifyRecs):
+def readFromClassify(xmlData):
     # Extract relevant data from returned works
-    logger.debug('Parsing Returned Works')
-    extractedData = extractFromXML(classifyRecs)
-
-    combinedData = combineData(extractedData)
-
-    return combinedData
-
-
-def extractFromXML(xmlData):
-    return list(map(parseWork, xmlData))
-
+    logger.debug('Parsing Returned Work')
+    return parseWork(xmlData)
 
 def parseWork(workXML):
     namespaces = {
@@ -64,10 +55,10 @@ def parseWork(workXML):
     headingList = list(map(parseHeading, headings))
 
     workDict = {
-        'oclcTitle': oclcTitle,
-        'authors': authorList,
-        'editions': editionList,
-        'headings': headingList,
+        'title': oclcTitle,
+        'agents': authorList,
+        'instances': editionList,
+        'subjects': headingList,
         'identifiers': [
             oclcNo,
             owiNo
@@ -80,12 +71,21 @@ def parseWork(workXML):
 
 def parseHeading(heading):
 
-    return {
-        'text': heading.text,
-        'id': heading.get('ident'),
-        'source': heading.get('src'),
-        'holdings': heading.get('heldby')
+    headingDict = {
+        'subject': heading.text,
+        'uri': heading.get('ident'),
+        'authority': heading.get('src')
     }
+
+    subject = Subject.createFromDict(**headingDict)
+    subject.addMeasurement(
+        quantity='holdings',
+        value=heading.get('heldby'),
+        weight=1,
+        taken_at=MEASUREMENT_TIME
+    )
+
+    return subject
 
 def parseEdition(edition):
 
@@ -139,8 +139,7 @@ def parseClassification(classification):
 
     classDict = {
         'type': subjectType,
-        'value': classification.get('sfa'),
-        'identifier': None,
+        'identifier': classification.get('sfa'),
         'weight': 1
     }
 
@@ -155,80 +154,3 @@ def parseAuthor(author):
     }
 
     return Agent.createFromDict(**authorDict)
-
-def combineData(extractedData):
-    workTitle = None
-    workTitles = []
-    editionCount = 0
-    holdings = 0
-    digHoldings = 0
-    authors = []
-    editions = []
-    headings = []
-    measurements = []
-
-    for work in extractedData:
-
-        if int(Measurement.getValueForMeasurement(work['measurements'], 'editions')) > editionCount:
-            workTitle = work['oclcTitle']
-
-        workTitles.append(work['oclcTitle'])
-        holdings += int(Measurement.getValueForMeasurement(work['measurements'], 'holdings'))
-        digHoldings += int(Measurement.getValueForMeasurement(work['measurements'], 'eholdings'))
-        editionCount += int(Measurement.getValueForMeasurement(work['measurements'], 'editions'))
-
-        authors.extend(list(filter(None, map(authorCheck, work['authors'], repeat(authors)))))
-
-        editions.extend(list(filter(None, map(editionCheck, work['editions'], repeat(editions)))))
-
-        headings.extend(list(filter(None, map(headingCheck, work['headings'], repeat(headings)))))
-
-    for measure in [('editions', editionCount), ('holdings', holdings), ('eholdings', digHoldings)]:
-        measurements.append(Measurement(
-            measure[0],
-            measure[1],
-            1,
-            MEASUREMENT_TIME
-        ))
-
-    mergedData = {
-        "workTitle": workTitle,
-        "altTitles": workTitles,
-        "authors": authors,
-        "editions": editions,
-        "subjects": headings,
-        "measurements": measurements
-    }
-
-    return WorkRecord.createFromDict(**mergedData)
-
-def headingCheck(heading, existing):
-
-    if len(existing) < 1:
-        return heading
-
-    if len(list(filter(lambda x: x['id'] == heading['id'], existing))) > 0:
-        return False
-
-    return heading
-
-def editionCheck(edition, existing):
-
-    if len(existing) < 1:
-        return edition
-
-    if len(list(filter(lambda x: x['identifiers'][0]['identifier'] == edition['identifiers'][0]['identifier'], existing))) > 0:
-        return False
-
-    return edition
-
-def authorCheck(author, existing):
-
-    if len(existing) < 1:
-        return author
-
-    for exist in existing:
-        if jaro_winkler(author['name'].lower(), exist['name'].lower()) > 0.8:
-            return False
-
-    return author

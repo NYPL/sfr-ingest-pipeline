@@ -52,14 +52,5 @@ def parseRecord(encodedRec):
         logger.debug(b64Err)
         return False
 
-    status = record['status']
-    stage = record['stage']
-    if status != 200:
-        logger.warning('Bad Record Found! Alert the Authorities')
-        return False
-    elif stage != 'oclc':
-        logger.info('This record is not for this stage, return for further processing')
-        return False
-
     result = enhanceRecord(record)
     return result
