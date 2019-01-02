@@ -12,7 +12,8 @@ logger = createLog('handler')
 
 
 def handler(event, context):
-
+    """Method invoked by Lambda event. Verifies that records were received and,
+    if so, passes them to be parsed"""
     logger.debug('Starting Lambda Execution')
 
     records = event.get('Records')
@@ -24,9 +25,6 @@ def handler(event, context):
         logger.error('Records block contains no records')
         raise NoRecordsReceived('Records block empty', event)
 
-    # Method to be invoked goes here
-    # TODO Implement oauth checking
-
     results = parseRecords(records)
 
     logger.info('Successfully invoked lambda')
@@ -36,11 +34,15 @@ def handler(event, context):
     return results
 
 def parseRecords(records):
+    """Simple method to parse list of records and process each entry."""
     logger.debug("Parsing Messages")
     results = list(map(parseRecord, records))
     return results
 
 def parseRecord(encodedRec):
+    """Parse an individual record. Verifies that an object was able to be
+    decoded from the input base64 encoded string and if so, hands this to the
+    enhancer method"""
     try:
         record = json.loads(base64.b64decode(encodedRec['kinesis']['data']))
     except json.decoder.JSONDecodeError as jsonErr:

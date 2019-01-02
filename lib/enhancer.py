@@ -10,6 +10,9 @@ from lib.kinesisWrite import KinesisOutput
 logger = createLog('enhancer')
 
 def enhanceRecord(record):
+    """Takes a single input record and retrieves data from the OCLC Classify
+    service. Manages the overall workflow of the function."""
+
     try:
         sourceData = record['data']
     except KeyError:
@@ -30,8 +33,8 @@ def enhanceRecord(record):
         return False
 
     logger.info('Starting to enhance work record {}'.format(workUUID))
-    try:
 
+    try:
         # Step 1: Generate a set of XML records retrieved from Classify
         # This step also adds the oclc identifiers to the sourceData record
         classifyData = classifyRecord(searchType, searchFields, workUUID)
@@ -46,6 +49,7 @@ def enhanceRecord(record):
         # Step 2: Parse the data recieved from Classify into the SFR data model
         parsedData = readFromClassify(classifyData)
 
+        # This sets the primary identifier for processing by the db manager
         parsedData.primary_identifier = Identifier('uuid', workUUID, 1)
 
         # Step 3: Output this block to kinesis
@@ -54,4 +58,5 @@ def enhanceRecord(record):
     except OCLCError as err:
         logger.error('OCLC Query failed with message: {}'.format(err.message))
         return False
+
     return True

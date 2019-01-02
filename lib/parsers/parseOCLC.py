@@ -21,12 +21,11 @@ MARC_FIELDS = {
 }
 
 
-def readFromClassify(xmlData):
-    # Extract relevant data from returned works
+def readFromClassify(workXML):
+    """Parse Classify XML document into a object that complies with the
+    SFR data model. Accepts a single XML document and returns a WorkRecord."""
     logger.debug('Parsing Returned Work')
-    return parseWork(xmlData)
 
-def parseWork(workXML):
     namespaces = {
         None: 'http://classify.oclc.org'
     }
@@ -42,6 +41,7 @@ def parseWork(workXML):
             1,
             MEASUREMENT_TIME
         ))
+    
     oclcNo = Identifier('oclc', work.text, 1)
     owiNo = Identifier('owi', work.get('owi'), 1)
 
@@ -70,7 +70,7 @@ def parseWork(workXML):
 
 
 def parseHeading(heading):
-
+    """Parse a subject heading into a data model object"""
     headingDict = {
         'subject': heading.text,
         'uri': heading.get('ident'),
@@ -88,7 +88,7 @@ def parseHeading(heading):
     return subject
 
 def parseEdition(edition):
-
+    """Parse an edition into a Instance record"""
     oclcNo = Identifier(
         'oclc',
         edition.get('oclc'),
@@ -133,7 +133,7 @@ def parseEdition(edition):
     return InstanceRecord.createFromDict(**editionDict)
 
 def parseClassification(classification):
-
+    """Parse a classification into an identifier for the work record."""
     tag = classification.get('tag')
     subjectType = MARC_FIELDS[tag]
 
@@ -146,7 +146,7 @@ def parseClassification(classification):
     return Identifier.createFromDict(**classDict)
 
 def parseAuthor(author):
-
+    """Parse a supplied author into an agent record."""
     authorDict = {
         'name': author.text,
         'viaf': author.get('viaf'),

@@ -10,6 +10,7 @@ from helpers.clientHelpers import createAWSClient
 logger = createLog('kinesis_write')
 
 class KinesisOutput():
+    """Class for managing connections and operations with AWS Kinesis"""
     KINESIS_CLIENT = createAWSClient('kinesis')
 
     def __init__(self):
@@ -17,7 +18,7 @@ class KinesisOutput():
 
     @classmethod
     def putRecord(cls, record, stream):
-
+        """Put an event into the specific Kinesis stream"""
         logger.info("Writing results to Kinesis")
         outputObject = {
             'status': 200,

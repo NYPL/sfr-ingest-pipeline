@@ -24,6 +24,11 @@ LOOKUP_IDENTIFIERS = [
 ]
 
 def classifyRecord(searchType, searchFields, workUUID):
+    """Generates a query for the OCLC Classify service and returns the raw
+    XML response recieved from that service. This method takes 3 arguments:
+    - searchType: identifier|authorTitle
+    - searchFields: identifier+idType|authors+title
+    - uuid: UUID of the parent work record"""
     # TODO Check to be sure that we have not queried this URL recently
     # Probably within the last 24 hours
     queryURL = formatURL(searchType, searchFields)
@@ -39,6 +44,13 @@ def classifyRecord(searchType, searchFields, workUUID):
 
 
 def parseClassify(rawXML, workUUID):
+    """Parses results received from Classify. Response is based of the code
+    recieved from the service, generically it will response with the XML of a
+    work record or None if it recieves a different response code.
+
+    If a multi-response is recieved, those identifiers are put back into the
+    processing stream, this will recurse until a single work record is
+    found."""
     try:
         parseXML = etree.fromstring(rawXML.encode('utf-8'))
     except etree.XMLSyntaxError as err:
@@ -59,7 +71,6 @@ def parseClassify(rawXML, workUUID):
         return None
     elif responseCode == 2:
         logger.debug('Got Single Work, parsing work and edition data')
-        work = parseXML.find('.//work', namespaces=NAMESPACE)
         return parseXML
     elif responseCode == 4:
         logger.debug('Got Multiwork response, iterate through works to get details')
@@ -86,7 +97,7 @@ def parseClassify(rawXML, workUUID):
         return None
 
 def queryClassify(queryURL):
-
+    """Execute a request against the OCLC Classify service"""
     classifyResp = requests.get(queryURL)
     if classifyResp.status_code != 200:
         logger.error('OCLC Classify Request failed')
@@ -97,7 +108,10 @@ def queryClassify(queryURL):
 
 
 def formatURL(searchType, searchFields):
-
+    """Create a URL query for the Classify service depending on the type.
+    authorTitle search will create a query based on the title and author(s) of
+    a work. identifier will create a query based on one of a standardized set
+    of identifiers."""
     if searchType == 'authorTitle':
         return generateClassifyURL(None, None, searchFields['title'], searchFields['authors'])
     elif searchType == 'identifier':
@@ -106,6 +120,8 @@ def formatURL(searchType, searchFields):
 
 
 def generateClassifyURL(recID=None, recType=None, title=None, author=None):
+    """Append the parameters recieved from formatURL to the Classify service
+    base URL and return a formatted URL"""
     classifyRoot = "http://classify.oclc.org/classify2/Classify?"
     if recID is not None:
         classifySearch = "{}{}={}".format(classifyRoot, recType, recID)

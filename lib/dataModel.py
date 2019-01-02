@@ -2,6 +2,8 @@ from Levenshtein import distance, jaro_winkler
 from collections import defaultdict
 
 class DataObject(object):
+    """Abstract data model object that specific classes inherit from. Sets
+    basic functions that allow writing/retrieving attributes."""
     def __init__(self):
         pass
 
@@ -12,11 +14,15 @@ class DataObject(object):
         return self.__dict__[key]
 
     def getDictValue(self):
+        """Convert current object into a dict. Used for generating JSON objects
+        and in other instances where a standard type is necessary."""
         return vars(self)
 
     @classmethod
     def createFromDict(cls, **kwargs):
-
+        """Take a standard dict object and convert to an instance of the
+        provided class. Allows for creation of new instances with arbitrary
+        fields set"""
         record = cls()
         for field, value in kwargs.items():
             record[field] = value
