@@ -17,15 +17,10 @@ class KinesisOutput():
         pass
 
     @classmethod
-    def putRecord(cls, record, stream):
+    def putRecord(cls, outputObject, stream):
         """Put an event into the specific Kinesis stream"""
         logger.info("Writing results to Kinesis")
-        outputObject = {
-            'status': 200,
-            'type': 'work',
-            'method': 'update',
-            'data': record
-        }
+
         # The default lambda function here converts all objects into dicts
         kinesisStream = json.dumps(
             outputObject,

@@ -53,7 +53,13 @@ def enhanceRecord(record):
         parsedData.primary_identifier = Identifier('uuid', workUUID, 1)
 
         # Step 3: Output this block to kinesis
-        KinesisOutput.putRecord(parsedData, os.environ['OUTPUT_KINESIS'])
+        outputObject = {
+            'status': 200,
+            'type': 'work',
+            'method': 'update',
+            'data': parsedData
+        }
+        KinesisOutput.putRecord(outputObject, os.environ['OUTPUT_KINESIS'])
 
     except OCLCError as err:
         logger.error('OCLC Query failed with message: {}'.format(err.message))
