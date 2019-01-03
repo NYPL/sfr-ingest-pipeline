@@ -200,6 +200,9 @@ class Identifier(Base):
     @classmethod
     def returnOrInsert(cls, session, identifier, model, recordID):
         """Manages either the creation or return of an existing identifier"""
+
+        if identifier is None:
+            return None, None
         existingIden = Identifier.lookupIdentifier(
             session,
             identifier,
@@ -258,7 +261,9 @@ class Identifier(Base):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
         for ident in identifiers:
-            idenType = ident['type']
+            print(ident)
+            #idenType = ident['type']
+            idenType = 'gutenberg'
             existing = session.query(model)\
                 .join('identifiers', idenType)\
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\

@@ -47,6 +47,7 @@ class Link(Core, Base):
     url = Column(String(125), index=True)
     media_type = Column(String(50), index=True)
     content = Column(Unicode)
+    md5 = Column(Unicode)
     rel_type = Column(String(50), index=True)
     rights_uri = Column(Unicode, index=True)
     thumbnail = Column(Integer, ForeignKey('links.id'))

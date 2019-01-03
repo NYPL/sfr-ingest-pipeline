@@ -19,7 +19,7 @@ from model.measurement import (
     REPORT_MEASUREMENTS,
     Measurement
 )
-from model.identifiers import ITEM_IDENTIFIERS
+from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
 
 from lib.outputManager import OutputManager
@@ -102,12 +102,28 @@ class Item(Core, Base):
         """Will query for existing items and either update or insert an item
         record pending the outcome of that query"""
         link = item.pop('link', None)
+        identifier = item.pop('identifier', None)
         measurements = item.pop('measurements', [])
 
-        itemRec = Item.insert(
+        existing = None
+        if identifier is not None:
+            existing = Identifier.getByIdentifier(cls, session, [identifier])
+
+        if existing is not None:
+            cls.update(
+                session,
+                existing,
+                item,
+                identifier=identifier,
+                link=link,
+                measurements=measurements
+            )
+
+        itemRec = cls.insert(
             item,
             link=link,
-            measurements=measurements
+            measurements=measurements,
+            identifier=identifier
         )
 
         return itemRec
@@ -115,10 +131,21 @@ class Item(Core, Base):
     @classmethod
     def insert(cls, itemData, **kwargs):
         """Insert a new item record"""
-        item = Item(**itemData)
+        item = cls(**itemData)
 
         link = kwargs.get('link', None)
         measurements = kwargs.get('measurements', [])
+        identifier = kwargs.get('identifier', None)
+
+        status, idenRec = Identifier.returnOrInsert(
+            session,
+            identifier,
+            Instance,
+            existing.id
+        )
+
+        if status == 'new':
+            existing.identifiers.append(idenRec)
 
         if link is not None:
             newLink = Link(**link)
@@ -129,6 +156,51 @@ class Item(Core, Base):
             item.measurements.append(measurementRec)
 
         return item
+
+    @classmethod
+    def update(cls, existing, item, **kwargs):
+        """Update an existing item record"""
+
+        link = kwargs.get('link', None)
+        measurements = kwargs.get('measurements', [])
+        identifier = kwargs.get('identifier', None)
+
+        for field, value in item.items():
+            if(value is not None and value.strip() != ''):
+                setattr(existing, field, value)
+
+        status, idenRec = Identifier.returnOrInsert(
+            session,
+            identifier,
+            Instance,
+            existing.id
+        )
+
+        if status == 'new':
+            existing.identifiers.append(idenRec)
+
+        for measurement in measurements:
+            measurementRec = Measurement.insert(measurement)
+            existing.measurements.append(measurementRec)
+
+        if link is not None:
+            newLink = Link(**link)
+            item.links.append(newLink)
+
+    @classmethod
+    def addReportData(cls, session, reportData):
+        """Adds accessibility report data to an item."""
+        identifier = reportData.pop('identifier', None)
+
+        existing = None
+        if identifier is not None:
+            existing = Identifier.getByIdentifier(cls, session, [identifier])
+
+        if existing is not None:
+            reportData.pop('instance_id', None)
+            reportData.pop('identifier', None)
+            newReport = AccessReport(**reportData)
+            existing.access_reports.append(newReport)
 
 
 class AccessReport(Core, Base):

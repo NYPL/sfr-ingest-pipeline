@@ -51,7 +51,8 @@ def importRecord(session, record):
     - instances
     - items
     - agents
-    - subjects"""
+    - subjects
+    - access_reports"""
     if 'type' not in record:
         record['type'] = 'work'
 
@@ -77,7 +78,22 @@ def importRecord(session, record):
         })
 
         return op, dbWork.uuid.hex
+
     elif record['type'] == 'item':
         itemData = record['data']
+        instanceID = itemData.pop('instance_id', None)
 
-        op, dbItem = Item.updateOrInsert(session, itemData)
+        dbItem = Item.updateOrInsert(session, itemData)
+
+        if dbItem is not None:
+
+            # Add item to parent instance record
+            Instance.addItemRecord(session, instanceID, dbItem)
+            session.add(dbItem)
+            session.flush()
+
+    elif record['type'] == 'access_report':
+
+        reportData = record['data']
+
+        Item.addReportData(session, reportData)
