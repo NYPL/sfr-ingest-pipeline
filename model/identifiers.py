@@ -261,9 +261,11 @@ class Identifier(Base):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
         for ident in identifiers:
-            print(ident)
-            #idenType = ident['type']
-            idenType = 'gutenberg'
+            logger.debug('Querying database for identifier {} ({})'.format(
+                ident['identifier'],
+                ident['type']
+            ))
+            idenType = ident['type']
             existing = session.query(model)\
                 .join('identifiers', idenType)\
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
@@ -273,10 +275,10 @@ class Identifier(Base):
                 return existing[0]
             elif len(existing) > 1:
                 logger.error('Found multiple references from {}'.format(
-                    identifier['identifier']
+                    ident['identifier']
                 ))
                 raise DBError(
-                    identifier['type'],
+                    ident['type'],
                     'Found multiple references to identifier'
                 )
         else:

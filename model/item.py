@@ -23,7 +23,9 @@ from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
 
 from lib.outputManager import OutputManager
+from helpers.logHelpers import createLog
 
+logger = createLog('items')
 
 class Item(Core, Base):
     """An item is an individual copy of a work in the FRBR model. In the
@@ -110,6 +112,7 @@ class Item(Core, Base):
             existing = Identifier.getByIdentifier(cls, session, [identifier])
 
         if existing is not None:
+            logger.debug('Found existing item by identifier')
             cls.update(
                 session,
                 existing,
@@ -118,8 +121,11 @@ class Item(Core, Base):
                 link=link,
                 measurements=measurements
             )
+            return None
 
+        logger.debug('Inserting new item record')
         itemRec = cls.insert(
+            session,
             item,
             link=link,
             measurements=measurements,
@@ -129,7 +135,7 @@ class Item(Core, Base):
         return itemRec
 
     @classmethod
-    def insert(cls, itemData, **kwargs):
+    def insert(cls, session, itemData, **kwargs):
         """Insert a new item record"""
         item = cls(**itemData)
 
@@ -137,15 +143,7 @@ class Item(Core, Base):
         measurements = kwargs.get('measurements', [])
         identifier = kwargs.get('identifier', None)
 
-        status, idenRec = Identifier.returnOrInsert(
-            session,
-            identifier,
-            Instance,
-            existing.id
-        )
-
-        if status == 'new':
-            existing.identifiers.append(idenRec)
+        item.identifiers.append(Identifier.insert(identifier))
 
         if link is not None:
             newLink = Link(**link)
@@ -158,7 +156,7 @@ class Item(Core, Base):
         return item
 
     @classmethod
-    def update(cls, existing, item, **kwargs):
+    def update(cls, session, existing, item, **kwargs):
         """Update an existing item record"""
 
         link = kwargs.get('link', None)
@@ -172,7 +170,7 @@ class Item(Core, Base):
         status, idenRec = Identifier.returnOrInsert(
             session,
             identifier,
-            Instance,
+            cls,
             existing.id
         )
 
@@ -184,8 +182,11 @@ class Item(Core, Base):
             existing.measurements.append(measurementRec)
 
         if link is not None:
-            newLink = Link(**link)
-            item.links.append(newLink)
+            existingLink = Link.lookupLink(session, link, cls, existing.id)
+            if existingLink is None:
+                existing.links.append(Link(**link))
+            else:
+                Link.update(existingLink, link)
 
     @classmethod
     def addReportData(cls, session, reportData):
@@ -197,9 +198,23 @@ class Item(Core, Base):
             existing = Identifier.getByIdentifier(cls, session, [identifier])
 
         if existing is not None:
-            reportData.pop('instance_id', None)
-            reportData.pop('identifier', None)
-            newReport = AccessReport(**reportData)
+            aceReport = reportData['data']
+
+            violations = aceReport.pop('violations', [])
+            aceReport['ace_version'] = aceReport.pop('aceVersion')
+            aceReport['report_json'] = aceReport.pop('json')
+            timestamp = aceReport.pop('timestamp', None)
+
+            newReport = AccessReport(**aceReport)
+
+            for violation, count in violations.items():
+                newReport.measurements.append(Measurement(**{
+                    'quantity': violation,
+                    'value': count,
+                    'weight': 1,
+                    'taken_at': timestamp
+                }))
+
             existing.access_reports.append(newReport)
 
 

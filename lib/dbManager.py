@@ -4,10 +4,15 @@ from sqlalchemy.orm import sessionmaker
 
 from model.core import Base
 from model.work import Work
+from model.instance import Instance
 from model.item import Item
 
 from lib.queryManager import queryWork
 from lib.outputManager import OutputManager
+
+from helpers.logHelpers import createLog
+
+logger = createLog('db_manager')
 
 # Load environemnt variables for database connection
 USERNAME = os.environ['DB_USER']
@@ -80,20 +85,21 @@ def importRecord(session, record):
         return op, dbWork.uuid.hex
 
     elif record['type'] == 'item':
+        logger.info('Ingesting item record')
         itemData = record['data']
         instanceID = itemData.pop('instance_id', None)
 
         dbItem = Item.updateOrInsert(session, itemData)
 
         if dbItem is not None:
-
+            logger.debug('Got new item record, adding to instance')
             # Add item to parent instance record
             Instance.addItemRecord(session, instanceID, dbItem)
             session.add(dbItem)
             session.flush()
 
     elif record['type'] == 'access_report':
-
+        logger.info('Ingest Accessibility Report')
         reportData = record['data']
 
         Item.addReportData(session, reportData)
