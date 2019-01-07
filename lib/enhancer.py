@@ -1,6 +1,6 @@
 import os
 
-from helpers.errorHelpers import OCLCError
+from helpers.errorHelpers import OCLCError, DataError
 from helpers.logHelpers import createLog
 from lib.dataModel import Agent, Identifier
 from lib.readers.oclcClassify import classifyRecord
@@ -17,7 +17,7 @@ def enhanceRecord(record):
         sourceData = record['data']
     except KeyError:
         logger.error('Missing data from input event')
-        return False
+        raise DataError('No data received in Kinesis record')
 
     try:
         workUUID = sourceData['uuid']
@@ -26,11 +26,11 @@ def enhanceRecord(record):
     except KeyError as e:
         logger.error('Missing attribute in data block!')
         logger.debug(e)
-        return False
+        raise DataError('Required attribute missing from data block')
     except TypeError as e:
         logger.error('Could not read data from source')
         logger.debug(e)
-        return False
+        raise DataError('Kinesis data contains non-dictionary value')
 
     logger.info('Starting to enhance work record {}'.format(workUUID))
 
@@ -38,13 +38,6 @@ def enhanceRecord(record):
         # Step 1: Generate a set of XML records retrieved from Classify
         # This step also adds the oclc identifiers to the sourceData record
         classifyData = classifyRecord(searchType, searchFields, workUUID)
-
-        if classifyData is None:
-            # If we got no data back, then either we got no data, or this was
-            # a multi-work response and the records have been put back into the
-            # queue
-            logger.info('No data for parsing related to {}, exit'.format(workUUID))
-            return False
 
         # Step 2: Parse the data recieved from Classify into the SFR data model
         parsedData = readFromClassify(classifyData)
@@ -62,7 +55,7 @@ def enhanceRecord(record):
         KinesisOutput.putRecord(outputObject, os.environ['OUTPUT_KINESIS'])
 
     except OCLCError as err:
-        logger.error('OCLC Query failed with message: {}'.format(err.message))
-        return False
+        logger.error('OCLC Query for work {} failed with message: {}'.format(workUUID, err.message))
+        raise err
 
     return True

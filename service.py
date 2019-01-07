@@ -1,7 +1,7 @@
 import json
 import base64
 
-from helpers.errorHelpers import NoRecordsReceived
+from helpers.errorHelpers import NoRecordsReceived, DataError, OCLCError
 from helpers.logHelpers import createLog
 
 from lib.enhancer import enhanceRecord
@@ -36,8 +36,7 @@ def handler(event, context):
 def parseRecords(records):
     """Simple method to parse list of records and process each entry."""
     logger.debug("Parsing Messages")
-    results = list(map(parseRecord, records))
-    return results
+    return [ parseRecord(r) for r in records ]
 
 def parseRecord(encodedRec):
     """Parse an individual record. Verifies that an object was able to be
@@ -45,14 +44,15 @@ def parseRecord(encodedRec):
     enhancer method"""
     try:
         record = json.loads(base64.b64decode(encodedRec['kinesis']['data']))
+        return enhanceRecord(record)
     except json.decoder.JSONDecodeError as jsonErr:
         logger.error('Invalid JSON block recieved')
         logger.error(jsonErr)
-        return False
     except UnicodeDecodeError as b64Err:
         logger.error('Invalid data found in base64 encoded block')
         logger.debug(b64Err)
-        return False
+    except (DataError, OCLCError) as err:
+        logger.error(err.message)
 
-    result = enhanceRecord(record)
-    return result
+
+    return False

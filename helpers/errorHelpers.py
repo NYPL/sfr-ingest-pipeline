@@ -19,6 +19,9 @@ class OCLCError(Exception):
     def __init__(self, message):
         self.message = message
 
+class DataError(Exception):
+    def __init__(self, message):
+        self.message = message
 
 class KinesisError(Exception):
     def __init__(self, message):

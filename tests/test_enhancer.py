@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, mock_open, call
 
 from lib.enhancer import enhanceRecord
-from helpers.errorHelpers import OCLCError
+from helpers.errorHelpers import OCLCError, DataError
 from lib.dataModel import WorkRecord
 
 class TestEnhancer(unittest.TestCase):
@@ -32,9 +32,11 @@ class TestEnhancer(unittest.TestCase):
             'source': 'test',
             'recordID': 1
         }
-
-        res = enhanceRecord(testRec)
-        self.assertFalse(res)
+        try:
+            res = enhanceRecord(testRec)
+        except DataError:
+            pass
+        self.assertRaises(OCLCError)
 
     @patch('lib.enhancer.classifyRecord', return_value=(True, True), side_effect=OCLCError('testing'))
     def test_enhancer_err(self, mock_classify):
@@ -43,7 +45,8 @@ class TestEnhancer(unittest.TestCase):
             'recordID': 1,
             'data': 'some data'
         }
-
-        res = enhanceRecord(testRec)
-        self.assertFalse(res)
+        try:
+            res = enhanceRecord(testRec)
+        except DataError:
+            pass
         self.assertRaises(OCLCError)

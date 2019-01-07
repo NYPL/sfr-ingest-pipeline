@@ -40,6 +40,7 @@ def classifyRecord(searchType, searchFields, workUUID):
 
     # Parse response, and if it is a Multi-Work response, parse further
     logger.debug('Parsing Classify Response')
+    
     return parseClassify(rawData, workUUID)
 
 
@@ -68,7 +69,7 @@ def parseClassify(rawXML, workUUID):
 
     if responseCode == 102:
         logger.info('Did not find any information for this query')
-        return None
+        raise OCLCError('No work records found in OCLC Classify Service')
     elif responseCode == 2:
         logger.debug('Got Single Work, parsing work and edition data')
         return parseXML
@@ -90,7 +91,7 @@ def parseClassify(rawXML, workUUID):
 
             storedWorks.extend(workData)
 
-        return None
+        raise OCLCError('Received Multi-Work response from Classify, returned records to input stream')
     else:
         raise OCLCError('Recieved unexpected response {} from Classify'.format(responseCode))
 
