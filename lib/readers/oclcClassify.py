@@ -40,7 +40,7 @@ def classifyRecord(searchType, searchFields, workUUID):
 
     # Parse response, and if it is a Multi-Work response, parse further
     logger.debug('Parsing Classify Response')
-    
+
     return parseClassify(rawData, workUUID)
 
 
@@ -95,7 +95,6 @@ def parseClassify(rawXML, workUUID):
     else:
         raise OCLCError('Recieved unexpected response {} from Classify'.format(responseCode))
 
-        return None
 
 def queryClassify(queryURL):
     """Execute a request against the OCLC Classify service"""
