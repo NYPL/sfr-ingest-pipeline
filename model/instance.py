@@ -1,4 +1,5 @@
 import babelfish
+from datetime import datetime
 from sqlalchemy import (
     Column,
     Date,
@@ -13,7 +14,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from model.core import Base, Core
 from model.measurement import INSTANCE_MEASUREMENTS, Measurement
 from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
-from model.link import INSTANCE_LINKS
+from model.link import INSTANCE_LINKS, Link
 from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS
@@ -67,8 +68,8 @@ class Instance(Core, Base):
     )
     alt_titles = relationship(
         'AltTitle',
-        secondary=INSTANCE_ALTS
-        back_populates='work'
+        secondary=INSTANCE_ALTS,
+        back_populates='instance'
     )
 
     def __repr__(self):
@@ -92,15 +93,17 @@ class Instance(Core, Base):
         # Get fields targeted for works
         series = instance.pop('series', None)
         seriesPos = instance.pop('series_position', None)
+        subjects = instance.pop('subjects', [])
 
 
         existing = Identifier.getByIdentifier(Instance, session, identifiers)
         if existing is not None:
-            parentWork = session.query(Work).get(existing.work_id)
+            parentWork = existing.work
             parentWork.updateFields(**{
                 'series': series,
                 'series_position': seriesPos
             })
+            parentWork.importSubjects(session, subjects)
             Instance.update(
                 session,
                 existing,
@@ -136,12 +139,15 @@ class Instance(Core, Base):
         altTitles = kwargs.get('alt_titles', [])
         links = kwargs.get('links', [])
 
-        if len(instance['language']) != 2:
+        if instance['language'] is not None and len(instance['language']) != 2:
             lang = babelfish.Language(instance['language'])
             instance['language'] = lang.alpha2
 
+        if instance['pub_date'] is not None:
+            instance['pub_date'] = datetime.strptime(instance['pub_date'], '%Y')
+
         for field, value in instance.items():
-            if(value is not None and value.strip() != ''):
+            if(value is not None):
                 setattr(existing, field, value)
 
         for iden in identifiers:
@@ -163,8 +169,8 @@ class Instance(Core, Base):
         for item in items:
             # Check if the provided record contains an epub that can be stored
             # locally. If it does, defer insert to epub creation process
-            itemRes = Item.createOrStore(session, item, existing.id)
-            if itemRes is not None:
+            itemRec = Item.createOrStore(session, item, existing.id)
+            if itemRec is not None:
                 existing.items.append(itemRec)
 
         for agent in agents:
@@ -175,7 +181,7 @@ class Instance(Core, Base):
                 if AgentInstances.roleExists(session, agentRec, role, Instance, existing.id) is None:
                     AgentInstances(
                         agent=agentRec,
-                        work=existing,
+                        instance=existing,
                         role=role
                     )
 
@@ -239,8 +245,8 @@ class Instance(Core, Base):
         session.flush()
 
         for item in items:
-            itemRes = Item.createOrStore(session, item, existing.id)
-            if item is not None:
+            itemRec = Item.createOrStore(session, item, existing.id)
+            if itemRec is not None:
                 instance.items.append(itemRec)
 
         return instance

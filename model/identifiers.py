@@ -156,7 +156,7 @@ class GENERIC(Core, Base):
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
-    identifier = relationship('Identifier', back_populates='ddc')
+    identifier = relationship('Identifier', back_populates='generic')
 
     def __repr__(self):
         return '<GENERIC(value={})>'.format(self.value)
@@ -244,7 +244,8 @@ class Identifier(Base):
         idenRec = specificIden(value=identifier['identifier'])
 
         # Add new identifier entry to the core table record
-        idenField = getattr(coreIden, identifier['type'])
+        idenTable = identifier['type'] if identifier['type'] is not None else 'generic'
+        idenField = getattr(coreIden, idenTable)
         idenField.append(idenRec)
 
         return coreIden
@@ -282,8 +283,9 @@ class Identifier(Base):
                 ident['type']
             ))
             idenType = ident['type']
+            idenTable = idenType if idenType is not None else 'generic'
             existing = session.query(model)\
-                .join('identifiers', idenType)\
+                .join('identifiers', idenTable)\
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
                 .all()
 

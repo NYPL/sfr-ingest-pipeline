@@ -111,8 +111,6 @@ class Item(Core, Base):
 
         url = item['link']['url']
 
-        for
-
         epubPayload = {
             'url': item['link']['url'],
             'id': instanceID,

@@ -1,4 +1,5 @@
 from sqlalchemy import (
+    Table,
     Column,
     ForeignKey,
     Integer,
@@ -29,15 +30,15 @@ class AltTitle(Core, Base):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode, index=True)
 
-    works = relationship(
+    work = relationship(
         'Work',
         secondary=WORK_ALTS,
-        back_populates='links'
+        back_populates='alt_titles'
     )
-    instances = relationship(
+    instance = relationship(
         'Instance',
         secondary=INSTANCE_ALTS,
-        back_populates='links'
+        back_populates='alt_titles'
     )
 
     def __repr__(self):

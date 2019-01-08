@@ -61,7 +61,7 @@ class Work(Core, Base):
 
     alt_titles = relationship(
         'AltTitle',
-        secondary=WORK_ALTS
+        secondary=WORK_ALTS,
         back_populates='work'
     )
     subjects = relationship(
@@ -99,6 +99,13 @@ class Work(Core, Base):
 
     def __repr__(self):
         return '<Work(title={})>'.format(self.title)
+
+    def importSubjects(self, session, subjects):
+        for subject in subjects:
+            op, subjectRec = Subject.updateOrInsert(session, subject)
+            relExists = Work.lookupSubjectRel(session, subjectRec, self.id)
+            if relExists is None:
+                self.subjects.append(subjectRec)
 
     @classmethod
     def updateOrInsert(cls, session, workData):
