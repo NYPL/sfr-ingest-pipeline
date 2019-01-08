@@ -161,11 +161,11 @@ class Instance(Core, Base):
             existing.measurements.append(measurementRec)
 
         for item in items:
-            # TODO This should defer and put this into a stream for
-            # processing/storage
-            Item.createLocalEpub(item, existing.id)
-            # itemRec = Item.updateOrInsert(session, item)
-            # existing.items.append(itemRec)
+            # Check if the provided record contains an epub that can be stored
+            # locally. If it does, defer insert to epub creation process
+            itemRes = Item.createOrStore(session, item, existing.id)
+            if itemRes is not None:
+                existing.items.append(itemRec)
 
         for agent in agents:
             agentRec, roles = Agent.updateOrInsert(session, agent)
@@ -239,9 +239,9 @@ class Instance(Core, Base):
         session.flush()
 
         for item in items:
-            Item.createLocalEpub(item, instance.id)
-            # itemRec = Item.updateOrInsert(session, item)
-            # instance.items.append(itemRec)
+            itemRes = Item.createOrStore(session, item, existing.id)
+            if item is not None:
+                instance.items.append(itemRec)
 
         return instance
 
