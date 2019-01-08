@@ -2,10 +2,14 @@ export class InstanceRecord {
   constructor(title, language) {
     this.title = title
     this.sub_title = null
+    this.alt_titles = []
     this.pub_place = null
     this.pub_date = null
     this.language = language
     this.edition = null
+    this.extent = null
+    this.license = null
+    this.rights_statement = null
     this.edition_statement = null
     this.table_of_contents = null
     this.copyright_date = null
