@@ -36,6 +36,8 @@ class Instance(Core, Base):
     copyright_date = Column(Date, index=True)
     language = Column(String(2), index=True)
     extant = Column(Unicode)
+    license = Column(String(255))
+    rights_statement = Column(Unicode)
 
     work_id = Column(Integer, ForeignKey('works.id'))
 
