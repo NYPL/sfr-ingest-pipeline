@@ -88,8 +88,19 @@ class Instance(Core, Base):
         measurements = instance.pop('measurements', None)
         links = instance.pop('links', None)
         alt_titles = instance.pop('alt_titles', None)
+
+        # Get fields targeted for works
+        series = instance.pop('series', None)
+        seriesPos = instance.pop('series_position', None)
+
+
         existing = Identifier.getByIdentifier(Instance, session, identifiers)
         if existing is not None:
+            parentWork = session.query(Work).get(existing.work_id)
+            parentWork.updateFields(**{
+                'series': series,
+                'series_position': seriesPos
+            })
             Instance.update(
                 session,
                 existing,

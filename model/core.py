@@ -19,3 +19,7 @@ class Core(object):
         default=datetime.now(),
         onupdate=datetime.now()
     )
+
+    def updateFields(self, **kwargs)
+        for key, value in kwargs.items():
+            setattr(self, key, value)
