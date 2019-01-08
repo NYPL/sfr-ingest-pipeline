@@ -37,7 +37,7 @@ class OutputManager():
 
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
-
+        
         try:
             cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,

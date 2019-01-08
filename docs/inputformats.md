@@ -11,6 +11,7 @@ The database manager accepts record inputs from a variety of sources, but they m
   - Work: A full work record representing an ebook
   - Instance: A specific edition or other version of an ebook, to be associated with an existing work
   - Item: A specific copy of an instance, to be associated with an existing instance. Items will generally be created by the epub storage pipeline
+  - Access Report: An accessibility report generated for a stored copy of an ePub file. Associated with an item, the accessibility reports provide a general score for how accessible an individual item is.
 - Method: This indicates whether the record is an `insert` operation where the function will test if a record exists and creates one if not. And an `update` operation that assumes a matching record already exists and updates that record
 - Data: A field containing the record data, or in the case of the error, the full error message. This object must conform the data model as defined in this function.
 

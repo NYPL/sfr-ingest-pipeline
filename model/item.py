@@ -19,11 +19,13 @@ from model.measurement import (
     REPORT_MEASUREMENTS,
     Measurement
 )
-from model.identifiers import ITEM_IDENTIFIERS
+from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
 
 from lib.outputManager import OutputManager
+from helpers.logHelpers import createLog
 
+logger = createLog('items')
 
 class Item(Core, Base):
     """An item is an individual copy of a work in the FRBR model. In the
@@ -102,23 +104,46 @@ class Item(Core, Base):
         """Will query for existing items and either update or insert an item
         record pending the outcome of that query"""
         link = item.pop('link', None)
+        identifier = item.pop('identifier', None)
         measurements = item.pop('measurements', [])
 
-        itemRec = Item.insert(
+        existing = None
+        if identifier is not None:
+            existing = Identifier.getByIdentifier(cls, session, [identifier])
+
+        if existing is not None:
+            logger.debug('Found existing item by identifier')
+            cls.update(
+                session,
+                existing,
+                item,
+                identifier=identifier,
+                link=link,
+                measurements=measurements
+            )
+            return None
+
+        logger.debug('Inserting new item record')
+        itemRec = cls.insert(
+            session,
             item,
             link=link,
-            measurements=measurements
+            measurements=measurements,
+            identifier=identifier
         )
 
         return itemRec
 
     @classmethod
-    def insert(cls, itemData, **kwargs):
+    def insert(cls, session, itemData, **kwargs):
         """Insert a new item record"""
-        item = Item(**itemData)
+        item = cls(**itemData)
 
         link = kwargs.get('link', None)
         measurements = kwargs.get('measurements', [])
+        identifier = kwargs.get('identifier', None)
+
+        item.identifiers.append(Identifier.insert(identifier))
 
         if link is not None:
             newLink = Link(**link)
@@ -129,6 +154,68 @@ class Item(Core, Base):
             item.measurements.append(measurementRec)
 
         return item
+
+    @classmethod
+    def update(cls, session, existing, item, **kwargs):
+        """Update an existing item record"""
+
+        link = kwargs.get('link', None)
+        measurements = kwargs.get('measurements', [])
+        identifier = kwargs.get('identifier', None)
+
+        for field, value in item.items():
+            if(value is not None and value.strip() != ''):
+                setattr(existing, field, value)
+
+        status, idenRec = Identifier.returnOrInsert(
+            session,
+            identifier,
+            cls,
+            existing.id
+        )
+
+        if status == 'new':
+            existing.identifiers.append(idenRec)
+
+        for measurement in measurements:
+            measurementRec = Measurement.insert(measurement)
+            existing.measurements.append(measurementRec)
+
+        if link is not None:
+            existingLink = Link.lookupLink(session, link, cls, existing.id)
+            if existingLink is None:
+                existing.links.append(Link(**link))
+            else:
+                Link.update(existingLink, link)
+
+    @classmethod
+    def addReportData(cls, session, reportData):
+        """Adds accessibility report data to an item."""
+        identifier = reportData.pop('identifier', None)
+
+        existing = None
+        if identifier is not None:
+            existing = Identifier.getByIdentifier(cls, session, [identifier])
+
+        if existing is not None:
+            aceReport = reportData['data']
+
+            violations = aceReport.pop('violations', [])
+            aceReport['ace_version'] = aceReport.pop('aceVersion')
+            aceReport['report_json'] = aceReport.pop('json')
+            timestamp = aceReport.pop('timestamp', None)
+
+            newReport = AccessReport(**aceReport)
+
+            for violation, count in violations.items():
+                newReport.measurements.append(Measurement(**{
+                    'quantity': violation,
+                    'value': count,
+                    'weight': 1,
+                    'taken_at': timestamp
+                }))
+
+            existing.access_reports.append(newReport)
 
 
 class AccessReport(Core, Base):

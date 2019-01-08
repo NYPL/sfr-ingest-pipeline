@@ -203,6 +203,11 @@ class Instance(Core, Base):
 
         return instance
 
+    @classmethod
+    def addItemRecord(cls, session, instanceID, itemRec):
+        instance = session.query(cls).get(instanceID)
+        instance.items.append(itemRec)
+
 
 class AgentInstances(Core, Base):
     """Table relating agents and instances. Is instantiated as a class to
