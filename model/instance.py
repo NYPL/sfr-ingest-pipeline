@@ -16,6 +16,7 @@ from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
 from model.link import INSTANCE_LINKS
 from model.item import Item
 from model.agent import Agent
+from model.altTitle import INSTANCE_ALTS
 
 
 class Instance(Core, Base):
@@ -26,7 +27,6 @@ class Instance(Core, Base):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
-    alt_title = Column(Unicode, index=True)
     pub_place = Column(Unicode, index=True)
     pub_date = Column(Date, index=True)
     edition = Column(Unicode)
@@ -34,6 +34,7 @@ class Instance(Core, Base):
     table_of_contents = Column(Unicode)
     copyright_date = Column(Date, index=True)
     language = Column(String(2), index=True)
+    extant = Column(Unicode)
 
     work_id = Column(Integer, ForeignKey('works.id'))
 
@@ -64,6 +65,11 @@ class Instance(Core, Base):
         secondary=INSTANCE_LINKS,
         back_populates='instances'
     )
+    alt_titles = relationship(
+        'AltTitle',
+        secondary=INSTANCE_ALTS
+        back_populates='work'
+    )
 
     def __repr__(self):
         return '<Instance(title={}, edition={}, work={})>'.format(
@@ -80,6 +86,8 @@ class Instance(Core, Base):
         agents = instance.pop('agents', None)
         identifiers = instance.pop('identifiers', None)
         measurements = instance.pop('measurements', None)
+        links = instance.pop('links', None)
+        alt_titles = instance.pop('alt_titles', None)
         existing = Identifier.getByIdentifier(Instance, session, identifiers)
         if existing is not None:
             Instance.update(
@@ -89,7 +97,9 @@ class Instance(Core, Base):
                 items=items,
                 agents=agents,
                 identifiers=identifiers,
-                measurements=measurements
+                measurements=measurements,
+                links=links,
+                alt_titles=alt_titles
             )
             return None
 
@@ -99,7 +109,9 @@ class Instance(Core, Base):
             items=items,
             agents=agents,
             identifiers=identifiers,
-            measurements=measurements
+            measurements=measurements,
+            links=links,
+            alt_titles=alt_titles
         )
         return newInstance
 

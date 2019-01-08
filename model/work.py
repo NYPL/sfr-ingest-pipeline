@@ -16,7 +16,7 @@ from sqlalchemy.orm.exc import NoResultFound
 from model.core import Base, Core
 from model.subject import SUBJECT_WORKS
 from model.identifiers import WORK_IDENTIFIERS, Identifier
-from model.altTitle import AltTitle
+from model.altTitle import AltTitle, WORK_ALTS
 from model.rawData import RawData
 from model.measurement import WORK_MEASUREMENTS, Measurement
 from model.link import WORK_LINKS, Link
@@ -61,6 +61,7 @@ class Work(Core, Base):
 
     alt_titles = relationship(
         'AltTitle',
+        secondary=WORK_ALTS
         back_populates='work'
     )
     subjects = relationship(
