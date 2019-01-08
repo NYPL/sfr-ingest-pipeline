@@ -122,6 +122,8 @@ class Instance(Core, Base):
         measurements = kwargs.get('measurements', [])
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
+        altTitles = kwargs.get('alt_titles', [])
+        links = kwargs.get('links', [])
 
         if len(instance['language']) != 2:
             lang = babelfish.Language(instance['language'])
@@ -166,6 +168,14 @@ class Instance(Core, Base):
                         role=role
                     )
 
+        for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Instance, existing.id), altTitles)):
+            existing.altTitles.append(AltTitle(title=altTitle))
+
+        for link in links:
+            updateLink = Link.updateOrInsert(session, link, Instance, existing.id)
+            if updateLink is not None:
+                existing.links.append(updateLink)
+
         return existing
 
     @classmethod
@@ -182,6 +192,8 @@ class Instance(Core, Base):
         measurements = kwargs.get('measurements', [])
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
+        altTitles = kwargs.get('alt_titles', [])
+        links = kwargs.get('links', [])
 
         if agents is not None:
             for agent in agents:
@@ -201,6 +213,13 @@ class Instance(Core, Base):
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
             instance.measurements.append(measurementRec)
+
+        for altTitle in altTitles:
+            instance.altTitles.append(AltTitle(title=altTitle))
+
+        for link in links:
+            newLink = Link(**link)
+            work.links.append(newLink)
 
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here
