@@ -131,6 +131,8 @@ exports.getRDF = (repo, lcRels) => {
           resolve({
             'recordID': gutID,
             'source': 'gutenberg',
+            'type': 'work',
+            'method': 'insert',
             'data': err,
             'status': 500,
             'message': 'Could not parse Gutenberg Metadata'
@@ -139,6 +141,8 @@ exports.getRDF = (repo, lcRels) => {
           resolve({
             'recordID': gutID,
             'source': 'gutenberg',
+            'type': 'work',
+            'method': 'insert',
             'data': rdfData,
             'status': 200,
             'message': 'Retrieved Gutenberg Metadata'
@@ -149,6 +153,8 @@ exports.getRDF = (repo, lcRels) => {
       resolve({
         'recordID': gutID,
         'source': 'gutenberg',
+        'type': 'work',
+        'method': 'insert',
         'data': err,
         'status': 500,
         'message': 'Error in parsing Gutenberg Record'

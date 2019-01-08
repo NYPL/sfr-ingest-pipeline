@@ -1,15 +1,14 @@
 export class InstanceRecord {
   constructor(title, language) {
     this.title = title
-    this.subtitle = null
-    this.altTitle = null
-    this.pubPlace = null
-    this.pubDate = null
+    this.sub_title = null
+    this.pub_place = null
+    this.pub_date = null
     this.language = language
     this.edition = null
-    this.editionStatement = null
-    this.tableOfContents = null
-    this.copyrightDate = null
+    this.edition_statement = null
+    this.table_of_contents = null
+    this.copyright_date = null
     this.agents = []
     this.identifiers = []
     this.formats = []
@@ -19,19 +18,23 @@ export class InstanceRecord {
   addAgent(name, roles, aliases, birth, death, link){
     this.agents.push(new Agent(name, roles, aliases, birth, death, link))
   }
+
+  addIdentifier(type, identifier, weight){
+    this.identifiers.push(new Identifier(type, identifier, weight))
+  }
 }
 
 export class Agent {
   constructor(name, role, aliases, birth, death, link) {
     this.name = name
-    this.sortName = null
+    this.sort_name = null
     this.roles = role
     this.lcnaf = null
     this.viaf = null
     this.biography = null
     this.aliases = aliases
-    this.birthDate = birth
-    this.deathDate = death
+    this.birth_date = birth
+    this.death_date = death
     this.link = link
   }
 }
@@ -49,15 +52,17 @@ export class Identifier {
 
 export class Format {
   constructor(contentType, link, modified) {
-    this.contentType = contentType
+    this.source = null
+    this.content_type = contentType
     this.drm = null
     this.measurements = []
     this.modified = modified
+    this.rights_uri = null
+    this.identifiers = []
 
     if (link instanceof Link || link == null) this.link = link
     else this.link = this.setLink(link)
 
-    this.rightsURI = null
   }
 
   setLink(linkObj){
@@ -76,15 +81,20 @@ export class Format {
   addMeasurement(quantity, value, weight, takenAt){
     this.measurements.push(new Measurement(quantity, value, weight, takenAt))
   }
+
+  addIdentifier(type, identifier, weight){
+    this.identifiers.push(new Identifier(type, identifier, weight))
+  }
 }
 
 
 export class Link {
   constructor(url, mediaType, relType){
     this.url = url
-    this.mediaType = mediaType
+    this.media_type = mediaType
     this.content = null
-    this.relType = relType
+    this.rel_type = relType
+    this.rights_uri = null
     this.thumbnail = null
   }
 }
@@ -92,11 +102,10 @@ export class Link {
 
 export class Subject {
   constructor(subjectType, value, weight){
-    this.type = subjectType
-    this.identifier = null
-    this.value = value
+    this.authority = subjectType
+    this.uri = null
+    this.subject = value
     this.weight = weight
-    this.measurements = []
   }
 }
 
@@ -106,13 +115,12 @@ export class Measurement {
     this.quantity = quantity
     this.value = value
     this.weight = weight
-    this.takenAt = null
+    this.taken_at = null
   }
 }
 
 export class WorkRecord {
-  constructor(source) {
-    this.source = source
+  constructor() {
     this.identifiers = []
     this.instances = []
     this.subjects = []
@@ -122,15 +130,16 @@ export class WorkRecord {
     this.license = null
     this.language = null
     this.title = null
-    this.subTitle = null
-    this.altTitle = null
-    this.rightsStatement = null
+    this.sub_title = null
+    this.alt_titles = null
+    this.sort_title = null
+    this.rights_statement = null
     this.issued = null
     this.published = null
     this.medium = null
     this.series = null
-    this.seriesPosition = null
-    this.primaryIdentifier = null
+    this.series_position = null
+    this.primary_identifier = null
   }
 
   addIdentifier(type, identifier, weight){

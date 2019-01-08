@@ -98,7 +98,7 @@ describe('GitHub Data [githubDataFetch.js]', () => {
     it('should return data block parsed from RDF', async () => {
       let parseStub = sinon.stub(RDFParser, 'parseRDF').yields(null, {
         'title': 'Hello',
-        'altTitle': 'Test Data',
+        'alt_titles': 'Test Data',
         'entities': [],
         'subjects': []
       })

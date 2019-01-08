@@ -7,9 +7,9 @@ import { WorkRecord, InstanceRecord, Agent, Identifier, Format, Subject, Link, M
 
 const storeFields = [
   ['dcterms:title', 'title'],
-  ['dcterms:alternative', 'altTitle'],
+  ['dcterms:alternative', 'alt_titles'],
   ['dcterms:publisher', 'publisher'],
-  ['dcterms:rights', 'rightsStatement'],
+  ['dcterms:rights', 'rights_statement'],
   ['pgterms:marc010', 'lccn'],
   ['dcterms:issued', 'issued'],
   ['pgterms:marc901', 'coverImageUrl']
@@ -17,8 +17,8 @@ const storeFields = [
 
 const workFields = [
   'title',
-  'altTitle',
-  'rightsStatement',
+  'alt_titles',
+  'rights_statement',
   'issued'
 ]
 
@@ -29,7 +29,7 @@ const entityFields = [
 ]
 
 const fileFields = [
-  ['dcterms:modified', 'updated'],
+  ['dcterms:modified', 'modified'],
   ['dcterms:extent', 'size']
 ]
 
@@ -65,7 +65,7 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   let work = rdf['cc:Work'][0]
 
   // Create a new work record, where all metadata will be stored
-  let bibRecord = new WorkRecord('gutenberg')
+  let bibRecord = new WorkRecord()
 
   // Load basic Fields
   let mainFields = {}
@@ -95,7 +95,7 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
 
   // Add the gutenberg ID, which is also assigned as the primary identifier
   bibRecord.addIdentifier('gutenberg', gutenbergID, 1)
-  bibRecord.primaryIdentifier = new Identifier('gutenberg', gutenbergID, 1)
+  bibRecord.primary_identifier = new Identifier('gutenberg', gutenbergID, 1)
 
   // If present, add LCCN identifier to the work
   if (mainFields['lccn'] !== '') bibRecord.addIdentifier('lccn', mainFields['lccn'], 1)
@@ -106,9 +106,15 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
 
   // Add formats to the instance
   gutenbergInstance.formats = exports.getFormats(ebook['dcterms:hasFormat'])
+  gutenbergInstance.formats.map(format => {
+    format.addIdentifier('gutenberg', gutenbergID, 1)
+  })
 
   // Add Publisher to instance
   gutenbergInstance.addAgent('Project Gutenberg', ['publisher'], null, null, null, null)
+
+  // Add the gutenberg ID to this instance since it is our only ID for it
+  gutenbergInstance.addIdentifier('gutenberg', gutenbergID, 1)
 
 
   return bibRecord
@@ -219,6 +225,8 @@ exports.getFormats = (formats) => {
 
       let sfrFormat = new Format('application/epub+zip', epubLink, epub['modified'])
       sfrFormat.addMeasurement('bytes', epub['size'], 1, moment().format())
+
+      sfrFormat.source = 'gutenberg'
 
       epubs.push(sfrFormat)
 
