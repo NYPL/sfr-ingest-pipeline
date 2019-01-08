@@ -148,6 +148,20 @@ class DDC(Core, Base):
         return '<DDC(value={})>'.format(self.value)
 
 
+class GENERIC(Core, Base):
+    """Table for generic or otherwise uncontroller identifiers"""
+    __tablename__ = 'generic'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='ddc')
+
+    def __repr__(self):
+        return '<GENERIC(value={})>'.format(self.value)
+
+
 class Identifier(Base):
     """Core table for Identifiers. This relates specific identifiers, each
     contained within their own table, to FRBR entities. This structure allows
@@ -182,6 +196,7 @@ class Identifier(Base):
     owi = relationship('OWI', back_populates='identifier')
     lcc = relationship('LCC', back_populates='identifier')
     ddc = relationship('DDC', back_populates='identifier')
+    generic = relationship('GENERIC', back_populates='identifier')
 
     identifierTypes = {
         'gutenberg': Gutenberg,
@@ -191,7 +206,8 @@ class Identifier(Base):
         'isbn': ISBN,
         'issn': ISSN,
         'lcc': LCC,
-        'ddc': DDC
+        'ddc': DDC,
+        None: GENERIC
     }
 
     def __repr__(self):
