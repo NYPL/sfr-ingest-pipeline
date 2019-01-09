@@ -34,7 +34,13 @@ exports.handler = async (event, context, callback) => {
   let repoInfo = success
   if (repoInfo.length === 0) {
     logger.notice('No updates made in the fetch period to GITenberg')
-    return callback(new Error('No updates made in the fetch period to GITenberg'))
+    let emptyResult = {
+      'source': 'gutenberg',
+      'status': 204,
+      'message': 'No records updated in fetch period'
+    }
+    Kinesis.resultHandler(emptyResult)
+    return callback(null, 'No updated records found')
   }
 
   for (let i = 0; i < repoInfo.length; i++) {
