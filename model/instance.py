@@ -35,7 +35,7 @@ class Instance(Core, Base):
     table_of_contents = Column(Unicode)
     copyright_date = Column(Date, index=True)
     language = Column(String(2), index=True)
-    extant = Column(Unicode)
+    extent = Column(Unicode)
     license = Column(String(255))
     rights_statement = Column(Unicode)
 
@@ -89,7 +89,7 @@ class Instance(Core, Base):
         agents = instance.pop('agents', None)
         identifiers = instance.pop('identifiers', None)
         measurements = instance.pop('measurements', None)
-        links = instance.pop('links', None)
+        links = instance.pop('links', [])
         alt_titles = instance.pop('alt_titles', None)
 
         # Get fields targeted for works
@@ -247,7 +247,7 @@ class Instance(Core, Base):
         session.flush()
 
         for item in items:
-            itemRec = Item.createOrStore(session, item, existing.id)
+            itemRec = Item.createOrStore(session, item, instance.id)
             if itemRec is not None:
                 instance.items.append(itemRec)
 
