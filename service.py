@@ -73,12 +73,14 @@ def parseRecord(encodedRec):
         result = importRecord(session, record)
         session.flush()
         session.commit()
-    except:  # noqa: Q000
+    except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
         session.rollback()
-        raise
+        logger.error('Failed to store record')
+        logger.debug(err)
+        raise DBError('unknown', 'Unable to parse/ingest record, see logs for error')
     finally:
         logger.debug('Closing Session')
         session.close()
