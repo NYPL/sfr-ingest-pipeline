@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised'
 import sinon from 'sinon'
 import sinonChai from 'sinon-chai'
 import RDFParser from '../src/parseRDF.js'
+import { Format } from '../src/sfrMetadataModel.js'
 
 chai.should()
 chai.use(sinonChai)
@@ -217,7 +218,7 @@ describe('RDF Parser [parseRDF.js]', () => {
       let fieldStub = sinon.stub(RDFParser, 'getRecordField')
       let attribStub = sinon.stub(RDFParser, 'getFieldAttrib')
 
-      formatStub.returns(jsonData['formats'])
+      formatStub.returns([new Format('test', 'test', 'test'), new Format('test', 'test', 'test')])
 
       subjectStub.returns(jsonData['subjects'])
 
@@ -290,8 +291,8 @@ describe('RDF Parser [parseRDF.js]', () => {
       let subjects = jsonInput['pgterms:ebook'][0]['dcterms:subject']
       let subjReturn = RDFParser.getSubjects(subjects)
       expect(subjReturn).to.have.lengthOf(1)
-      expect(subjReturn[0]['value']).to.equal('PS')
-      expect(subjReturn[0]['type']).to.equal('LCC')
+      expect(subjReturn[0].subject).to.equal('PS')
+      expect(subjReturn[0].authority).to.equal('LCC')
     })
   })
 
