@@ -71,6 +71,7 @@ class Instance(Core, Base):
     dates = relationship(
         'Date',
         secondary=INSTANCE_DATES,
+        back_populates='instances'
     )
     alt_titles = relationship(
         'AltTitle',
@@ -152,9 +153,6 @@ class Instance(Core, Base):
         if instance['language'] is not None and len(instance['language']) != 2:
             lang = babelfish.Language(instance['language'])
             instance['language'] = lang.alpha2
-
-        if instance['pub_date'] is not None:
-            instance['pub_date'] = datetime.strptime(instance['pub_date'], '%Y')
 
         for field, value in instance.items():
             if(value is not None):

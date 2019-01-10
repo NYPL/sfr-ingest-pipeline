@@ -67,22 +67,22 @@ class Date(Core, Base):
     date_range = Column(DATERANGE, index=True)
     date_type = Column(Unicode, index=True)
 
-    work = relationship(
+    works = relationship(
         'Work',
         secondary=WORK_DATES,
         back_populates='dates'
     )
-    instance = relationship(
+    instances = relationship(
         'Instance',
         secondary=INSTANCE_DATES,
         back_populates='dates'
     )
-    item = relationship(
+    items = relationship(
         'Item',
         secondary=ITEM_DATES,
         back_populates='dates'
     )
-    agent = relationship(
+    agents = relationship(
         'Agent',
         secondary=AGENT_DATES,
         back_populates='dates'
@@ -93,13 +93,16 @@ class Date(Core, Base):
 
     @classmethod
     def updateOrInsert(cls, session, date, model, recordID):
+        logger.debug('Inserting or updating date {}'.format(date['display_date']))
         """Query the database for a date on the current record. If found,
         update the existing date, if not, insert new row"""
         existing = Date.lookupDate(session, date, model, recordID)
         if existing is not None:
-            Date.update(existing, link)
+            logger.info('Updating existing date record {}'.format(existing.id))
+            Date.update(existing, date)
             return None
 
+        logger.info('Inserting new date object')
         return Date.insert(date)
 
     @classmethod
@@ -128,7 +131,7 @@ class Date(Core, Base):
         return date
 
     @classmethod
-    def lookupDate(cls, session, link, model, recordID):
+    def lookupDate(cls, session, date, model, recordID):
         """Query database for link related to current record. Return link
         if found, otherwise return None"""
         return session.query(cls)\
@@ -138,17 +141,36 @@ class Date(Core, Base):
             .one_or_none()
 
     @staticmethod
-    def parseDate(date):
-        if type(date) is list:
-            return DateRange(parse(date[0]), parse(date[1]))
-        elif re.match(r'^[0-9]{4}$', date):
-            year = parse(date).year
-            return DateRange(date(year, 1, 1), date(year, 12, 31))
-        elif re.match(r'^[0-9]{4}-[0-9]{2}$', date):
-            dateObj = parse(date)
-            year = dateObj.year
-            month = dateObj.month
-            lastDay = monthrange(year, month)[1]  # Accounts for leap years
-            return DateRange(date(year, month, 1), date(year, month, lastDay))
-        else:
-            return DateRange(parse(date), None)
+    def parseDate(dateObj):
+        """This generates daterange strings compatible with postgres. It should
+        be able to use the psycopg2.extra model, but that does not work for
+        some reason. That should be fixed and used here."""
+
+        logger.info('Parsing date string {} into date range'.format(dateObj))
+
+        try:
+            if type(dateObj) is list:
+                logger.debug('Recieved list of dates, treating as start/end bounds')
+                return '[{}, {})'.format(parse(dateObj[0]).date(), parse(dateObj[1]).date())
+                #return DateRange(parse(date[0]), parse(date[1]))
+            elif re.match(r'^[0-9]{4}$', dateObj):
+                logger.debug('Recieved year value, parsing into full year range')
+                year = parse(dateObj).year
+                return '[{}, {})'.format(date(year, 1, 1), date(year, 12, 31))
+                #return DateRange(date(year, 1, 1), date(year, 12, 31))
+            elif re.match(r'^[0-9]{4}-[0-9]{2}$', dateObj):
+                logger.debug('Recieved year-month, parsing into month range')
+                dateObj = parse(dateObj)
+                year = dateObj.year
+                month = dateObj.month
+                lastDay = monthrange(year, month)[1]  # Accounts for leap years
+                return '[{}, {})'.format(date(year, month, 1), date(year, month, lastDay))
+                #return DateRange(date(year, month, 1), date(year, month, lastDay))
+            else:
+                logger.debug('Received other value, treating as single date')
+                return '[{},)'.format(str(parse(dateObj).date()))
+                #DateRange(parse(date), None, bounds='[]')
+        except ValueError as err:
+            logger.error('Could not parse date string {}'.format(dateObj))
+            logger.debug('Returing None for date_range, will still be displayed, but unsearchable')
+            return None

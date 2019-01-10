@@ -94,7 +94,7 @@ class Work(Core, Base):
     dates = relationship(
         'Date',
         secondary=WORK_DATES,
-        back_populates='work'
+        back_populates='works'
     )
     import_json = relationship(
         'RawData',
@@ -316,7 +316,6 @@ class Work(Core, Base):
         for date in dates:
             newDate = Date.insert(date)
             work.dates.append(newDate)
-
         return work
 
     @classmethod

@@ -82,7 +82,7 @@ class Item(Core, Base):
     dates = relationship(
         'Date',
         secondary=ITEM_DATES,
-        back_populates='item'
+        back_populates='items'
     )
 
     def __repr__(self):

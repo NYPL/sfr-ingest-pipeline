@@ -52,7 +52,7 @@ class Agent(Core, Base):
     dates = relationship(
         'Date',
         secondary=AGENT_DATES,
-        back_populates='agent'
+        back_populates='agents'
     )
 
     def __repr__(self):
