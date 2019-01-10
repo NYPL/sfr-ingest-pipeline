@@ -1,7 +1,7 @@
 import json
 import base64
 
-from helpers.errorHelpers import NoRecordsReceived
+from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
 from lib.dbManager import dbGenerateConnection, importRecord, createSession
 
@@ -46,8 +46,11 @@ def handler(event, context):
 def parseRecords(records):
     """Iterator for handling multiple incoming messages"""
     logger.debug('Parsing Messages')
-    results = list(map(parseRecord, records))
-    return results
+    try:
+        return [parseRecord(r) for r in records]
+    except (NoRecordsReceived, DataError, DBError) as err:
+        logger.error('Could not process records in current invocation')
+        logger.debug(err)
 
 
 def parseRecord(encodedRec):
@@ -58,14 +61,26 @@ def parseRecord(encodedRec):
     """
     try:
         record = json.loads(base64.b64decode(encodedRec['kinesis']['data']))
+        statusCode = record['status']
+        if statusCode != 200:
+            if statusCode == 204:
+                logger.info('No updates received')
+                raise NoRecordsReceived(
+                    'No records received from {}'.format(record['source']),
+                    record
+                )
+            else:
+                logger.error('Received error from pipeline')
+                logger.debug(record['message'])
+                raise DataError('Received error {}',format(record['message']))
     except json.decoder.JSONDecodeError as jsonErr:
         logger.error('Invalid JSON block recieved')
         logger.error(jsonErr)
-        return False
+        raise DataError('Invalid JSON block')
     except UnicodeDecodeError as b64Err:
         logger.error('Invalid data found in base64 encoded block')
         logger.debug(b64Err)
-        return False
+        raise DataError('Error in base64 encoding of record')
 
     session = createSession(engine)
 
@@ -78,7 +93,7 @@ def parseRecord(encodedRec):
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
         session.rollback()
-        raise
+        raise DBError('Unable to parse/ingest record, see logs for error')
     finally:
         logger.debug('Closing Session')
         session.close()

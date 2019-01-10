@@ -148,6 +148,20 @@ class DDC(Core, Base):
         return '<DDC(value={})>'.format(self.value)
 
 
+class GENERIC(Core, Base):
+    """Table for generic or otherwise uncontroller identifiers"""
+    __tablename__ = 'generic'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='generic')
+
+    def __repr__(self):
+        return '<GENERIC(value={})>'.format(self.value)
+
+
 class Identifier(Base):
     """Core table for Identifiers. This relates specific identifiers, each
     contained within their own table, to FRBR entities. This structure allows
@@ -182,6 +196,7 @@ class Identifier(Base):
     owi = relationship('OWI', back_populates='identifier')
     lcc = relationship('LCC', back_populates='identifier')
     ddc = relationship('DDC', back_populates='identifier')
+    generic = relationship('GENERIC', back_populates='identifier')
 
     identifierTypes = {
         'gutenberg': Gutenberg,
@@ -191,7 +206,8 @@ class Identifier(Base):
         'isbn': ISBN,
         'issn': ISSN,
         'lcc': LCC,
-        'ddc': DDC
+        'ddc': DDC,
+        None: GENERIC
     }
 
     def __repr__(self):
@@ -228,7 +244,8 @@ class Identifier(Base):
         idenRec = specificIden(value=identifier['identifier'])
 
         # Add new identifier entry to the core table record
-        idenField = getattr(coreIden, identifier['type'])
+        idenTable = identifier['type'] if identifier['type'] is not None else 'generic'
+        idenField = getattr(coreIden, idenTable)
         idenField.append(idenRec)
 
         return coreIden
@@ -266,8 +283,9 @@ class Identifier(Base):
                 ident['type']
             ))
             idenType = ident['type']
+            idenTable = idenType if idenType is not None else 'generic'
             existing = session.query(model)\
-                .join('identifiers', idenType)\
+                .join('identifiers', idenTable)\
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
                 .all()
 

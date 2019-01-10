@@ -1,5 +1,7 @@
-python-lambda
+babelfish
 coverage
 flake8
+psycopg2-binary
+python-lambda
 pyyaml
 SQLAlchemy
