@@ -44,7 +44,7 @@ class Link(Core, Base):
     """A generic class for describing a reference to an external resource"""
     __tablename__ = 'links'
     id = Column(Integer, primary_key=True)
-    url = Column(String(125), index=True)
+    url = Column(String(255), index=True)
     media_type = Column(String(50), index=True)
     content = Column(Unicode)
     md5 = Column(Unicode)

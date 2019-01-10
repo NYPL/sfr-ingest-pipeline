@@ -1,4 +1,5 @@
 import babelfish
+from datetime import datetime
 from sqlalchemy import (
     Column,
     Date,
@@ -13,9 +14,10 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from model.core import Base, Core
 from model.measurement import INSTANCE_MEASUREMENTS, Measurement
 from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
-from model.link import INSTANCE_LINKS
+from model.link import INSTANCE_LINKS, Link
 from model.item import Item
 from model.agent import Agent
+from model.altTitle import INSTANCE_ALTS
 
 
 class Instance(Core, Base):
@@ -26,7 +28,6 @@ class Instance(Core, Base):
     id = Column(Integer, primary_key=True)
     title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
-    alt_title = Column(Unicode, index=True)
     pub_place = Column(Unicode, index=True)
     pub_date = Column(Date, index=True)
     edition = Column(Unicode)
@@ -34,6 +35,9 @@ class Instance(Core, Base):
     table_of_contents = Column(Unicode)
     copyright_date = Column(Date, index=True)
     language = Column(String(2), index=True)
+    extent = Column(Unicode)
+    license = Column(String(255))
+    rights_statement = Column(Unicode)
 
     work_id = Column(Integer, ForeignKey('works.id'))
 
@@ -64,6 +68,11 @@ class Instance(Core, Base):
         secondary=INSTANCE_LINKS,
         back_populates='instances'
     )
+    alt_titles = relationship(
+        'AltTitle',
+        secondary=INSTANCE_ALTS,
+        back_populates='instance'
+    )
 
     def __repr__(self):
         return '<Instance(title={}, edition={}, work={})>'.format(
@@ -80,8 +89,23 @@ class Instance(Core, Base):
         agents = instance.pop('agents', None)
         identifiers = instance.pop('identifiers', None)
         measurements = instance.pop('measurements', None)
+        links = instance.pop('links', [])
+        alt_titles = instance.pop('alt_titles', None)
+
+        # Get fields targeted for works
+        series = instance.pop('series', None)
+        seriesPos = instance.pop('series_position', None)
+        subjects = instance.pop('subjects', [])
+
+
         existing = Identifier.getByIdentifier(Instance, session, identifiers)
         if existing is not None:
+            parentWork = existing.work
+            parentWork.updateFields(**{
+                'series': series,
+                'series_position': seriesPos
+            })
+            parentWork.importSubjects(session, subjects)
             Instance.update(
                 session,
                 existing,
@@ -89,7 +113,9 @@ class Instance(Core, Base):
                 items=items,
                 agents=agents,
                 identifiers=identifiers,
-                measurements=measurements
+                measurements=measurements,
+                links=links,
+                alt_titles=alt_titles
             )
             return None
 
@@ -99,7 +125,9 @@ class Instance(Core, Base):
             items=items,
             agents=agents,
             identifiers=identifiers,
-            measurements=measurements
+            measurements=measurements,
+            links=links,
+            alt_titles=alt_titles
         )
         return newInstance
 
@@ -110,13 +138,18 @@ class Instance(Core, Base):
         measurements = kwargs.get('measurements', [])
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
+        altTitles = kwargs.get('alt_titles', [])
+        links = kwargs.get('links', [])
 
-        if len(instance['language']) != 2:
+        if instance['language'] is not None and len(instance['language']) != 2:
             lang = babelfish.Language(instance['language'])
             instance['language'] = lang.alpha2
 
+        if instance['pub_date'] is not None:
+            instance['pub_date'] = datetime.strptime(instance['pub_date'], '%Y')
+
         for field, value in instance.items():
-            if(value is not None and value.strip() != ''):
+            if(value is not None):
                 setattr(existing, field, value)
 
         for iden in identifiers:
@@ -136,11 +169,11 @@ class Instance(Core, Base):
             existing.measurements.append(measurementRec)
 
         for item in items:
-            # TODO This should defer and put this into a stream for
-            # processing/storage
-            Item.createLocalEpub(item, existing.id)
-            # itemRec = Item.updateOrInsert(session, item)
-            # existing.items.append(itemRec)
+            # Check if the provided record contains an epub that can be stored
+            # locally. If it does, defer insert to epub creation process
+            itemRec = Item.createOrStore(session, item, existing.id)
+            if itemRec is not None:
+                existing.items.append(itemRec)
 
         for agent in agents:
             agentRec, roles = Agent.updateOrInsert(session, agent)
@@ -150,9 +183,17 @@ class Instance(Core, Base):
                 if AgentInstances.roleExists(session, agentRec, role, Instance, existing.id) is None:
                     AgentInstances(
                         agent=agentRec,
-                        work=existing,
+                        instance=existing,
                         role=role
                     )
+
+        for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Instance, existing.id), altTitles)):
+            existing.altTitles.append(AltTitle(title=altTitle))
+
+        for link in links:
+            updateLink = Link.updateOrInsert(session, link, Instance, existing.id)
+            if updateLink is not None:
+                existing.links.append(updateLink)
 
         return existing
 
@@ -170,6 +211,8 @@ class Instance(Core, Base):
         measurements = kwargs.get('measurements', [])
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
+        altTitles = kwargs.get('alt_titles', [])
+        links = kwargs.get('links', [])
 
         if agents is not None:
             for agent in agents:
@@ -190,6 +233,13 @@ class Instance(Core, Base):
             measurementRec = Measurement.insert(measurement)
             instance.measurements.append(measurementRec)
 
+        for altTitle in altTitles:
+            instance.altTitles.append(AltTitle(title=altTitle))
+
+        for link in links:
+            newLink = Link(**link)
+            work.links.append(newLink)
+
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here
         # TODO evaluate if this is a good idea, or can be handled better elsewhere
@@ -197,9 +247,9 @@ class Instance(Core, Base):
         session.flush()
 
         for item in items:
-            Item.createLocalEpub(item, instance.id)
-            # itemRec = Item.updateOrInsert(session, item)
-            # instance.items.append(itemRec)
+            itemRec = Item.createOrStore(session, item, instance.id)
+            if itemRec is not None:
+                instance.items.append(itemRec)
 
         return instance
 
