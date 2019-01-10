@@ -1,4 +1,5 @@
 import os
+import re
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -27,6 +28,16 @@ from lib.outputManager import OutputManager
 from helpers.logHelpers import createLog
 
 logger = createLog('items')
+
+# SOURCES
+# gut = GUTENBERG
+# ia  = INTERNET ARCHIVE
+SOURCE_REGEX = {
+    'gut': r'gutenberg.org\/ebooks\/[0-9]+\.epub\.(?:no|)images$',
+    'ia': r'archive.org\/details\/[a-z0-9]+$'
+}
+
+EPUB_SOURCES = ['gut']
 
 class Item(Core, Base):
     """An item is an individual copy of a work in the FRBR model. In the
@@ -81,6 +92,19 @@ class Item(Core, Base):
         )
 
     @classmethod
+    def createOrStore(cls, session, item, instanceID):
+
+        url = item['link']['url']
+
+        for source, regex in SOURCE_REGEX.items():
+            if re.search(regex, url):
+                if source in EPUB_SOURCES:
+                    cls.createLocalEpub(item, instanceID)
+                    return None
+        else:
+            return cls.updateOrInsert(session, item)
+
+    @classmethod
     def createLocalEpub(cls, item, instanceID):
         """Pass new item to epub storage pipeline. Does not store item record
         at this time, but defers until epub has been processed.
@@ -90,6 +114,8 @@ class Item(Core, Base):
         id: The ID of the parent row of the item to be stored
         updated: Date the ebook was last updated at the source
         data: A raw block of the metadata associated with this item"""
+
+        url = item['link']['url']
 
         epubPayload = {
             'url': item['link']['url'],

@@ -84,6 +84,16 @@ def importRecord(session, record):
 
         return op, dbWork.uuid.hex
 
+    elif record['type'] == 'instance':
+        logger.info('Ingesting instance record')
+        instanceData = record['data']
+
+        dbInstance = Instance.updateOrInsert(session, instanceData)
+
+        if dbInstance is not None:
+            logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
+        
+
     elif record['type'] == 'item':
         logger.info('Ingesting item record')
         itemData = record['data']

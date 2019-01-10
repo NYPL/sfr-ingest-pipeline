@@ -1,10 +1,10 @@
 region: us-east-1
 
-function_name: sfr-db-manager
+function_name: sfr-db-manager-development
 handler: service.handler
-description:
+description: Manages updates to SFR database for work, instance, item and report records
 runtime: python3.6
-role:
+role: lambda_basic_execution
 
 # if access key and secret are left blank, boto will use the credentials
 # defined in the [default] section of ~/.aws/credentials.
