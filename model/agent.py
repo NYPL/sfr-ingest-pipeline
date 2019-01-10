@@ -10,10 +10,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
-from sqlalchemy.orm.exc import NoResultFound 
+from sqlalchemy.orm.exc import NoResultFound
 
 from model.core import Base, Core
 from model.link import AGENT_LINKS, Link
+from model.date import AGENT_DATES
 
 from helpers.logHelpers import createLog
 
@@ -38,8 +39,6 @@ class Agent(Core, Base):
     lcnaf = Column(String(25))
     viaf = Column(String(25))
     biography = Column(Unicode)
-    birth_date = Column(Date, default=None)
-    death_date = Column(Date, default=None)
 
     aliases = relationship(
         'Alias',
@@ -49,6 +48,11 @@ class Agent(Core, Base):
         'Link',
         secondary=AGENT_LINKS,
         back_populates='agents'
+    )
+    dates = relationship(
+        'Date',
+        secondary=AGENT_DATES,
+        back_populates='agent'
     )
 
     def __repr__(self):
@@ -66,6 +70,7 @@ class Agent(Core, Base):
         aliases = agent.pop('aliases', [])
         roles = agent.pop('roles', [])
         link = agent.pop('link', [])
+        dates = agent.pop('dates', [])
 
         existingAgent = Agent.lookupAgent(session, agent)
         if existingAgent is not None:
@@ -74,14 +79,16 @@ class Agent(Core, Base):
                 existingAgent,
                 agent,
                 aliases=aliases,
-                link=link
+                link=link,
+                dates=dates
             )
             return updated, roles
 
         newAgent = Agent.insert(
             agent,
             aliases=aliases,
-            link=link
+            link=link,
+            dates=dates
         )
         return newAgent, roles
 
@@ -90,6 +97,7 @@ class Agent(Core, Base):
         """Updates an existing agent record"""
         aliases = kwargs.get('aliases', [])
         link = kwargs.get('link', [])
+        dates = kwargs.get('dates', [])
 
         for field, value in agent.items():
             if(value is not None and value.strip() != ''):
@@ -104,6 +112,11 @@ class Agent(Core, Base):
             if updateLink is not None:
                 existing.links.append(updateLink)
 
+        for date in dates:
+            updateDate = Date.updateOrInsert(session, date, Agent, existing.id)
+            if updateDate is not None:
+                existing.dates.append(updateDate)
+
         return existing
 
     @classmethod
@@ -116,21 +129,9 @@ class Agent(Core, Base):
             # TODO Order sort_name in last, first order always
             agent.sort_name = agent.name
 
-        for dateField in ['birth_date', 'death_date']:
-            agentField = getattr(agent, dateField)
-            try:
-                # TODO Improve checking to see if this is a valid date value?
-                agentField = parse(agentField)
-            except ValueError:
-                logger.info('Got invalid date object {}'.format(agentField))
-                agentField = None
-            except TypeError:
-                logger.debug('Got an empty date field')
-                continue
-            setattr(agent, dateField, agentField)
-
         aliases = kwargs.get('aliases', [])
         link = kwargs.get('link', [])
+        dates = kwargs.get('dates', [])
 
         if aliases is not None:
             for alias in list(map(lambda x: Alias(alias=x), aliases)):
@@ -139,6 +140,10 @@ class Agent(Core, Base):
         if link is not None:
             newLink = Link(**link)
             agent.links.append(newLink)
+
+        for date in dates:
+            newDate = Date.insert(date)
+            work.dates.append(newDate)
 
         return agent
 

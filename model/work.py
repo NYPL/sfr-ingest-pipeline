@@ -20,6 +20,7 @@ from model.altTitle import AltTitle
 from model.rawData import RawData
 from model.measurement import WORK_MEASUREMENTS, Measurement
 from model.link import WORK_LINKS, Link
+from model.date import WORK_DATES, Date
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
@@ -47,8 +48,6 @@ class Work(Core, Base):
     sort_title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
     language = Column(String(2), index=True)
-    issued = Column(Date)
-    published = Column(Date)
     license = Column(String(50))
     rights_statement = Column(Unicode)
     medium = Column(Unicode)
@@ -91,6 +90,11 @@ class Work(Core, Base):
         secondary=WORK_LINKS,
         back_populates='works'
     )
+    dates = relationship(
+        'Date',
+        secondary=WORK_DATES,
+        back_populates='work'
+    )
     import_json = relationship(
         'RawData',
         back_populates='work'
@@ -114,6 +118,7 @@ class Work(Core, Base):
         identifiers = workData.pop('identifiers', None)
         measurements = workData.pop('measurements', None)
         links = workData.pop('links', None)
+        dates = workData.pop('dates', None)
 
         existing = cls.lookupWork(session, identifiers, primaryIdentifier)
         if existing is not None:
@@ -128,6 +133,7 @@ class Work(Core, Base):
                 subjects=subjects,
                 measurements=measurements,
                 links=links,
+                dates=dates,
                 json=storeJson
             )
             return 'update', updated
@@ -143,6 +149,7 @@ class Work(Core, Base):
             subjects=subjects,
             measurements=measurements,
             links=links,
+            dates=dates,
             json=storeJson
         )
 
@@ -161,6 +168,7 @@ class Work(Core, Base):
         measurements = kwargs.get('measurements', [])
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
+        dates = kwargs.get('dates', [])
 
         jsonRec = RawData(data=storeJson)
         existing.import_json.append(jsonRec)
@@ -228,6 +236,11 @@ class Work(Core, Base):
             if updateLink is not None:
                 existing.links.append(updateLink)
 
+        for date in dates:
+            updateDate = Date.updateOrInsert(session, date, Work, existing.id)
+            if updateDate is not None:
+                existing.dates.append(updateDate)
+
         return existing
 
     @classmethod
@@ -255,6 +268,7 @@ class Work(Core, Base):
         measurements = kwargs.get('measurements', [])
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
+        dates = kwargs.get('dates', [])
 
         jsonRec = RawData(data=storeJson)
         work.import_json.append(jsonRec)
@@ -290,6 +304,10 @@ class Work(Core, Base):
         for link in links:
             newLink = Link(**link)
             work.links.append(newLink)
+
+        for date in dates:
+            newDate = Date.insert(date)
+            work.dates.append(newDate)
 
         return work
 

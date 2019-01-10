@@ -1,7 +1,7 @@
 import json
 import base64
 
-from helpers.errorHelpers import NoRecordsReceived
+from helpers.errorHelpers import NoRecordsReceived, DBError
 from helpers.logHelpers import createLog
 from lib.dbManager import dbGenerateConnection, importRecord, createSession
 

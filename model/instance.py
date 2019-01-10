@@ -14,6 +14,7 @@ from model.core import Base, Core
 from model.measurement import INSTANCE_MEASUREMENTS, Measurement
 from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
 from model.link import INSTANCE_LINKS
+from model.date import INSTANCE_DATES
 from model.item import Item
 from model.agent import Agent
 
@@ -28,7 +29,6 @@ class Instance(Core, Base):
     sub_title = Column(Unicode, index=True)
     alt_title = Column(Unicode, index=True)
     pub_place = Column(Unicode, index=True)
-    pub_date = Column(Date, index=True)
     edition = Column(Unicode)
     edition_statement = Column(Unicode)
     table_of_contents = Column(Unicode)
@@ -64,6 +64,11 @@ class Instance(Core, Base):
         secondary=INSTANCE_LINKS,
         back_populates='instances'
     )
+    dates = relationship(
+        'Date',
+        secondary=INSTANCE_DATES,
+        back_populates='instance'
+    )
 
     def __repr__(self):
         return '<Instance(title={}, edition={}, work={})>'.format(
@@ -80,6 +85,7 @@ class Instance(Core, Base):
         agents = instance.pop('agents', None)
         identifiers = instance.pop('identifiers', None)
         measurements = instance.pop('measurements', None)
+        dates = instance.pop('dates', [])
         existing = Identifier.getByIdentifier(Instance, session, identifiers)
         if existing is not None:
             Instance.update(
@@ -89,7 +95,8 @@ class Instance(Core, Base):
                 items=items,
                 agents=agents,
                 identifiers=identifiers,
-                measurements=measurements
+                measurements=measurements,
+                dates=dates
             )
             return None
 
@@ -99,7 +106,8 @@ class Instance(Core, Base):
             items=items,
             agents=agents,
             identifiers=identifiers,
-            measurements=measurements
+            measurements=measurements,
+            dates=dates
         )
         return newInstance
 
@@ -110,6 +118,7 @@ class Instance(Core, Base):
         measurements = kwargs.get('measurements', [])
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
+        dates = kwargs.get('dates', [])
 
         if len(instance['language']) != 2:
             lang = babelfish.Language(instance['language'])
@@ -134,6 +143,11 @@ class Instance(Core, Base):
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
             existing.measurements.append(measurementRec)
+
+        for date in dates:
+            updateDate = Date.updateOrInsert(session, date, Instance, existing.id)
+            if updateDate is not None:
+                existing.dates.append(updateDate)
 
         for item in items:
             # TODO This should defer and put this into a stream for
@@ -170,6 +184,7 @@ class Instance(Core, Base):
         measurements = kwargs.get('measurements', [])
         items = kwargs.get('items', [])
         agents = kwargs.get('agents', [])
+        dates = kwargs.get('dates', [])
 
         if agents is not None:
             for agent in agents:
@@ -189,6 +204,10 @@ class Instance(Core, Base):
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
             instance.measurements.append(measurementRec)
+
+        for date in dates:
+            newDate = Date.insert(date)
+            work.dates.append(newDate)
 
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here
