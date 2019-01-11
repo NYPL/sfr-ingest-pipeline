@@ -4,7 +4,6 @@ export class InstanceRecord {
     this.sub_title = null
     this.alt_titles = []
     this.pub_place = null
-    this.pub_date = null
     this.language = language
     this.edition = null
     this.extent = null
@@ -17,6 +16,8 @@ export class InstanceRecord {
     this.identifiers = []
     this.formats = []
     this.measurements = []
+    this.links = []
+    this.dates = []
   }
 
   addAgent(name, roles, aliases, birth, death, link){
@@ -25,6 +26,10 @@ export class InstanceRecord {
 
   addIdentifier(type, identifier, weight){
     this.identifiers.push(new Identifier(type, identifier, weight))
+  }
+
+  addDate(display, range, type){
+    this.dates.push(new Date(display, range, type))
   }
 }
 
@@ -37,9 +42,12 @@ export class Agent {
     this.viaf = null
     this.biography = null
     this.aliases = aliases
-    this.birth_date = birth
-    this.death_date = death
     this.link = link
+    this.dates = []
+  }
+
+  addDate(display, range, type){
+    this.dates.push(new Date(display, range, type))
   }
 }
 
@@ -63,6 +71,7 @@ export class Format {
     this.modified = modified
     this.rights_uri = null
     this.identifiers = []
+    this.dates = []
 
     if (link instanceof Link || link == null) this.link = link
     else this.link = this.setLink(link)
@@ -123,6 +132,14 @@ export class Measurement {
   }
 }
 
+export class Date {
+  constructor(date, range, type){
+    this.display_date = date
+    this.date_range = range
+    this.date_type = type
+  }
+}
+
 export class WorkRecord {
   constructor() {
     this.identifiers = []
@@ -131,6 +148,7 @@ export class WorkRecord {
     this.agents = []
     this.links = []
     this.measurements = []
+    this.dates = []
     this.license = null
     this.language = null
     this.title = null
@@ -138,8 +156,6 @@ export class WorkRecord {
     this.alt_titles = null
     this.sort_title = null
     this.rights_statement = null
-    this.issued = null
-    this.published = null
     this.medium = null
     this.series = null
     this.series_position = null
@@ -164,5 +180,9 @@ export class WorkRecord {
 
   addMeasurement(quantity, value, weight, takenAt){
     this.measurements.push(new Measurement(quantity, value, weight, takenAt))
+  }
+
+  addDate(display, range, type){
+    this.dates.push(new Date(display, range, type))
   }
 }

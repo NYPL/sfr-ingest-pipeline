@@ -11,20 +11,16 @@ const storeFields = [
   ['dcterms:publisher', 'publisher'],
   ['dcterms:rights', 'rights_statement'],
   ['pgterms:marc010', 'lccn'],
-  ['dcterms:issued', 'issued'],
   ['pgterms:marc901', 'coverImageUrl']
 ]
 
 const workFields = [
   'title',
   'alt_titles',
-  'rights_statement',
-  'issued'
+  'rights_statement'
 ]
 
 const entityFields = [
-  ['pgterms:birthdate', 'birth'],
-  ['pgterms:deathdate', 'death'],
   ['pgterms:name', 'name']
 ]
 
@@ -93,6 +89,11 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   // Add license to the work
   bibRecord.license = exports.getFieldAttrib(work['cc:license'][0], 'rdf:resource')
 
+  // Add dates to the work
+  if ('dcterms:issued' in ebook) {
+    let issued = exports.getRecordField(ebook, 'dcterms:issued')
+    bibRecord.addDate(issued, issued, 'issued')
+  }
   // Add the gutenberg ID, which is also assigned as the primary identifier
   bibRecord.addIdentifier('gutenberg', gutenbergID, 1)
   bibRecord.primary_identifier = new Identifier('gutenberg', gutenbergID, 1)
@@ -176,6 +177,16 @@ exports.getAgent = (agent, role) => {
 
   // Aliases is an array, so it should be stored as such
   entRec['aliases'] = agent['pgterms:alias']
+
+  if ('pgterms:birthdate' in agent) {
+    let birth = exports.getRecordField(agent, 'pgterms:birthdate')
+    entRec.addDate(birth, birth, 'birth_date')
+  }
+
+  if ('pgterms:deathdate' in agent) {
+    let death = exports.getRecordField(agent, 'pgterms:deathdate')
+    entRec.addDate(death, death, 'death_date')
+  }
 
   // If a webpage exists, create a Link object for that page
   if ('pgterms:webpage' in agent) {
