@@ -2,7 +2,8 @@ import json
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
-from lib.dbManager import dbGenerateConnection, indexRecord, createSession
+from lib.dbManager import dbGenerateConnection, retrieveRecord, createSession
+from lib.esManager import ESConnection
 
 """Logger can be passed name of current module
 Can also be instantiated on a class/method basis using dot notation
@@ -78,7 +79,10 @@ def parseRecord(encodedRec):
             recordID,
             recordType
         ))
-        result = indexRecord(session, recordType, recordID)
+        dbRec = retrieveRecord(session, recordType, recordID)
+        logger.info('Indexing record {}'.format(dbRec))
+        es = ESConnection()
+        indexResult = es.indexRecord(dbRec)
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
@@ -93,4 +97,4 @@ def parseRecord(encodedRec):
     finally:
         logger.debug('Closing Session')
         session.close()
-    return result
+    return indexResult
