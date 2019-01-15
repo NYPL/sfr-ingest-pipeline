@@ -32,9 +32,9 @@ class DataModel(unittest.TestCase):
         self.assertEqual(model.getDictValue(), {'test': 'tester'})
 
     def test_work_create(self):
-        work = WorkRecord('tester')
+        work = WorkRecord()
         self.assertIsInstance(work, WorkRecord)
-        self.assertEqual(work.source, 'tester')
+        self.assertIsInstance(work, WorkRecord)
 
     def test_work_addIdentifier(self):
         work = WorkRecord()
@@ -69,7 +69,7 @@ class DataModel(unittest.TestCase):
     def test_format_create(self):
         testFormat = Format('ebook', 'http://test.test', 'now')
         self.assertIsInstance(testFormat, Format)
-        self.assertEqual(testFormat.contentType, 'ebook')
+        self.assertEqual(testFormat.content_type, 'ebook')
 
     def test_format_create_with_link(self):
         testFormat = Format('ebook', Link('testing'), 'now')

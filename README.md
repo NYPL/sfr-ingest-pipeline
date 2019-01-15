@@ -22,8 +22,8 @@ Accepts a Metadata record generated either by harvesting records from one of the
 ## Output
 A **Work** record containing the following fields
 - Title [String]
-- SubTitle [String]
-- AltTitles [Array]
+- Subtitle [String]
+- Alt Title [Array]
 - Source [String]
 - Language [String]
 - License [URI]
@@ -46,4 +46,3 @@ A **Work** record containing the following fields
 
 - Add further comments/tests to increase coverage
 - Chaos test with various strange/incomplete/erroneous input metadata blocks
-- Refactor matching code in several places where it could be cleaner/better

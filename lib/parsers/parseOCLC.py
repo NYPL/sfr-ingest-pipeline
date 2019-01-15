@@ -21,21 +21,11 @@ MARC_FIELDS = {
 }
 
 
-def readFromClassify(classifyRecs):
-    # Extract relevant data from returned works
-    logger.debug('Parsing Returned Works')
-    extractedData = extractFromXML(classifyRecs)
+def readFromClassify(workXML):
+    """Parse Classify XML document into a object that complies with the
+    SFR data model. Accepts a single XML document and returns a WorkRecord."""
+    logger.debug('Parsing Returned Work')
 
-    combinedData = combineData(extractedData)
-
-    return combinedData
-
-
-def extractFromXML(xmlData):
-    return list(map(parseWork, xmlData))
-
-
-def parseWork(workXML):
     namespaces = {
         None: 'http://classify.oclc.org'
     }
@@ -51,6 +41,7 @@ def parseWork(workXML):
             1,
             MEASUREMENT_TIME
         ))
+    
     oclcNo = Identifier('oclc', work.text, 1)
     owiNo = Identifier('owi', work.get('owi'), 1)
 
@@ -64,10 +55,10 @@ def parseWork(workXML):
     headingList = list(map(parseHeading, headings))
 
     workDict = {
-        'oclcTitle': oclcTitle,
-        'authors': authorList,
-        'editions': editionList,
-        'headings': headingList,
+        'title': oclcTitle,
+        'agents': authorList,
+        'instances': editionList,
+        'subjects': headingList,
         'identifiers': [
             oclcNo,
             owiNo
@@ -79,16 +70,25 @@ def parseWork(workXML):
 
 
 def parseHeading(heading):
-
-    return {
-        'text': heading.text,
-        'id': heading.get('ident'),
-        'source': heading.get('src'),
-        'holdings': heading.get('heldby')
+    """Parse a subject heading into a data model object"""
+    headingDict = {
+        'subject': heading.text,
+        'uri': heading.get('ident'),
+        'authority': heading.get('src')
     }
 
-def parseEdition(edition):
+    subject = Subject.createFromDict(**headingDict)
+    subject.addMeasurement(
+        quantity='holdings',
+        value=heading.get('heldby'),
+        weight=1,
+        taken_at=MEASUREMENT_TIME
+    )
 
+    return subject
+
+def parseEdition(edition):
+    """Parse an edition into a Instance record"""
     oclcNo = Identifier(
         'oclc',
         edition.get('oclc'),
@@ -133,21 +133,20 @@ def parseEdition(edition):
     return InstanceRecord.createFromDict(**editionDict)
 
 def parseClassification(classification):
-
+    """Parse a classification into an identifier for the work record."""
     tag = classification.get('tag')
     subjectType = MARC_FIELDS[tag]
 
     classDict = {
         'type': subjectType,
-        'value': classification.get('sfa'),
-        'identifier': None,
+        'identifier': classification.get('sfa'),
         'weight': 1
     }
 
     return Identifier.createFromDict(**classDict)
 
 def parseAuthor(author):
-
+    """Parse a supplied author into an agent record."""
     authorDict = {
         'name': author.text,
         'viaf': author.get('viaf'),
@@ -155,80 +154,3 @@ def parseAuthor(author):
     }
 
     return Agent.createFromDict(**authorDict)
-
-def combineData(extractedData):
-    workTitle = None
-    workTitles = []
-    editionCount = 0
-    holdings = 0
-    digHoldings = 0
-    authors = []
-    editions = []
-    headings = []
-    measurements = []
-
-    for work in extractedData:
-
-        if int(Measurement.getValueForMeasurement(work['measurements'], 'editions')) > editionCount:
-            workTitle = work['oclcTitle']
-
-        workTitles.append(work['oclcTitle'])
-        holdings += int(Measurement.getValueForMeasurement(work['measurements'], 'holdings'))
-        digHoldings += int(Measurement.getValueForMeasurement(work['measurements'], 'eholdings'))
-        editionCount += int(Measurement.getValueForMeasurement(work['measurements'], 'editions'))
-
-        authors.extend(list(filter(None, map(authorCheck, work['authors'], repeat(authors)))))
-
-        editions.extend(list(filter(None, map(editionCheck, work['editions'], repeat(editions)))))
-
-        headings.extend(list(filter(None, map(headingCheck, work['headings'], repeat(headings)))))
-
-    for measure in [('editions', editionCount), ('holdings', holdings), ('eholdings', digHoldings)]:
-        measurements.append(Measurement(
-            measure[0],
-            measure[1],
-            1,
-            MEASUREMENT_TIME
-        ))
-
-    mergedData = {
-        "workTitle": workTitle,
-        "altTitles": workTitles,
-        "authors": authors,
-        "editions": editions,
-        "subjects": headings,
-        "measurements": measurements
-    }
-
-    return WorkRecord.createFromDict(**mergedData)
-
-def headingCheck(heading, existing):
-
-    if len(existing) < 1:
-        return heading
-
-    if len(list(filter(lambda x: x['id'] == heading['id'], existing))) > 0:
-        return False
-
-    return heading
-
-def editionCheck(edition, existing):
-
-    if len(existing) < 1:
-        return edition
-
-    if len(list(filter(lambda x: x['identifiers'][0]['identifier'] == edition['identifiers'][0]['identifier'], existing))) > 0:
-        return False
-
-    return edition
-
-def authorCheck(author, existing):
-
-    if len(existing) < 1:
-        return author
-
-    for exist in existing:
-        if jaro_winkler(author['name'].lower(), exist['name'].lower()) > 0.8:
-            return False
-
-    return author

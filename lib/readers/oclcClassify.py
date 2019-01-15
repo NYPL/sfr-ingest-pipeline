@@ -5,6 +5,8 @@ from lxml import etree
 from helpers.errorHelpers import OCLCError
 from helpers.logHelpers import createLog
 
+from lib.kinesisWrite import KinesisOutput
+
 logger = createLog('classify_read')
 
 NAMESPACE = {
@@ -21,8 +23,15 @@ LOOKUP_IDENTIFIERS = [
     'stdnbr'# Sandard Number (unclear)
 ]
 
-def classifyRecord(source, data, recID):
-    queryURL = formatURL(source, data, recID)
+def classifyRecord(searchType, searchFields, workUUID):
+    """Generates a query for the OCLC Classify service and returns the raw
+    XML response recieved from that service. This method takes 3 arguments:
+    - searchType: identifier|authorTitle
+    - searchFields: identifier+idType|authors+title
+    - uuid: UUID of the parent work record"""
+    # TODO Check to be sure that we have not queried this URL recently
+    # Probably within the last 24 hours
+    queryURL = formatURL(searchType, searchFields)
     logger.info('Fetching data for url: {}'.format(queryURL))
 
     # Load Query Response from OCLC Classify
@@ -31,12 +40,18 @@ def classifyRecord(source, data, recID):
 
     # Parse response, and if it is a Multi-Work response, parse further
     logger.debug('Parsing Classify Response')
-    xmlData, sourceData = parseClassify(rawData, data)
 
-    return xmlData, sourceData
+    return parseClassify(rawData, workUUID)
 
 
-def parseClassify(rawXML, sourceData):
+def parseClassify(rawXML, workUUID):
+    """Parses results received from Classify. Response is based of the code
+    recieved from the service, generically it will response with the XML of a
+    work record or None if it recieves a different response code.
+
+    If a multi-response is recieved, those identifiers are put back into the
+    processing stream, this will recurse until a single work record is
+    found."""
     try:
         parseXML = etree.fromstring(rawXML.encode('utf-8'))
     except etree.XMLSyntaxError as err:
@@ -52,19 +67,12 @@ def parseClassify(rawXML, sourceData):
     responseXML = parseXML.find('.//response', namespaces=NAMESPACE)
     responseCode = int(responseXML.get('code'))
 
-    storedWorks = []
     if responseCode == 102:
-        return None, sourceData
+        logger.info('Did not find any information for this query')
+        raise OCLCError('No work records found in OCLC Classify Service')
     elif responseCode == 2:
         logger.debug('Got Single Work, parsing work and edition data')
-        work = parseXML.find('.//work', namespaces=NAMESPACE)
-        if len(list(filter(lambda x: x['identifier'] == work.text, sourceData['identifiers']))) < 1:
-            sourceData['identifiers'].append({
-                'type': 'oclc',
-                'identifier': work.text,
-                'weight': 0.9
-            })
-        storedWorks.append(parseXML)
+        return parseXML
     elif responseCode == 4:
         logger.debug('Got Multiwork response, iterate through works to get details')
         works = parseXML.findall('.//work', namespaces=NAMESPACE)
@@ -72,25 +80,24 @@ def parseClassify(rawXML, sourceData):
         for work in works:
             oclcID = work.get('wi')
 
-            # Skip records that we've alread parsed
-            if len(list(filter(lambda x: x['identifier'] == oclcID, sourceData['identifiers']))) > 0:
-                continue
+            KinesisOutput.putRecord({
+                'type': 'identifier',
+                'uuid': workUUID,
+                'fields': {
+                    'idType': 'oclc',
+                    'identifier': oclcID
+                }
+            }, os.environ['CLASSIFY_STREAM'])
 
-            sourceData['identifiers'].append({
-                'type': 'oclc',
-                'identifier': oclcID,
-                'weight': 0.9
-            })
-
-            workData, sourceData = classifyRecord('oclc', sourceData, oclcID)
             storedWorks.extend(workData)
+
+        raise OCLCError('Received Multi-Work response from Classify, returned records to input stream')
     else:
         raise OCLCError('Recieved unexpected response {} from Classify'.format(responseCode))
 
-    return storedWorks, sourceData
 
 def queryClassify(queryURL):
-
+    """Execute a request against the OCLC Classify service"""
     classifyResp = requests.get(queryURL)
     if classifyResp.status_code != 200:
         logger.error('OCLC Classify Request failed')
@@ -100,29 +107,21 @@ def queryClassify(queryURL):
     return classifyBody
 
 
-def formatURL(source, record, recID):
-    title = None
-    author = None
-    lookupID = None
-    recType = None
-    logger.debug('Generating URL for Record')
-    authors = list(a['name'] for a in filter(lambda x: 'author' in x['roles'], record['agents']))
+def formatURL(searchType, searchFields):
+    """Create a URL query for the Classify service depending on the type.
+    authorTitle search will create a query based on the title and author(s) of
+    a work. identifier will create a query based on one of a standardized set
+    of identifiers."""
+    if searchType == 'authorTitle':
+        return generateClassifyURL(None, None, searchFields['title'], searchFields['authors'])
+    elif searchType == 'identifier':
+        return generateClassifyURL(searchFields['identifier'], searchFields['idType'], None, None)
 
-    author = None
-    if len(authors) > 0:
-        author = ", ".join(authors)
-
-    title = record['title']
-
-    for identifier in record['identifiers']:
-        if identifier['type'] in LOOKUP_IDENTIFIERS:
-            lookupID = identifier['identifier']
-            recType = identifier['type']
-
-    return generateClassifyURL(lookupID, recType, title, author)
 
 
 def generateClassifyURL(recID=None, recType=None, title=None, author=None):
+    """Append the parameters recieved from formatURL to the Classify service
+    base URL and return a formatted URL"""
     classifyRoot = "http://classify.oclc.org/classify2/Classify?"
     if recID is not None:
         classifySearch = "{}{}={}".format(classifyRoot, recType, recID)

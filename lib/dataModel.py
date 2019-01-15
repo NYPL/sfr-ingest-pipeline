@@ -2,6 +2,8 @@ from Levenshtein import distance, jaro_winkler
 from collections import defaultdict
 
 class DataObject(object):
+    """Abstract data model object that specific classes inherit from. Sets
+    basic functions that allow writing/retrieving attributes."""
     def __init__(self):
         pass
 
@@ -12,11 +14,15 @@ class DataObject(object):
         return self.__dict__[key]
 
     def getDictValue(self):
+        """Convert current object into a dict. Used for generating JSON objects
+        and in other instances where a standard type is necessary."""
         return vars(self)
 
     @classmethod
     def createFromDict(cls, **kwargs):
-
+        """Take a standard dict object and convert to an instance of the
+        provided class. Allows for creation of new instances with arbitrary
+        fields set"""
         record = cls()
         for field, value in kwargs.items():
             record[field] = value
@@ -25,27 +31,28 @@ class DataObject(object):
 
 
 class WorkRecord(DataObject):
-    def __init__(self, source=None):
+    def __init__(self):
         super()
-        self.source = source
         self.identifiers = []
         self.instances = []
         self.subjects = []
         self.agents = []
         self.links = []
         self.measurements = []
+        self.uuid = None
         self.license = None
         self.language = None
         self.title = None
-        self.subtitle = None
-        self.altTitle = None
-        self.rightsStatement = None
+        self.sub_title = None
+        self.alt_titles = None
+        self.sort_title = None
+        self.rights_statement = None
         self.issued = None
         self.published = None
         self.medium = None
         self.series = None
         self.seriesPosition = None
-        self.primaryIdentifier = None
+        self.primary_identifier = None
 
     def addIdentifier(self, **identifierDict):
         self.identifiers.append(Identifier.createFromDict(**identifierDict))
@@ -68,15 +75,15 @@ class InstanceRecord(DataObject):
         super()
         self.title = title
         self.language = language
-        self.subtitle = None
-        self.altTitle = None
-        self.pubPlace = None
-        self.pubDate = None
+        self.sub_title = None
+        self.alt_title = None
+        self.pub_place = None
+        self.pub_date = None
         self.edition = None
-        self.editionStatement = None
-        self.tableOfContents = None
-        self.copyrightDate = None
-        self.agents = None
+        self.edition_statement = None
+        self.table_of_contents = None
+        self.copyright_date = None
+        self.agents = []
         self.identifiers = []
         self.formats = []
         self.measurements = []
@@ -85,11 +92,11 @@ class InstanceRecord(DataObject):
 class Format(DataObject):
     def __init__(self, contentType=None, link=None, modified=None):
         super()
-        self.contentType = contentType
+        self.content_type = contentType
         self.modified = modified
         self.drm = None
         self.measurements = []
-        self.rightsURI = None
+        self.rights_uri = None
         self.link = None
 
         if (isinstance(link, Link)):
@@ -106,13 +113,13 @@ class Agent(DataObject):
     def __init__(self, name=None, role=None, aliases=None, birth=None, death=None, link=None):
         super()
         self.name = name
-        self.sortName = None
+        self.sort_name = None
         self.lcnaf = None
         self.viaf = None
         self.biography = None
         self.aliases = aliases
-        self.birthDate = birth
-        self.deathDate = death
+        self.birth_date = birth
+        self.death_date = death
         self.link = link
 
         if isinstance(role, (str, int)):
@@ -168,20 +175,23 @@ class Link(DataObject):
     def __init__(self, url=None, mediaType=None, relType=None):
         super()
         self.url = url
-        self.mediaType = mediaType
+        self.media_type = mediaType
         self.content = None
-        self.relType = None
+        self.rel_type = None
         self.thumbnail = None
 
 
 class Subject(DataObject):
     def __init__(self, subjectType=None, value=None, weight=None):
         super()
-        self.type = subjectType
-        self.identifier = None
-        self.value = value
+        self.authority = subjectType
+        self.subject = value
+        self.uri = None
         self.weight = weight
         self.measurements = []
+
+    def addMeasurement(self, **measurementDict):
+        self.measurements.append(Measurement.createFromDict(**measurementDict))
 
 
 class Measurement(DataObject):
@@ -190,7 +200,7 @@ class Measurement(DataObject):
         self.quantity = quantity
         self.value = value
         self.weight = weight
-        self.takenAt = takenAt
+        self.taken_at = takenAt
 
     @staticmethod
     def getValueForMeasurement(measurementList, quantity):

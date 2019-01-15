@@ -1,7 +1,7 @@
 import json
 import base64
 
-from helpers.errorHelpers import NoRecordsReceived
+from helpers.errorHelpers import NoRecordsReceived, DataError, OCLCError
 from helpers.logHelpers import createLog
 
 from lib.enhancer import enhanceRecord
@@ -12,7 +12,8 @@ logger = createLog('handler')
 
 
 def handler(event, context):
-
+    """Method invoked by Lambda event. Verifies that records were received and,
+    if so, passes them to be parsed"""
     logger.debug('Starting Lambda Execution')
 
     records = event.get('Records')
@@ -24,9 +25,6 @@ def handler(event, context):
         logger.error('Records block contains no records')
         raise NoRecordsReceived('Records block empty', event)
 
-    # Method to be invoked goes here
-    # TODO Implement oauth checking
-
     results = parseRecords(records)
 
     logger.info('Successfully invoked lambda')
@@ -36,30 +34,25 @@ def handler(event, context):
     return results
 
 def parseRecords(records):
+    """Simple method to parse list of records and process each entry."""
     logger.debug("Parsing Messages")
-    results = list(map(parseRecord, records))
-    return results
+    return [ parseRecord(r) for r in records ]
 
 def parseRecord(encodedRec):
+    """Parse an individual record. Verifies that an object was able to be
+    decoded from the input base64 encoded string and if so, hands this to the
+    enhancer method"""
     try:
         record = json.loads(base64.b64decode(encodedRec['kinesis']['data']))
+        return enhanceRecord(record)
     except json.decoder.JSONDecodeError as jsonErr:
         logger.error('Invalid JSON block recieved')
         logger.error(jsonErr)
-        return False
     except UnicodeDecodeError as b64Err:
         logger.error('Invalid data found in base64 encoded block')
         logger.debug(b64Err)
-        return False
+    except (DataError, OCLCError) as err:
+        logger.error(err.message)
 
-    status = record['status']
-    stage = record['stage']
-    if status != 200:
-        logger.warning('Bad Record Found! Alert the Authorities')
-        return False
-    elif stage != 'oclc':
-        logger.info('This record is not for this stage, return for further processing')
-        return False
 
-    result = enhanceRecord(record)
-    return result
+    return False
