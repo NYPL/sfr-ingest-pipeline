@@ -9,6 +9,7 @@ os.environ['DB_PASS'] = 'test'
 os.environ['DB_HOST'] = 'test'
 os.environ['DB_PORT'] = '1'
 os.environ['DB_NAME'] = 'test'
+os.environ['ES_INDEX'] = 'test'
 
 # This method is invoked outside of the main handler method as this allows
 # us to re-use db connections across Lambda invocations, but it requires a
@@ -60,12 +61,14 @@ class TestHandler(unittest.TestCase):
         res = parseRecords(testRecord)
         self.assertEqual(res, None)
 
-    @patch('service.indexRecord', return_value=True)
+    @patch('service.ESConnection')
+    @patch('service.retrieveRecord')
     @patch('service.createSession')
-    def test_parse_record_success(self, mock_session, mock_index):
+    def test_parse_record_success(self, mock_session, mock_index, mock_es):
         testJSON = {
             'Body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }
+        mock_es.indexRecord.return_value = True
         res = parseRecord(testJSON)
         mock_session.assert_called_once()
         mock_index.assert_called_once()
@@ -85,9 +88,10 @@ class TestHandler(unittest.TestCase):
         with self.assertRaises(DataError):
             parseRecord(missingJSON)
 
-    @patch('service.indexRecord', side_effect=DBError('work', 'Test Error'))
+    @patch('service.ESConnection')
+    @patch('service.retrieveRecord', side_effect=DBError('work', 'Test Error'))
     @patch('service.createSession')
-    def test_indexing_error(self, mock_session, mock_index):
+    def test_indexing_error(self, mock_session, mock_index, mock_es):
         testJSON = {
             'Body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }

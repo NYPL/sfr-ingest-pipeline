@@ -1,11 +1,12 @@
 import os
 from elasticsearch import Elasticsearch
+from elasticsearch.exceptions import ConnectionError
 from elasticsearch_dsl import connections
 
 from model.elasticDocs import Work
 
 from helpers.logHelpers import createLog
-from helpers.errorHelpers import DBError
+from helpers.errorHelpers import ESError
 
 logger = createLog('es_manager')
 
@@ -22,7 +23,10 @@ class ESConnection():
         port = os.environ['ES_PORT']
         timeout = int(os.environ['ES_TIMEOUT'])
         logger.info('Creating connection to ElasticSearch')
-        self.client = Elasticsearch(hosts=[{'host': host, 'port': port}], timeout=timeout)
+        try:
+            self.client = Elasticsearch(hosts=[{'host': host, 'port': port}], timeout=timeout)
+        except ConnectionError:
+            raise ESError('Failed to connect to ElasticSearch instance')
         connections.connections._conns['default'] = self.client
 
     def createIndex(self):

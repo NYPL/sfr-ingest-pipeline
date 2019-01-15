@@ -20,6 +20,10 @@ class DBError(Exception):
         self.table = table
         self.message = message
 
+class ESError(Exception):
+    def __init__(self, message):
+        self.message = message
+
 
 class DataError(Exception):
     def __init__(self, message):
