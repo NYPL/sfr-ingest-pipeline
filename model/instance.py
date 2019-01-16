@@ -84,6 +84,9 @@ class Instance(Core, Base):
             self.edition,
             self.work
         )
+    
+    def __dir__(self):
+        return ['title', 'sub_title', 'pub_place', 'edition', 'edition_statement', 'table_of_contents', 'language', 'extent', 'license', 'rights_statement']
 
     @classmethod
     def updateOrInsert(cls, session, instance):

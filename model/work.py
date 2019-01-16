@@ -103,6 +103,9 @@ class Work(Core, Base):
 
     def __repr__(self):
         return '<Work(title={})>'.format(self.title)
+    
+    def __dir__(self):
+        return ['uuid', 'title', 'sort_title', 'sub_title', 'language', 'license', 'rights_statement', 'medium', 'series', 'series_position']
 
     def importSubjects(self, session, subjects):
         for subject in subjects:

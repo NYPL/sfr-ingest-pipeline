@@ -19,7 +19,7 @@ class BaseDoc(Document):
     date_created = Date()
     date_modified = Date()
 
-    def save(**kwargs):
+    def save(self, **kwargs):
         return super(BaseDoc, self).save(**kwargs)
 
 
@@ -27,7 +27,7 @@ class BaseInner(InnerDoc):
     date_created = Date()
     date_modified = Date()
 
-    def save(**kwargs):
+    def save(self, **kwargs):
         return super(BaseInner, self).save(**kwargs)
 
 
@@ -66,8 +66,11 @@ class Agent(BaseInner):
     lcnaf = Keyword()
     viaf = Keyword()
     birth_date = DateRange()
+    birth_display = Keyword(index=False)
     death_date = DateRange()
+    death_display = Keyword(index=False)
     biography = Text()
+    roles = Keyword()
 
     links = Nested(Link)
 
@@ -96,11 +99,13 @@ class Instance(BaseInner):
     sub_title = Text(fields={'keyword': Keyword()})
     alt_titles = Text(fields={'keyword': Keyword()})
     pub_place = Text(fields={'keyword': Keyword()})
-    pub_date = DateRange()
+    pub_date = DateRange(format='date_optional_time')
+    pub_date_display = Keyword(index=False)
     edition = Text(fields={'keyword': Keyword()})
     edition_statement = Text(fields={'keyword': Keyword()})
     table_of_contents = Text()
     copyright_date = DateRange()
+    copyright_date_display = Keyword(index=False)
     language = Keyword(ignore_above=2)
     extent = Text()
     license = Text(fields={'keyword': Keyword()})
@@ -124,9 +129,12 @@ class Work(BaseDoc):
     series = Text(fields={'keyword': Keyword()})
     series_position = Short(ignore_malformed=True)
     issued = DateRange(format='date_optional_time')
+    issued_display = Keyword(index=False)
     created = DateRange(format='date_optional_time')
+    created_display = Keyword(index=False)
     alt_titles = Text(fields={'keyword': Keyword()})
 
+    identifiers = Nested(Identifier)
     subjects = Nested(Subject)
     agents = Nested(Agent)
     measurements = Nested(Measurement)

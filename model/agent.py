@@ -77,6 +77,12 @@ class Agent(Core, Base):
             self.lcnaf,
             self.viaf
         )
+    
+    def __dir__(self):
+        return ['name', 'sort_name', 'lcnaf', 'viaf', 'biography']
+    
+    def getRelationship(self, relRec):
+        pass
 
     @classmethod
     def updateOrInsert(cls, session, agent):

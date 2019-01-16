@@ -89,6 +89,9 @@ class Item(Core, Base):
             self.source,
             self.instance
         )
+    
+    def __dir__(self):
+        return ['source', 'content_type', 'modified', 'drm', 'rights_uri']
 
     @classmethod
     def createOrStore(cls, session, item, instanceID):
