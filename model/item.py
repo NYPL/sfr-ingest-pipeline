@@ -265,6 +265,9 @@ class AccessReport(Core, Base):
             self.score,
             self.item
         )
+    
+    def __dir__(self):
+        return ['ace_version', 'score']
 
 
 class AgentItems(Core, Base):
