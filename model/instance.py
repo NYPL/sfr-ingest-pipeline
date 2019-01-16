@@ -48,9 +48,9 @@ class Instance(Core, Base):
         'Item',
         back_populates='instance'
     )
-    agents = association_proxy(
-        'agent_instances',
-        'agent'
+    agents = relationship(
+        'AgentInstances',
+        back_populates='instance'
     )
     measurements = relationship(
         'Measurement',

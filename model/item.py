@@ -65,9 +65,9 @@ class Item(Core, Base):
         secondary=ITEM_IDENTIFIERS,
         back_populates='item'
     )
-    agents = association_proxy(
-        'agent_items',
-        'agents'
+    agents = relationship(
+        'AgentItems',
+        back_populates='item'
     )
     access_reports = relationship(
         'AccessReport',

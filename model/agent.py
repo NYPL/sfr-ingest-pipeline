@@ -7,9 +7,10 @@ from sqlalchemy import (
     Unicode,
     or_
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from model.core import Base, Core
 from model.link import AGENT_LINKS, Link
@@ -52,6 +53,21 @@ class Agent(Core, Base):
         'Date',
         secondary=AGENT_DATES,
         back_populates='agents'
+    )
+
+    works = relationship(
+        'AgentWorks',
+        back_populates='agent'
+    )
+
+    instances = relationship(
+        'AgentInstances',
+        back_populates='agent'
+    )
+
+    items = relationship(
+        'AgentItems',
+        back_populates='agent'
     )
 
     def __repr__(self):

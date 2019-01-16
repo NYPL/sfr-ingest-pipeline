@@ -72,9 +72,9 @@ class Work(Core, Base):
         'Instance',
         back_populates='work'
     )
-    agents = association_proxy(
-        'agent_works',
-        'agent'
+    agents = relationship(
+        'AgentWorks',
+        back_populates='work'
     )
     measurements = relationship(
         'Measurement',
@@ -364,7 +364,10 @@ class AgentWorks(Core, Base):
         Work,
         backref=backref('agent_works', cascade='all, delete-orphan')
     )
-    agent = relationship('Agent')
+    agent = relationship(
+        'Agent',
+        backref=backref('agent_works')
+    )
 
     def __repr__(self):
         return '<AgentWorks(work={}, agent={}, role={})>'.format(
