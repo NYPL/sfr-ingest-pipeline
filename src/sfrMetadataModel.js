@@ -34,7 +34,7 @@ export class InstanceRecord {
 }
 
 export class Agent {
-  constructor(name, role, aliases, birth, death, link) {
+  constructor(name, role, aliases, link) {
     this.name = name
     this.sort_name = null
     this.roles = role

@@ -177,25 +177,25 @@ exports.getAgent = (agent, role) => {
 
   // Aliases is an array, so it should be stored as such
   entRec['aliases'] = agent['pgterms:alias']
+  // If a webpage exists, create a Link object for that page
+  if ('pgterms:webpage' in agent) {
+    let pageLink = exports.getFieldAttrib(agent['pgterms:webpage'][0], 'rdf:resource')
+    entRec['link'] = new Link(pageLink, 'text/html', 'description')
+  }
+
+  let newAgent = new Agent(entRec['name'], [entRec['role']], entRec['aliases'], entRec['link'])
 
   if ('pgterms:birthdate' in agent) {
     let birth = exports.getRecordField(agent, 'pgterms:birthdate')
-    entRec.addDate(birth, birth, 'birth_date')
+    newAgent.addDate(birth, birth, 'birth_date')
   }
 
   if ('pgterms:deathdate' in agent) {
     let death = exports.getRecordField(agent, 'pgterms:deathdate')
-    entRec.addDate(death, death, 'death_date')
+    newAgent.addDate(death, death, 'death_date')
   }
 
-  // If a webpage exists, create a Link object for that page
-  if ('pgterms:webpage' in agent) {
-    let pageLink = exports.getFieldAttrib(agent['pgterms:webpage'][0], 'rdf:resource')
-    entRec['webpage'] = new Link(pageLink, 'text/html', 'description')
-  }
-
-  return new Agent(entRec['name'], [entRec['role']], entRec['aliases'], entRec['birth'], entRec['death'], entRec['webpage'])
-
+  return newAgent
 }
 
 exports.getSubjects = (subjects) => {
