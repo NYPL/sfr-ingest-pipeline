@@ -1,7 +1,7 @@
 {
   "EventSourceMappings": [
     {
-      "EventSourceArn": "arn:aws:kinesis:us-east-1:224280085904:stream/sfr-metadata-pipeline",
+      "EventSourceArn": "arn:aws:kinesis:us-east-1:224280085904:stream/sfr-classify-service-development",
       "BatchSize": 10,
       "StartingPosition": "LATEST",
       "Enabled": true
