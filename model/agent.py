@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from model.core import Base, Core
 from model.link import AGENT_LINKS, Link
-from model.date import AGENT_DATES
+from model.date import AGENT_DATES, Date
 
 from helpers.logHelpers import createLog
 
@@ -137,13 +137,13 @@ class Agent(Core, Base):
             for alias in list(map(lambda x: Alias(alias=x), aliases)):
                 agent.aliases.append(alias)
 
-        if link is not None:
+        for link in link:
             newLink = Link(**link)
             agent.links.append(newLink)
 
         for date in dates:
             newDate = Date.insert(date)
-            work.dates.append(newDate)
+            agent.dates.append(newDate)
 
         return agent
 

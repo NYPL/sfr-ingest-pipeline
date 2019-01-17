@@ -1,5 +1,6 @@
 import json
 import base64
+import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
@@ -95,6 +96,7 @@ def parseRecord(encodedRec):
         session.rollback()
         logger.error('Failed to store record')
         logger.debug(err)
+        logger.debug(traceback.format_exc())
         raise DBError('unknown', 'Unable to parse/ingest record, see logs for error')
     finally:
         logger.debug('Closing Session')
