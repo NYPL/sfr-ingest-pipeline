@@ -41,8 +41,8 @@ def main():
             '--requirements',
             'requirements.txt'
         ])
-        os.remove('run_config.yaml')
         createEventMapping(runType)
+        os.remove('run_config.yaml')
 
     elif re.match(r'^run-local', runType):
         logger.info('Running test locally with development environment')
