@@ -1,5 +1,7 @@
 import yaml
 import shutil
+import os
+import configparser
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import InvalidExecutionType
@@ -57,10 +59,33 @@ def setEnvVars(runType):
         'environment_variables': envVars
     }, default_flow_style=False)
     try:
+
+        config = configparser.ConfigParser()
+        try:
+            config.read(os.path.expanduser('~/.aws/credentials'))
+        except configparser.MissingSectionHeaderError:
+            pass
         with open('run_config.yaml', 'w') as newConfig:
             write = True
             written = False
             for line in configLines:
+
+                if line.strip() == 'aws_access_key_id:':
+                    try:
+                        keyID = os.environ['AWS_ACCESS_KEY_ID_DEVELOPMENT']
+                    except KeyError:
+                        keyID = config['default']['aws_access_key_id']
+                    newConfig.write('aws_access_key_id: {}\n'.format(keyID))
+                    continue
+                
+                if line.strip() == 'aws_secret_access_key:':
+                    try:
+                        awsKey = os.environ['AWS_SECRET_ACCESS_KEY_DEVELOPMENT']
+                    except KeyError:
+                        awsKey = config['default']['aws_secret_access_key']
+                    newConfig.write('aws_secret_access_key: {}\n'.format(awsKey))
+                    continue
+
                 if line.strip() == '# === END_ENV_VARIABLES ===':
                     write = True
 
