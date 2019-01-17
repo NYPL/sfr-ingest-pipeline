@@ -1,11 +1,12 @@
+import os
 from lxml import etree
 from itertools import repeat
-from Levenshtein import distance, jaro_winkler
 from datetime import datetime
 
 from helpers.errorHelpers import OCLCError
 from helpers.logHelpers import createLog
 from lib.dataModel import WorkRecord, InstanceRecord, Format, Agent, Identifier, Link, Subject, Measurement
+from lib.kinesisWrite import KinesisOutput
 
 logger = createLog('classify_parse')
 
@@ -41,7 +42,7 @@ def readFromClassify(workXML):
             1,
             MEASUREMENT_TIME
         ))
-    
+
     oclcNo = Identifier('oclc', work.text, 1)
     owiNo = Identifier('owi', work.get('owi'), 1)
 
@@ -98,6 +99,15 @@ def parseEdition(edition):
     identifiers = [
         oclcNo
     ]
+
+    # Put OCLC# into Kinesis stream for reading by OCLC Lookup service
+    KinesisOutput.putRecord(
+        {
+            'type': oclcNo.type,
+            'identifier': oclcNo.identifier
+        },
+        os.environ['LOOKUP_STREAM']
+    )
 
     classifications = edition.findall('.//class', namespaces=NAMESPACE)
     classificationList = list(map(parseClassification, classifications))
