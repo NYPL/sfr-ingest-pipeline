@@ -17,6 +17,8 @@ def loadEnvFile(runType, fileString):
         openFile = fileString.format(runType)
     else:
         openFile = 'config.yaml'
+        if os.path.isfile('run_config.yaml'):
+            openFile = 'run_config.yaml'
 
     try:
         with open(openFile) as envStream:
