@@ -39,6 +39,7 @@ class WorkRecord(DataObject):
         self.agents = []
         self.links = []
         self.measurements = []
+        self.dates = []
         self.uuid = None
         self.license = None
         self.language = None
@@ -47,8 +48,6 @@ class WorkRecord(DataObject):
         self.alt_titles = None
         self.sort_title = None
         self.rights_statement = None
-        self.issued = None
-        self.published = None
         self.medium = None
         self.series = None
         self.seriesPosition = None
@@ -69,6 +68,9 @@ class WorkRecord(DataObject):
     def addMeasurement(self, **measurementDict):
         self.measurements.append(Measurement.createFromDict(**measurementDict))
 
+    def addDate(self, **dateDict):
+        self.dates.append(Date.createFromDict(**dateDict))
+
 
 class InstanceRecord(DataObject):
     def __init__(self, title=None, language=None):
@@ -78,7 +80,6 @@ class InstanceRecord(DataObject):
         self.sub_title = None
         self.alt_title = None
         self.pub_place = None
-        self.pub_date = None
         self.edition = None
         self.edition_statement = None
         self.table_of_contents = None
@@ -87,6 +88,7 @@ class InstanceRecord(DataObject):
         self.identifiers = []
         self.formats = []
         self.measurements = []
+        self.dates = []
 
 
 class Format(DataObject):
@@ -98,6 +100,7 @@ class Format(DataObject):
         self.measurements = []
         self.rights_uri = None
         self.link = None
+        self.dates = []
 
         if (isinstance(link, Link)):
             self.link = link
@@ -121,6 +124,7 @@ class Agent(DataObject):
         self.birth_date = birth
         self.death_date = death
         self.link = link
+        self.dates = []
 
         if isinstance(role, (str, int)):
             self.roles = [role]
@@ -206,3 +210,11 @@ class Measurement(DataObject):
     def getValueForMeasurement(measurementList, quantity):
         retMeasurement = list(filter(lambda x: x['quantity'] == quantity, measurementList))
         return retMeasurement[0]['value']
+
+
+class Date(DataObject):
+    def __init__(self, displayDate=None, dateRange=None, dateType=None):
+        super()
+        self.display_date = displayDate
+        self.date_range = dateRange
+        self.date_type = dateType
