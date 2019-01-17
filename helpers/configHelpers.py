@@ -61,7 +61,10 @@ def setEnvVars(runType):
     try:
 
         config = configparser.ConfigParser()
-        config.read(os.path.expanduser('~/.aws/credentials'))
+        try:
+            config.read(os.path.expanduser('~/.aws/credentials'))
+        except configparser.MissingSectionHeaderError:
+            pass
         with open('run_config.yaml', 'w') as newConfig:
             write = True
             written = False
