@@ -23,3 +23,13 @@ class Core(object):
     def updateFields(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
+    
+    def loadDates(self, fields):
+        retDates = {}
+        for date in self.dates:
+            if date.date_type in fields:
+                retDates[date.date_type] = {
+                    'range': date.date_range,
+                    'display': date.display_date
+                }
+        return retDates

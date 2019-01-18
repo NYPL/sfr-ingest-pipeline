@@ -72,9 +72,9 @@ class Work(Core, Base):
         'Instance',
         back_populates='work'
     )
-    agents = association_proxy(
-        'agent_works',
-        'agent'
+    agents = relationship(
+        'AgentWorks',
+        back_populates='work'
     )
     measurements = relationship(
         'Measurement',
@@ -103,6 +103,9 @@ class Work(Core, Base):
 
     def __repr__(self):
         return '<Work(title={})>'.format(self.title)
+    
+    def __dir__(self):
+        return ['uuid', 'title', 'sort_title', 'sub_title', 'language', 'license', 'rights_statement', 'medium', 'series', 'series_position']
 
     def importSubjects(self, session, subjects):
         for subject in subjects:
@@ -364,7 +367,10 @@ class AgentWorks(Core, Base):
         Work,
         backref=backref('agent_works', cascade='all, delete-orphan')
     )
-    agent = relationship('Agent')
+    agent = relationship(
+        'Agent',
+        backref=backref('agent_works')
+    )
 
     def __repr__(self):
         return '<AgentWorks(work={}, agent={}, role={})>'.format(

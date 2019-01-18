@@ -79,6 +79,9 @@ class Link(Core, Base):
             self.media_type
         )
 
+    def __dir__(self):
+        return ['url', 'media_type', 'rel_type', 'thumbnail', 'rights_uri']
+
     @classmethod
     def updateOrInsert(cls, session, link, model, recordID):
         """Query the database for a link on the current record. If found,

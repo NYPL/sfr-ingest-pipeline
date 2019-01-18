@@ -48,9 +48,9 @@ class Instance(Core, Base):
         'Item',
         back_populates='instance'
     )
-    agents = association_proxy(
-        'agent_instances',
-        'agent'
+    agents = relationship(
+        'AgentInstances',
+        back_populates='instance'
     )
     measurements = relationship(
         'Measurement',
@@ -84,6 +84,9 @@ class Instance(Core, Base):
             self.edition,
             self.work
         )
+    
+    def __dir__(self):
+        return ['title', 'sub_title', 'pub_place', 'edition', 'edition_statement', 'table_of_contents', 'language', 'extent', 'license', 'rights_statement']
 
     @classmethod
     def updateOrInsert(cls, session, instance):

@@ -65,9 +65,9 @@ class Item(Core, Base):
         secondary=ITEM_IDENTIFIERS,
         back_populates='item'
     )
-    agents = association_proxy(
-        'agent_items',
-        'agents'
+    agents = relationship(
+        'AgentItems',
+        back_populates='item'
     )
     access_reports = relationship(
         'AccessReport',
@@ -89,6 +89,9 @@ class Item(Core, Base):
             self.source,
             self.instance
         )
+    
+    def __dir__(self):
+        return ['source', 'content_type', 'modified', 'drm', 'rights_uri']
 
     @classmethod
     def createOrStore(cls, session, item, instanceID):
@@ -262,6 +265,9 @@ class AccessReport(Core, Base):
             self.score,
             self.item
         )
+    
+    def __dir__(self):
+        return ['ace_version', 'score']
 
 
 class AgentItems(Core, Base):

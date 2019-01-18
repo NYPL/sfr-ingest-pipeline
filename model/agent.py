@@ -7,9 +7,10 @@ from sqlalchemy import (
     Unicode,
     or_
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.ext.associationproxy import association_proxy
 
 from model.core import Base, Core
 from model.link import AGENT_LINKS, Link
@@ -54,6 +55,21 @@ class Agent(Core, Base):
         back_populates='agents'
     )
 
+    works = relationship(
+        'AgentWorks',
+        back_populates='agent'
+    )
+
+    instances = relationship(
+        'AgentInstances',
+        back_populates='agent'
+    )
+
+    items = relationship(
+        'AgentItems',
+        back_populates='agent'
+    )
+
     def __repr__(self):
         return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(
             self.name,
@@ -61,6 +77,12 @@ class Agent(Core, Base):
             self.lcnaf,
             self.viaf
         )
+    
+    def __dir__(self):
+        return ['name', 'sort_name', 'lcnaf', 'viaf', 'biography']
+    
+    def getRelationship(self, relRec):
+        pass
 
     @classmethod
     def updateOrInsert(cls, session, agent):

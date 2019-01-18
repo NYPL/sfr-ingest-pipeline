@@ -10,7 +10,7 @@ os.environ['DB_HOST'] = 'test'
 os.environ['DB_PORT'] = 'test'
 os.environ['DB_NAME'] = 'test'
 
-from lib.dbManager import dbGenerateConnection, createSession, indexRecord, retrieveDBRecord  # noqa
+from lib.dbManager import dbGenerateConnection, createSession, retrieveRecord
 
 
 class TestDBManager(unittest.TestCase):
@@ -28,23 +28,18 @@ class TestDBManager(unittest.TestCase):
         mock_session.assert_called_once()
         self.assertIsInstance(res, Mock)
 
-    @patch('lib.dbManager.retrieveDBRecord', return_value=True)
-    def test_index_record(self, mock_retrieve):
-        indexRecord('session', 'work', 'uuid')
-        mock_retrieve.assert_called_once()
-
     def test_get_record(self):
         mockSession = MagicMock()
         mockSession.query.return_value.filter.return_value.one.return_value = True
-        res = retrieveDBRecord(mockSession, 'work', 'uuid')
+        res = retrieveRecord(mockSession, 'work', 'uuid')
         self.assertTrue(res)
 
     def test_get_record_err(self):
         mockSession = MagicMock()
         mockSession.query.return_value.filter.return_value.one.side_effect = DBError('work', 'Test Error')
         with self.assertRaises(DBError):
-            retrieveDBRecord(mockSession, 'work', 'uuid')
+            retrieveRecord(mockSession, 'work', 'uuid')
 
     def test_get_non_work(self):
         with self.assertRaises(DBError):
-            retrieveDBRecord('session', 'instance', 'uuid')
+            retrieveRecord('session', 'instance', 'uuid')

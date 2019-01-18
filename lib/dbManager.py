@@ -44,15 +44,7 @@ def createSession(engine):
     return Session()
 
 
-def indexRecord(session, recordType, recordID):
-    """Index the given record in ElasticSearch, first retrieving the necessary
-    fields from the postgreSQL database"""
-
-    sourceRec = retrieveDBRecord(session, recordType, recordID)
-    logger.info('Indexing record {}'.format(sourceRec))
-
-
-def retrieveDBRecord(session, recordType, recordID):
+def retrieveRecord(session, recordType, recordID):
     """Retrieve the given record from the postgreSQL instance"""
     if recordType == 'work':
         logger.info('Retrieving record identifier by {}'.format(recordID))
