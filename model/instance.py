@@ -15,6 +15,7 @@ from model.core import Base, Core
 from model.measurement import INSTANCE_MEASUREMENTS, Measurement
 from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
 from model.link import INSTANCE_LINKS, Link
+from model.date import INSTANCE_DATES
 from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS
@@ -29,7 +30,6 @@ class Instance(Core, Base):
     title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
     pub_place = Column(Unicode, index=True)
-    pub_date = Column(Date, index=True)
     edition = Column(Unicode)
     edition_statement = Column(Unicode)
     table_of_contents = Column(Unicode)
@@ -68,6 +68,11 @@ class Instance(Core, Base):
         secondary=INSTANCE_LINKS,
         back_populates='instances'
     )
+    dates = relationship(
+        'Date',
+        secondary=INSTANCE_DATES,
+        back_populates='instances'
+    )
     alt_titles = relationship(
         'AltTitle',
         secondary=INSTANCE_ALTS,
@@ -89,6 +94,7 @@ class Instance(Core, Base):
         agents = instance.pop('agents', None)
         identifiers = instance.pop('identifiers', None)
         measurements = instance.pop('measurements', None)
+        dates = instance.pop('dates', [])
         links = instance.pop('links', [])
         alt_titles = instance.pop('alt_titles', None)
 
@@ -114,6 +120,7 @@ class Instance(Core, Base):
                 agents=agents,
                 identifiers=identifiers,
                 measurements=measurements,
+                dates=dates,
                 links=links,
                 alt_titles=alt_titles
             )
@@ -126,6 +133,7 @@ class Instance(Core, Base):
             agents=agents,
             identifiers=identifiers,
             measurements=measurements,
+            dates=dates,
             links=links,
             alt_titles=alt_titles
         )
@@ -140,13 +148,11 @@ class Instance(Core, Base):
         agents = kwargs.get('agents', [])
         altTitles = kwargs.get('alt_titles', [])
         links = kwargs.get('links', [])
+        dates = kwargs.get('dates', [])
 
         if instance['language'] is not None and len(instance['language']) != 2:
             lang = babelfish.Language(instance['language'])
             instance['language'] = lang.alpha2
-
-        if instance['pub_date'] is not None:
-            instance['pub_date'] = datetime.strptime(instance['pub_date'], '%Y')
 
         for field, value in instance.items():
             if(value is not None):
@@ -167,6 +173,11 @@ class Instance(Core, Base):
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
             existing.measurements.append(measurementRec)
+
+        for date in dates:
+            updateDate = Date.updateOrInsert(session, date, Instance, existing.id)
+            if updateDate is not None:
+                existing.dates.append(updateDate)
 
         for item in items:
             # Check if the provided record contains an epub that can be stored
@@ -213,6 +224,7 @@ class Instance(Core, Base):
         agents = kwargs.get('agents', [])
         altTitles = kwargs.get('alt_titles', [])
         links = kwargs.get('links', [])
+        dates = kwargs.get('dates', [])
 
         if agents is not None:
             for agent in agents:
@@ -239,6 +251,10 @@ class Instance(Core, Base):
         for link in links:
             newLink = Link(**link)
             work.links.append(newLink)
+
+        for date in dates:
+            newDate = Date.insert(date)
+            work.dates.append(newDate)
 
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here

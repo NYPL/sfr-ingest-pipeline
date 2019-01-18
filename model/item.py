@@ -22,6 +22,7 @@ from model.measurement import (
 )
 from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
+from model.date import ITEM_DATES
 
 from lib.outputManager import OutputManager
 from helpers.logHelpers import createLog
@@ -78,6 +79,11 @@ class Item(Core, Base):
         secondary=ITEM_LINKS,
         back_populates='items'
     )
+    dates = relationship(
+        'Date',
+        secondary=ITEM_DATES,
+        back_populates='items'
+    )
 
     def __repr__(self):
         return '<Item(source={}, instance={})>'.format(
@@ -132,6 +138,7 @@ class Item(Core, Base):
         link = item.pop('link', None)
         identifier = item.pop('identifier', None)
         measurements = item.pop('measurements', [])
+        dates = item.pop('dates', [])
 
         existing = None
         if identifier is not None:
@@ -145,7 +152,8 @@ class Item(Core, Base):
                 item,
                 identifier=identifier,
                 link=link,
-                measurements=measurements
+                measurements=measurements,
+                dates=dates
             )
             return None
 
@@ -155,7 +163,8 @@ class Item(Core, Base):
             item,
             link=link,
             measurements=measurements,
-            identifier=identifier
+            identifier=identifier,
+            dates=dates
         )
 
         return itemRec
@@ -168,6 +177,7 @@ class Item(Core, Base):
         link = kwargs.get('link', None)
         measurements = kwargs.get('measurements', [])
         identifier = kwargs.get('identifier', None)
+        dates = kwargs.get('dates', [])
 
         item.identifiers.append(Identifier.insert(identifier))
 
@@ -179,6 +189,10 @@ class Item(Core, Base):
             measurementRec = Measurement.insert(measurement)
             item.measurements.append(measurementRec)
 
+        for date in dates:
+            newDate = Date.insert(date)
+            work.dates.append(newDate)
+
         return item
 
     @classmethod
@@ -188,6 +202,7 @@ class Item(Core, Base):
         link = kwargs.get('link', None)
         measurements = kwargs.get('measurements', [])
         identifier = kwargs.get('identifier', None)
+        dates = kwawrgs.get('dates', [])
 
         for field, value in item.items():
             if(value is not None and value.strip() != ''):
@@ -213,6 +228,11 @@ class Item(Core, Base):
                 existing.links.append(Link(**link))
             else:
                 Link.update(existingLink, link)
+
+        for date in dates:
+            updateDate = Date.updateOrInsert(session, date, Item, existing.id)
+            if updateDate is not None:
+                existing.dates.append(updateDate)
 
     @classmethod
     def addReportData(cls, session, reportData):
