@@ -1,3 +1,4 @@
+babelfish
 coverage
 elasticsearch
 elasticsearch_dsl
