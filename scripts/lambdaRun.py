@@ -154,7 +154,11 @@ def createEventMapping(runType):
         if mapping['StartingPosition'] == 'AT_TIMESTAMP':
             createKwargs['StartingPositionTimestamp'] = mapping['StartingPositionTimestamp']  # noqa: E501
 
-        lambdaClient.create_event_source_mapping(**createKwargs)
+        try:
+            lambdaClient.create_event_source_mapping(**createKwargs)
+        except lambdaClient.exceptions.ResourceConflictException as err:
+            logger.info('Event Mapping already exists, update')
+            updateEventMapping(lambdaClient, mapping, configDict)
 
 
 def createAWSClient(configDict):
