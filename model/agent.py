@@ -137,9 +137,10 @@ class Agent(Core, Base):
             for alias in list(map(lambda x: Alias(alias=x), aliases)):
                 agent.aliases.append(alias)
 
-        for link in link:
-            newLink = Link(**link)
-            agent.links.append(newLink)
+        if link is not None and type(link) is list:
+            for link in link:
+                newLink = Link(**link)
+                agent.links.append(newLink)
 
         for date in dates:
             newDate = Date.insert(date)
