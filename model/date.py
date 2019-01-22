@@ -47,7 +47,7 @@ AGENT_DATES = Table(
 )
 
 
-class Date(Core, Base):
+class DateField(Core, Base):
     """An abstract class that represents a date value, associated with any
     entity or record in the SFR data model. This class contains a set of fields
     that store both human-readable and parsable date range values. While an
@@ -86,21 +86,21 @@ class Date(Core, Base):
     )
 
     def __repr__(self):
-        return '<Date(date={})>'.format(self.display_date)
+        return '<DateField(date={})>'.format(self.display_date)
 
     @classmethod
     def updateOrInsert(cls, session, date, model, recordID):
         logger.debug('Inserting or updating date {}'.format(date['display_date']))
         """Query the database for a date on the current record. If found,
         update the existing date, if not, insert new row"""
-        existing = Date.lookupDate(session, date, model, recordID)
+        existing = DateField.lookupDate(session, date, model, recordID)
         if existing is not None:
             logger.info('Updating existing date record {}'.format(existing.id))
-            Date.update(existing, date)
+            DateField.update(existing, date)
             return None
 
         logger.info('Inserting new date object')
-        return Date.insert(date)
+        return DateField.insert(date)
 
     @classmethod
     def update(cls, existing, date):
@@ -113,17 +113,17 @@ class Date(Core, Base):
             ):
                 setattr(existing, field, value)
 
-        existing.date_range = Date.parseDate(date['date_range'])
+        existing.date_range = DateField.parseDate(date['date_range'])
 
     @classmethod
     def insert(cls, dateData):
         """Insert a new date row"""
-        date = Date()
+        date = DateField()
         for field, value in dateData.items():
             if field != 'date_range':
                 setattr(date, field, value)
             else:
-                setattr(date, field, Date.parseDate(value))
+                setattr(date, field, DateField.parseDate(value))
 
         return date
 

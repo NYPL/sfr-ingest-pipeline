@@ -14,7 +14,7 @@ from model.core import Base, Core
 from model.measurement import INSTANCE_MEASUREMENTS, Measurement
 from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
 from model.link import INSTANCE_LINKS, Link
-from model.date import INSTANCE_DATES
+from model.date import INSTANCE_DATES, DateField
 from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS, AltTitle
@@ -68,7 +68,7 @@ class Instance(Core, Base):
         back_populates='instances'
     )
     dates = relationship(
-        'Date',
+        'DateField',
         secondary=INSTANCE_DATES,
         back_populates='instances'
     )
@@ -177,7 +177,7 @@ class Instance(Core, Base):
             existing.measurements.append(measurementRec)
 
         for date in dates:
-            updateDate = Date.updateOrInsert(session, date, Instance, existing.id)
+            updateDate = DateField.updateOrInsert(session, date, Instance, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
 
@@ -255,7 +255,7 @@ class Instance(Core, Base):
             instance.links.append(newLink)
 
         for date in dates:
-            newDate = Date.insert(date)
+            newDate = DateField.insert(date)
             instance.dates.append(newDate)
 
         # We need to get the ID of the instance to allow for asynchronously

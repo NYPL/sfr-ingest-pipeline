@@ -21,7 +21,7 @@ from model.measurement import (
 )
 from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
-from model.date import ITEM_DATES
+from model.date import ITEM_DATES, DateField
 
 from helpers.logHelpers import createLog
 
@@ -79,7 +79,7 @@ class Item(Core, Base):
         back_populates='items'
     )
     dates = relationship(
-        'Date',
+        'DateField',
         secondary=ITEM_DATES,
         back_populates='items'
     )
@@ -165,7 +165,7 @@ class Item(Core, Base):
             item.measurements.append(measurementRec)
 
         for date in dates:
-            newDate = Date.insert(date)
+            newDate = DateField.insert(date)
             work.dates.append(newDate)
 
         return item
@@ -205,7 +205,7 @@ class Item(Core, Base):
                 Link.update(existingLink, link)
 
         for date in dates:
-            updateDate = Date.updateOrInsert(session, date, Item, existing.id)
+            updateDate = DateField.updateOrInsert(session, date, Item, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
 

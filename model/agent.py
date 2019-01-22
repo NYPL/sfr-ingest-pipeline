@@ -14,7 +14,7 @@ from sqlalchemy.ext.associationproxy import association_proxy
 
 from model.core import Base, Core
 from model.link import AGENT_LINKS, Link
-from model.date import AGENT_DATES
+from model.date import AGENT_DATES, DateField
 
 from helpers.logHelpers import createLog
 
@@ -50,7 +50,7 @@ class Agent(Core, Base):
         back_populates='agents'
     )
     dates = relationship(
-        'Date',
+        'DateField',
         secondary=AGENT_DATES,
         back_populates='agents'
     )
@@ -134,7 +134,7 @@ class Agent(Core, Base):
                 existing.links.append(updateLink)
 
         for date in dates:
-            updateDate = Date.updateOrInsert(session, date, Agent, existing.id)
+            updateDate = DateField.updateOrInsert(session, date, Agent, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
 
@@ -163,7 +163,7 @@ class Agent(Core, Base):
             agent.links.append(newLink)
 
         for date in dates:
-            newDate = Date.insert(date)
+            newDate = DateField.insert(date)
             agent.dates.append(newDate)
 
         return agent

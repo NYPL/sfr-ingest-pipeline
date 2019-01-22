@@ -20,7 +20,7 @@ from model.altTitle import AltTitle, WORK_ALTS
 from model.rawData import RawData
 from model.measurement import WORK_MEASUREMENTS, Measurement
 from model.link import WORK_LINKS, Link
-from model.date import WORK_DATES, Date
+from model.date import WORK_DATES, DateField
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
@@ -248,7 +248,7 @@ class Work(Core, Base):
                 existing.links.append(updateLink)
 
         for date in dates:
-            updateDate = Date.updateOrInsert(session, date, Work, existing.id)
+            updateDate = DateField.updateOrInsert(session, date, Work, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
 
@@ -317,7 +317,7 @@ class Work(Core, Base):
             work.links.append(newLink)
 
         for date in dates:
-            newDate = Date.insert(date)
+            newDate = DateField.insert(date)
             work.dates.append(newDate)
         return work
 
