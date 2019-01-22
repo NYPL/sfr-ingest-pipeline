@@ -88,15 +88,16 @@ def importRecord(session, record):
         logger.info('Ingesting instance record')
         instanceData = record['data']
 
-        dbInstance = Instance.updateOrInsert(session, instanceData)
+        dbInstance, op = Instance.updateOrInsert(session, instanceData)
 
-        if dbInstance is not None:
+        if op is 'inserted':
             logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
-        
-        OutputManager.putQueue({
-            'type': 'work',
-            'identifier': dbInstance.work.uuid.hex
-        })
+            logger.error('Cannot update ElasticSearch record for orphan instance {}'.format(dbInstance.id))
+        else:
+            OutputManager.putQueue({
+                'type': 'work',
+                'identifier': dbInstance.work.uuid.hex
+            })
 
     elif record['type'] == 'item':
         logger.info('Ingesting item record')

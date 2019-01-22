@@ -124,7 +124,7 @@ class Instance(Core, Base):
                 links=links,
                 alt_titles=alt_titles
             )
-            return None
+            return existing, 'updated'
 
         newInstance = Instance.insert(
             session,
@@ -137,7 +137,7 @@ class Instance(Core, Base):
             links=links,
             alt_titles=alt_titles
         )
-        return newInstance
+        return newInstance, 'inserted'
 
     @classmethod
     def update(cls, session, existing, instance, **kwargs):
