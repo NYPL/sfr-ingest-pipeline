@@ -14,7 +14,7 @@ from sqlalchemy.orm.exc import NoResultFound
 
 from model.core import Base, Core
 from model.link import AGENT_LINKS, Link
-from model.date import AGENT_DATES, Date
+from model.date import AGENT_DATES, DateField
 
 from helpers.logHelpers import createLog
 
@@ -50,7 +50,7 @@ class Agent(Core, Base):
         back_populates='agents'
     )
     dates = relationship(
-        'Date',
+        'DateField',
         secondary=AGENT_DATES,
         back_populates='agents'
     )
@@ -107,13 +107,18 @@ class Agent(Core, Base):
             for alias in list(filter(lambda x: Alias.insertOrSkip(session, x, Agent, existing.id), aliases)):
                 existing.aliases.append(alias)
 
-        if link is not None:
+        if type(link) is dict:
             updateLink = Link.updateOrInsert(session, link, Agent, existing.id)
             if updateLink is not None:
                 existing.links.append(updateLink)
+        elif type(link) is list:
+            for linkItem in link:
+                updateLink = Link.updateOrInsert(session, linkItem, Agent, existing.id)
+                if updateLink is not None:
+                    existing.links.append(updateLink)
 
         for date in dates:
-            updateDate = Date.updateOrInsert(session, date, Agent, existing.id)
+            updateDate = DateField.updateOrInsert(session, date, Agent, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
 
@@ -137,13 +142,16 @@ class Agent(Core, Base):
             for alias in list(map(lambda x: Alias(alias=x), aliases)):
                 agent.aliases.append(alias)
 
-        if link is not None and type(link) is list:
-            for link in link:
-                newLink = Link(**link)
+        if type(link) is list:
+            for linkItem in link:
+                newLink = Link(**linkItem)
                 agent.links.append(newLink)
+        elif type(link) is dict:
+            newLink = Link(**link)
+            agent.links.append(newLink)
 
         for date in dates:
-            newDate = Date.insert(date)
+            newDate = DateField.insert(date)
             agent.dates.append(newDate)
 
         return agent

@@ -93,6 +93,10 @@ def importRecord(session, record):
         if dbInstance is not None:
             logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
         
+        OutputManager.putQueue({
+            'type': 'work',
+            'identifier': dbInstance.work.uuid.hex
+        })
 
     elif record['type'] == 'item':
         logger.info('Ingesting item record')
@@ -107,6 +111,11 @@ def importRecord(session, record):
             Instance.addItemRecord(session, instanceID, dbItem)
             session.add(dbItem)
             session.flush()
+        
+        OutputManager.putQueue({
+            'type': 'work',
+            'identifier': dbItem.instance.work.uuid.hex
+        })
 
     elif record['type'] == 'access_report':
         logger.info('Ingest Accessibility Report')

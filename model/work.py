@@ -20,7 +20,7 @@ from model.altTitle import AltTitle, WORK_ALTS
 from model.rawData import RawData
 from model.measurement import WORK_MEASUREMENTS, Measurement
 from model.link import WORK_LINKS, Link
-from model.date import WORK_DATES, Date
+from model.date import WORK_DATES, DateField
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
@@ -92,7 +92,7 @@ class Work(Core, Base):
         back_populates='works'
     )
     dates = relationship(
-        'Date',
+        'DateField',
         secondary=WORK_DATES,
         back_populates='works'
     )
@@ -196,11 +196,11 @@ class Work(Core, Base):
             oldHoldings = list(filter(lambda x: x.quantity == 'holdings', existing.measurements))
 
             for holding in oldHoldings:
-                if newHoldings.value > holding.value:
+                if float(newHoldings['value']) > holding.value:
                     existing.title = newTitle
                     break
             else:
-                existing.altTitle.append(AltTitle(title=newTitle))
+                existing.alt_titles.append(AltTitle(title=newTitle))
 
         for instance in instances:
             instanceRec = Instance.updateOrInsert(session, instance)
@@ -225,7 +225,7 @@ class Work(Core, Base):
                     )
 
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Work, existing.id), altTitles)):
-            existing.altTitles.append(AltTitle(title=altTitle))
+            existing.alt_titles.append(AltTitle(title=altTitle))
 
         for subject in subjects:
             op, subjectRec = Subject.updateOrInsert(session, subject)
@@ -245,7 +245,7 @@ class Work(Core, Base):
                 existing.links.append(updateLink)
 
         for date in dates:
-            updateDate = Date.updateOrInsert(session, date, Work, existing.id)
+            updateDate = DateField.updateOrInsert(session, date, Work, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
 
@@ -299,7 +299,7 @@ class Work(Core, Base):
                 )
 
         for altTitle in altTitles:
-            work.altTitles.append(AltTitle(title=altTitle))
+            work.alt_titles.append(AltTitle(title=altTitle))
 
         for subject in subjects:
             op, subjectRec = Subject.updateOrInsert(session, subject)
@@ -314,7 +314,7 @@ class Work(Core, Base):
             work.links.append(newLink)
 
         for date in dates:
-            newDate = Date.insert(date)
+            newDate = DateField.insert(date)
             work.dates.append(newDate)
         return work
 

@@ -183,6 +183,25 @@ def createAWSClient(configDict):
     return lambdaClient
 
 
+def updateEventMapping(client, mapping, configDict):
+
+    listSourceKwargs = {
+        'EventSourceArn': mapping['EventSourceArn'],
+        'FunctionName': configDict['function_name'],
+        'MaxItems': 1
+    }
+    sourceMappings = client.list_event_source_mappings(**listSourceKwargs)
+    mappingMeta = sourceMappings['EventSourceMappings'][0]
+
+    updateKwargs = {
+        'UUID': mappingMeta['UUID'],
+        'FunctionName': configDict['function_name'],
+        'Enabled': mapping['Enabled'],
+        'BatchSize': mapping['BatchSize'],
+    }
+    client.update_event_source_mapping(**updateKwargs)
+
+
 def loadEnvFile(runType, fileString):
 
     if fileString:

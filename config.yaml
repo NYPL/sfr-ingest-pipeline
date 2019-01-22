@@ -15,6 +15,9 @@ aws_secret_access_key:
 timeout: 15
 memory_size: 256
 
+subnet_ids: ['subnet-12aa8a65', 'subnet-cd4a25e6']
+security_group_ids: ['sg-5521ef32']
+
 # If tags are used they will overwrite all existing tags at deployment time
 tags:
   sfr: sfr

@@ -15,10 +15,10 @@ from model.core import Base, Core
 from model.measurement import INSTANCE_MEASUREMENTS, Measurement
 from model.identifiers import INSTANCE_IDENTIFIERS, Identifier
 from model.link import INSTANCE_LINKS, Link
-from model.date import INSTANCE_DATES
+from model.date import INSTANCE_DATES, DateField
 from model.item import Item
 from model.agent import Agent
-from model.altTitle import INSTANCE_ALTS
+from model.altTitle import INSTANCE_ALTS, AltTitle
 
 
 class Instance(Core, Base):
@@ -69,7 +69,7 @@ class Instance(Core, Base):
         back_populates='instances'
     )
     dates = relationship(
-        'Date',
+        'DateField',
         secondary=INSTANCE_DATES,
         back_populates='instances'
     )
@@ -175,7 +175,7 @@ class Instance(Core, Base):
             existing.measurements.append(measurementRec)
 
         for date in dates:
-            updateDate = Date.updateOrInsert(session, date, Instance, existing.id)
+            updateDate = DateField.updateOrInsert(session, date, Instance, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
 
@@ -199,7 +199,7 @@ class Instance(Core, Base):
                     )
 
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Instance, existing.id), altTitles)):
-            existing.altTitles.append(AltTitle(title=altTitle))
+            existing.alt_titles.append(AltTitle(title=altTitle))
 
         for link in links:
             updateLink = Link.updateOrInsert(session, link, Instance, existing.id)
@@ -246,15 +246,15 @@ class Instance(Core, Base):
             instance.measurements.append(measurementRec)
 
         for altTitle in altTitles:
-            instance.altTitles.append(AltTitle(title=altTitle))
+            instance.alt_titles.append(AltTitle(title=altTitle))
 
         for link in links:
             newLink = Link(**link)
-            work.links.append(newLink)
+            instance.links.append(newLink)
 
         for date in dates:
-            newDate = Date.insert(date)
-            work.dates.append(newDate)
+            newDate = DateField.insert(date)
+            instance.dates.append(newDate)
 
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here
