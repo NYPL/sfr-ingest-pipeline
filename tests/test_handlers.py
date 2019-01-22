@@ -66,7 +66,7 @@ class TestHandler(unittest.TestCase):
     @patch('service.createSession')
     def test_parse_record_success(self, mock_session, mock_index, mock_es):
         testJSON = {
-            'Body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
+            'body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }
         mock_es.indexRecord.return_value = True
         res = parseRecord(testJSON)
@@ -76,14 +76,14 @@ class TestHandler(unittest.TestCase):
 
     def test_parse_bad_json(self):
         badJSON = {
-            'Body': '{"type: "work", "identifier": "a3800805fa64454095c459400c424271"}'
+            'body': '{"type: "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }
         with self.assertRaises(DataError):
             parseRecord(badJSON)
 
     def test_parse_missing_field(self):
         missingJSON = {
-            'Body': '{"type": "work"}'
+            'body': '{"type": "work"}'
         }
         with self.assertRaises(DataError):
             parseRecord(missingJSON)
@@ -93,7 +93,7 @@ class TestHandler(unittest.TestCase):
     @patch('service.createSession')
     def test_indexing_error(self, mock_session, mock_index, mock_es):
         testJSON = {
-            'Body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
+            'body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }
         with self.assertRaises(DBError):
             parseRecord(testJSON)

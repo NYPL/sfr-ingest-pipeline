@@ -89,6 +89,9 @@ class Measurement(Core, Base):
             self.quantity,
             self.value
         )
+    
+    def __dir__(self):
+        return ['quantity', 'value', 'weight', 'taken_at']
 
     # TODO Update methods below to handle updating on ALL tables/models, not
     # just for works

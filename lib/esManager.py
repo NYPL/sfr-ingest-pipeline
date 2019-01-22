@@ -4,7 +4,7 @@ from elasticsearch.exceptions import ConnectionError, TransportError
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
 
-from model.elasticDocs import Work, Subject, Identifier, Agent, Measurement, Instance, Link
+from model.elasticDocs import Work, Subject, Identifier, Agent, Measurement, Instance, Link, Item
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import ESError
@@ -58,6 +58,7 @@ class ESConnection():
             setattr(self.work, dateType, dateRange)
             setattr(self.work, dateType + '_display', date['display'])
         
+        self.work.alt_titles = []
         for altTitle in dbRec.alt_titles:
             self.work.alt_titles.append(altTitle.title)
         
@@ -82,7 +83,7 @@ class ESConnection():
             self.work.measurements.append(Measurement(
                 quantity=measure.quantity,
                 value = measure.value,
-                weight = meaure.weight,
+                weight = measure.weight,
                 taken_at = measure.taken_at
             ))
         
@@ -94,7 +95,6 @@ class ESConnection():
         for instance in dbRec.instances:
             ESConnection.addInstance(self.work, instance)
 
-        print(self.work.title)
         self.work.save()
 
     @staticmethod
@@ -119,7 +119,7 @@ class ESConnection():
     def addMeasurement(record, measurement):
         newMeasure = Measurement()
         for field in dir(measurement):
-            setattr(newMeasure, field, getatr(measurement, field, None))
+            setattr(newMeasure, field, getattr(measurement, field, None))
         
         record.measurements.append(newMeasure)
     

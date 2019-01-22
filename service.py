@@ -1,4 +1,5 @@
 import json
+import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
@@ -60,7 +61,7 @@ def parseRecord(encodedRec):
     then passed to the dbManager for retrieval and indexing.
     """
     try:
-        record = json.loads(encodedRec['Body'])
+        record = json.loads(encodedRec['body'])
         recordType = record['type']
         recordID = record['identifier']
     except json.decoder.JSONDecodeError as jsonErr:
@@ -90,6 +91,7 @@ def parseRecord(encodedRec):
         session.rollback()
         logger.error('Failed to store record')
         logger.debug(err)
+        logger.debug(traceback.format_exc())
         raise DBError(
             'unknown',
             'Unable to parse/ingest record, see logs for error'
