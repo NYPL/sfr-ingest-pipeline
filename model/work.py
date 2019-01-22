@@ -203,8 +203,8 @@ class Work(Core, Base):
                 existing.alt_titles.append(AltTitle(title=newTitle))
 
         for instance in instances:
-            instanceRec = Instance.updateOrInsert(session, instance)
-            if instanceRec is not None:
+            instanceRec, op = Instance.updateOrInsert(session, instance)
+            if op == 'inserted':
                 existing.instances.append(instanceRec)
 
         for iden in identifiers:
@@ -282,7 +282,7 @@ class Work(Core, Base):
         work.import_json.append(jsonRec)
 
         for instance in instances:
-            instanceRec = Instance.updateOrInsert(session, instance)
+            instanceRec, op = Instance.updateOrInsert(session, instance)
             work.instances.append(instanceRec)
 
         for iden in identifiers:
