@@ -78,7 +78,7 @@ class InstanceRecord(DataObject):
         self.title = title
         self.language = language
         self.sub_title = None
-        self.alt_title = None
+        self.alt_titles = []
         self.pub_place = None
         self.edition = None
         self.edition_statement = None

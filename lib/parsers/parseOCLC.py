@@ -27,9 +27,6 @@ def readFromClassify(workXML):
     SFR data model. Accepts a single XML document and returns a WorkRecord."""
     logger.debug('Parsing Returned Work')
 
-    namespaces = {
-        None: 'http://classify.oclc.org'
-    }
     work = workXML.find('.//work', namespaces=NAMESPACE)
 
     oclcTitle = work.get('title')

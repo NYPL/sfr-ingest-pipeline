@@ -89,8 +89,6 @@ def parseClassify(rawXML, workUUID):
                 }
             }, os.environ['CLASSIFY_STREAM'])
 
-            storedWorks.extend(workData)
-
         raise OCLCError('Received Multi-Work response from Classify, returned records to input stream')
     else:
         raise OCLCError('Recieved unexpected response {} from Classify'.format(responseCode))
@@ -113,6 +111,7 @@ def formatURL(searchType, searchFields):
     a work. identifier will create a query based on one of a standardized set
     of identifiers."""
     if searchType == 'authorTitle':
+        searchTitle = searchFields['title'].replace('\r', ' ').replace('\n', ' ')
         return generateClassifyURL(None, None, searchFields['title'], searchFields['authors'])
     elif searchType == 'identifier':
         return generateClassifyURL(searchFields['identifier'], searchFields['idType'], None, None)
