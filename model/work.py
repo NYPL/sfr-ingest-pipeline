@@ -92,7 +92,7 @@ class Work(Core, Base):
         back_populates='works'
     )
     dates = relationship(
-        'Date',
+        'DateField',
         secondary=WORK_DATES,
         back_populates='works'
     )
