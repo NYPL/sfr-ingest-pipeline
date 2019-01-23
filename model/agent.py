@@ -72,6 +72,9 @@ class Agent(Core, Base):
         link = agent.pop('link', [])
         dates = agent.pop('dates', [])
 
+        agent.pop('birth_date')
+        agent.pop('death_date')
+
         existingAgent = Agent.lookupAgent(session, agent)
         if existingAgent is not None:
             updated = Agent.update(
