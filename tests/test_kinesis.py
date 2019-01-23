@@ -21,13 +21,15 @@ class TestKinesis(unittest.TestCase):
         }
 
         record = {
-            'status': 200,
             'type': 'work',
             'method': 'update',
             'data': {'test': 'data'}
         }
 
-        body = json.dumps(record)
+        body = json.dumps({
+            'status': 200,
+            'data': record
+        })
 
         expected_params = {
             'Data': body,

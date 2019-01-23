@@ -22,21 +22,22 @@ class KinesisOutput():
         logger.info("Writing results to Kinesis")
 
         # The default lambda function here converts all objects into dicts
+        
+        dataObject = {
+            'status': 200,
+            'data': outputObject
+        }
+        
         kinesisStream = json.dumps(
-            outputObject,
+            dataObject,
             ensure_ascii=False,
             default=lambda x: vars(x)
         )
 
-        outputObject = {
-            'status': 200,
-            'data': kinesisStream
-        }
-
         try:
             kinesisResp = cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
-                Data=outputObject,
+                Data=kinesisStream,
                 PartitionKey=os.environ['OUTPUT_SHARD']
             )
         except:
