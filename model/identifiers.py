@@ -292,12 +292,9 @@ class Identifier(Base):
             if len(existing) == 1:
                 return existing[0]
             elif len(existing) > 1:
-                logger.error('Found multiple references from {}'.format(
+                logger.warning('Found multiple references from {}'.format(
                     ident['identifier']
                 ))
-                raise DBError(
-                    ident['type'],
-                    'Found multiple references to identifier'
-                )
+                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(ident['identifier']))
         else:
             return None
