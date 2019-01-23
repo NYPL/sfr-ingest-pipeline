@@ -17,6 +17,7 @@ def enhanceRecord(record):
         sourceData = record['data']
     except KeyError:
         logger.error('Missing data from input event')
+        logger.debug(record)
         raise DataError('No data received in Kinesis record')
 
     try:

@@ -27,10 +27,16 @@ class KinesisOutput():
             ensure_ascii=False,
             default=lambda x: vars(x)
         )
+
+        outputObject = {
+            'status': 200,
+            'data': kinesisStream
+        }
+
         try:
             kinesisResp = cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
-                Data=kinesisStream,
+                Data=outputObject,
                 PartitionKey=os.environ['OUTPUT_SHARD']
             )
         except:
