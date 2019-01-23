@@ -1,4 +1,5 @@
 import babelfish
+import re
 from datetime import datetime
 from sqlalchemy import (
     Column,
@@ -19,6 +20,10 @@ from model.date import INSTANCE_DATES, DateField
 from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS, AltTitle
+
+from helpers.logHelpers import createLog
+
+logger = createLog('instances')
 
 
 class Instance(Core, Base):
@@ -151,8 +156,13 @@ class Instance(Core, Base):
         dates = kwargs.get('dates', [])
 
         if instance['language'] is not None and len(instance['language']) != 2:
-            lang = babelfish.Language(instance['language'])
-            instance['language'] = lang.alpha2
+            langs = re.split(r'\W+', instance['language'])
+            try:
+                lang = babelfish.Language(langs[0])
+                instance['language'] = lang.alpha2
+            except ValueError:
+                instance['language'] = None
+                logger.warning('Unable to assign language {} to instance {}'.format(langs[0], existing.id))
 
         for field, value in instance.items():
             if(value is not None):
@@ -213,8 +223,13 @@ class Instance(Core, Base):
         """Insert a new instance record"""
         # Check if language codes are too long and convert if necessary
         if len(instanceData['language']) != 2:
-            lang = babelfish.Language(instanceData['language'])
-            instanceData['language'] = lang.alpha2
+            langs = re.split(r'\W+', instanceData['language'])
+            try:
+                lang = babelfish.Language(langs[0])
+                instanceData['language'] = lang.alpha2
+            except ValueError:
+                instanceData['language'] = None
+                logger.warning('Unable to assign language {} to new instance'.format(langs[0]))
 
         instance = Instance(**instanceData)
 
