@@ -11,7 +11,8 @@ from elasticsearch_dsl import (
     Float,
     HalfFloat,
     Date,
-    DateRange
+    DateRange,
+    Date
 )
 
 
@@ -83,7 +84,7 @@ class Identifier(BaseInner):
 class Item(BaseInner):
     source = Keyword()
     content_type = Keyword()
-    modified = DateRange()
+    modified = Date()
     drm = Keyword()
     rights_uri = Keyword()
 

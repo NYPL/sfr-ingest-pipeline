@@ -89,23 +89,23 @@ class DateField(Core, Base):
         return '<DateField(date={})>'.format(self.display_date)
 
     @classmethod
-    def updateOrInsert(cls, session, date, model, recordID):
+    def updateOrInsert(cls, session, dateObj, model, recordID):
         logger.debug('Inserting or updating date {}'.format(date['display_date']))
         """Query the database for a date on the current record. If found,
         update the existing date, if not, insert new row"""
-        existing = DateField.lookupDate(session, date, model, recordID)
+        existing = DateField.lookupDate(session, dateObj, model, recordID)
         if existing is not None:
             logger.info('Updating existing date record {}'.format(existing.id))
-            DateField.update(existing, date)
+            DateField.update(existing, dateObj)
             return None
 
         logger.info('Inserting new date object')
-        return DateField.insert(date)
+        return DateField.insert(dateObj)
 
     @classmethod
-    def update(cls, existing, date):
+    def update(cls, existing, dateObj):
         """Update fields on existing date"""
-        for field, value in date.items():
+        for field, value in dateObj.items():
             if(
                 value is not None
                 and value.strip() != ''
@@ -113,7 +113,7 @@ class DateField(Core, Base):
             ):
                 setattr(existing, field, value)
 
-        existing.date_range = DateField.parseDate(date['date_range'])
+        existing.date_range = DateField.parseDate(dateObj['date_range'])
 
     @classmethod
     def insert(cls, dateData):
@@ -128,13 +128,13 @@ class DateField(Core, Base):
         return date
 
     @classmethod
-    def lookupDate(cls, session, date, model, recordID):
+    def lookupDate(cls, session, dateObj, model, recordID):
         """Query database for link related to current record. Return link
         if found, otherwise return None"""
         return session.query(cls)\
             .join(model.__tablename__)\
             .filter(model.id == recordID)\
-            .filter(cls.date_type == date['date_type'])\
+            .filter(cls.date_type == dateObj['date_type'])\
             .one_or_none()
 
     @staticmethod
