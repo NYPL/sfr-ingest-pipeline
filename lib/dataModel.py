@@ -113,7 +113,7 @@ class Format(DataObject):
 
 
 class Agent(DataObject):
-    def __init__(self, name=None, role=None, aliases=None, birth=None, death=None, link=None):
+    def __init__(self, name=None, role=None, aliases=None, link=None):
         super()
         self.name = name
         self.sort_name = None
@@ -121,8 +121,6 @@ class Agent(DataObject):
         self.viaf = None
         self.biography = None
         self.aliases = aliases
-        self.birth_date = birth
-        self.death_date = death
         self.link = link
         self.dates = []
 
