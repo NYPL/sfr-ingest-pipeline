@@ -56,7 +56,7 @@ class Subject(Core, Base):
     def updateOrInsert(cls, session, subject):
         """Query for an existing subject, and if found, update existing record,
         otherwise insert a new subject"""
-        measurements = subject.pop('measurements', None)
+        measurements = subject.pop('measurements', [])
 
         existingSubject = Subject.lookupSubject(session, subject)
 
@@ -78,8 +78,11 @@ class Subject(Core, Base):
         measurements = kwargs.get('measurements', [])
 
         for field, value in subject.items():
-            if(value is not None and value.strip() != ''):
-                setattr(existing, field, value)
+            if value is not None:
+                if type(value) is str and value.strip() != '':
+                    setattr(existing, field, value)
+                else:
+                    setattr(existing, field, value)
 
         # TODO: Move measurements to relationship bewteen subject and record
         # It does not make sense for this data to be stored here. (Unless we
