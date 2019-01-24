@@ -19,7 +19,8 @@ class KinesisOutput():
     @classmethod
     def putRecord(cls, outputObject, stream):
         """Put an event into the specific Kinesis stream"""
-        logger.info("Writing results to Kinesis")
+        logger.info("Writing results to Kinesis {}".format(stream))
+        logger.debug(outputObject)
 
         # The default lambda function here converts all objects into dicts
         
