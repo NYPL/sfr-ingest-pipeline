@@ -249,7 +249,6 @@ class Item(Core, Base):
         existing = None
         if identifier is not None:
             existing = Identifier.getByIdentifier(cls, session, [identifier])
-            return None
 
         if existing is not None:
             aceReport = reportData['data']
