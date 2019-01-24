@@ -12,10 +12,10 @@ aws_access_key_id:
 aws_secret_access_key:
 
 # dist_directory: dist
-timeout: 15
-memory_size: 256
+timeout: 60
+memory_size: 192
 
-subnet_ids: ['subnet-12aa8a65', 'subnet-cd4a25e6']
+subnet_ids: ['subnet-12aa8a65']
 security_group_ids: ['sg-5521ef32']
 
 # If tags are used they will overwrite all existing tags at deployment time
