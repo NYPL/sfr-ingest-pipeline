@@ -107,9 +107,9 @@ def importRecord(session, record):
         itemData = record['data']
         instanceID = itemData.pop('instance_id', None)
 
-        dbItem = Item.updateOrInsert(session, itemData)
+        dbItem, op = Item.updateOrInsert(session, itemData)
 
-        if dbItem is not None:
+        if op == 'inserted':
             logger.debug('Got new item record, adding to instance')
             # Add item to parent instance record
             Instance.addItemRecord(session, instanceID, dbItem)

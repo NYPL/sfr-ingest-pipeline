@@ -155,7 +155,7 @@ class Item(Core, Base):
                 measurements=measurements,
                 dates=dates
             )
-            return None
+            return existing, 'updated'
 
         logger.debug('Inserting new item record')
         itemRec = cls.insert(
@@ -167,7 +167,7 @@ class Item(Core, Base):
             dates=dates
         )
 
-        return itemRec
+        return itemRec, 'inserted'
 
     @classmethod
     def insert(cls, session, itemData, **kwargs):

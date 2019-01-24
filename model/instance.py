@@ -193,8 +193,8 @@ class Instance(Core, Base):
         for item in items:
             # Check if the provided record contains an epub that can be stored
             # locally. If it does, defer insert to epub creation process
-            itemRec = Item.createOrStore(session, item, existing.id)
-            if itemRec is not None:
+            itemRec, op = Item.createOrStore(session, item, existing.id)
+            if op == 'inserted':
                 existing.items.append(itemRec)
 
         for agent in agents:
@@ -279,8 +279,8 @@ class Instance(Core, Base):
         session.flush()
 
         for item in items:
-            itemRec = Item.createOrStore(session, item, instance.id)
-            if itemRec is not None:
+            itemRec, op = Item.createOrStore(session, item, instance.id)
+            if op == 'inserted':
                 instance.items.append(itemRec)
 
         return instance
