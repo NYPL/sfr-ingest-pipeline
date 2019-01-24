@@ -1,6 +1,6 @@
 import os
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import ConnectionError, TransportError
+from elasticsearch.exceptions import ConnectionError, TransportError, ConflictError
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
 
@@ -51,6 +51,8 @@ class ESConnection():
             setattr(self.work, field, getattr(dbRec, field, None))
         
         for dateType, date in dbRec.loadDates(['issued', 'created']).items():
+            if date['range'] is None:
+                continue
             dateRange = Range(
                 gte=date['range'].lower,
                 lte=date['range'].upper
@@ -135,10 +137,13 @@ class ESConnection():
             for field in dir(agent):
                 setattr(esAgent, field, getattr(agent, field, None))
             
+            esAgent.aliases = []
             for alias in agent.aliases:
-                esAgent.aliases.append(alias.name)
+                esAgent.aliases.append(alias.alias)
             
             for dateType, date in agent.loadDates(['birth_date', 'death_date']).items():
+                if date['range'] is None:
+                    continue
                 dateRange = Range(
                     gte=date['range'].lower,
                     lte=date['range'].upper
@@ -157,6 +162,8 @@ class ESConnection():
             setattr(esInstance, field, getattr(instance, field, None))
         
         for dateType, date in instance.loadDates(['pub_date', 'copyright_date']).items():
+            if date['range'] is None:
+                continue
             dateRange = Range(
                 gte=date['range'].lower,
                 lte=date['range'].upper
@@ -164,18 +171,23 @@ class ESConnection():
             setattr(esInstance, dateType, dateRange)
             setattr(esInstance, dateType + '_display', date['display'])
 
+        esInstance.identifiers = []
         for identifier in instance.identifiers:
             ESConnection.addIdentifier(esInstance, identifier)
         
+        esInstance.agents = []
         for agent in instance.agents:
             ESConnection.addAgent(esInstance, agent)
         
+        esInstance.links = []
         for link in instance.links:
             ESConnection.addLink(esInstance, link)
         
+        esInstance.measurements = []
         for measure in instance.measurements:
             ESConnection.addMeasurement(esInstance, measure)
         
+        esInstance.items = []
         for item in instance.items:
             ESConnection.addItem(esInstance, item)
 
