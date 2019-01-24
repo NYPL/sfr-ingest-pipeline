@@ -1,4 +1,5 @@
 import babelfish
+from babelfish.exceptions import LanguageConvertError
 import re
 from datetime import datetime
 from sqlalchemy import (
@@ -160,7 +161,7 @@ class Instance(Core, Base):
             try:
                 lang = babelfish.Language(langs[0])
                 instance['language'] = lang.alpha2
-            except ValueError:
+            except (ValueError, LanguageConvertError):
                 instance['language'] = None
                 logger.warning('Unable to assign language {} to instance {}'.format(langs[0], existing.id))
 
@@ -227,7 +228,7 @@ class Instance(Core, Base):
             try:
                 lang = babelfish.Language(langs[0])
                 instanceData['language'] = lang.alpha2
-            except ValueError:
+            except (ValueError, LanguageConvertError):
                 instanceData['language'] = None
                 logger.warning('Unable to assign language {} to new instance'.format(langs[0]))
 
