@@ -75,6 +75,9 @@ class Agent(Core, Base):
         agent.pop('birth_date', None)
         agent.pop('death_date', None)
 
+        # Escape single quotes for postgres
+        agent['name'] = agent['name'].replace('\'', '\'\'')
+
         existingAgent = Agent.lookupAgent(session, agent)
         if existingAgent is not None:
             updated = Agent.update(
@@ -218,6 +221,9 @@ class Alias(Core, Base):
         """Queries database for alias associated with current agent. If alias
         exists, we can skip this, no modification is needed. If it is not
         found, a new alias is created."""
+
+        alias = alias.replace('\'', '\'\'')
+
         try:
             session.query(cls)\
                 .join(model)\
