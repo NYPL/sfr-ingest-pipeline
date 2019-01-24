@@ -52,7 +52,7 @@ class Work(Core, Base):
     rights_statement = Column(Unicode)
     medium = Column(Unicode)
     series = Column(Unicode)
-    series_position = Column(Integer)
+    series_position = Column(Unicode)
 
     #
     # Relationships
