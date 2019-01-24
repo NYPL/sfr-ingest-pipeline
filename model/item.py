@@ -249,6 +249,7 @@ class Item(Core, Base):
         existing = None
         if identifier is not None:
             existing = Identifier.getByIdentifier(cls, session, [identifier])
+            return None
 
         if existing is not None:
             aceReport = reportData['data']
@@ -269,6 +270,7 @@ class Item(Core, Base):
                 }))
 
             existing.access_reports.append(newReport)
+            return existing
 
 
 class AccessReport(Core, Base):

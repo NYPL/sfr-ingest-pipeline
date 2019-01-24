@@ -63,6 +63,9 @@ def importRecord(session, record):
 
     if record['type'] == 'work':
         workData = (record['data'])
+        if 'data' in workData:
+            record = workData
+            workData = workData['data']
         op, dbWork = Work.updateOrInsert(session, workData)
 
         if op == 'insert':
@@ -122,4 +125,11 @@ def importRecord(session, record):
         logger.info('Ingest Accessibility Report')
         reportData = record['data']
 
-        Item.addReportData(session, reportData)
+        dbItem = Item.addReportData(session, reportData)
+        
+        if dbItem is not None:
+            logger.debug('Updating ElasticSearch with access report for {}'.format(dbItem))
+            OutputManager.putQueue({
+                'type': 'work',
+                'identifier': dbItem.instance.work.uuid.hex
+            })
