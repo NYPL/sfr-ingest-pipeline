@@ -48,15 +48,17 @@ class TestHandler(unittest.TestCase):
         with self.assertRaises(NoRecordsReceived):
             handler(testRec, None)
 
+    @patch('service.ESConnection', return_value='esMock')
     @patch('service.parseRecord', return_value=True)
-    def test_parse_records_success(self, mock_parse):
+    def test_parse_records_success(self, mock_parse, mock_es):
         testRecords = ['rec1', 'rec2']
         res = parseRecords(testRecords)
-        mock_parse.assert_has_calls([call('rec1'), call('rec2')])
+        mock_parse.assert_has_calls([call('rec1', 'esMock'), call('rec2', 'esMock')])
         self.assertEqual(res, [True, True])
 
+    @patch('service.ESConnection', return_value='esMock')
     @patch('service.parseRecord', side_effect=DataError('test error'))
-    def test_parse_records_err(self, mock_parse):
+    def test_parse_records_err(self, mock_parse, mock_es):
         testRecord = ['badRecord']
         res = parseRecords(testRecord)
         self.assertEqual(res, None)
@@ -69,7 +71,7 @@ class TestHandler(unittest.TestCase):
             'body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }
         mock_es.indexRecord.return_value = True
-        res = parseRecord(testJSON)
+        res = parseRecord(testJSON, mock_es)
         mock_session.assert_called_once()
         mock_index.assert_called_once()
         self.assertTrue(res)
@@ -79,24 +81,23 @@ class TestHandler(unittest.TestCase):
             'body': '{"type: "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }
         with self.assertRaises(DataError):
-            parseRecord(badJSON)
+            parseRecord(badJSON, 'mockES')
 
     def test_parse_missing_field(self):
         missingJSON = {
             'body': '{"type": "work"}'
         }
         with self.assertRaises(DataError):
-            parseRecord(missingJSON)
+            parseRecord(missingJSON, 'mockES')
 
-    @patch('service.ESConnection')
     @patch('service.retrieveRecord', side_effect=DBError('work', 'Test Error'))
     @patch('service.createSession')
-    def test_indexing_error(self, mock_session, mock_index, mock_es):
+    def test_indexing_error(self, mock_session, mock_index):
         testJSON = {
             'body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
         }
         with self.assertRaises(DBError):
-            parseRecord(testJSON)
+            parseRecord(testJSON, 'mockES')
             mock_session.assert_called_once()
             mock_index.assert_called_once()
 
