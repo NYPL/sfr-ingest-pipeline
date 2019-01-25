@@ -47,14 +47,15 @@ def handler(event, context):
 def parseRecords(records):
     """Iterator for handling multiple incoming messages"""
     logger.debug('Parsing Messages')
+    es = ESConnection()
     try:
-        return [parseRecord(r) for r in records]
+        return [parseRecord(r, es) for r in records]
     except (NoRecordsReceived, DataError, DBError) as err:
         logger.error('Could not process records in current invocation')
         logger.debug(err)
 
 
-def parseRecord(encodedRec):
+def parseRecord(encodedRec, es):
     """Handles each individual record by parsing JSON the message string
     received in the SQS queue. Each message should contain a record type
     indicator along with an identifier for that record type. These fields are
@@ -82,7 +83,7 @@ def parseRecord(encodedRec):
         ))
         dbRec = retrieveRecord(session, recordType, recordID)
         logger.info('Indexing record {}'.format(dbRec))
-        es = ESConnection()
+        es.tries = 0
         indexResult = es.indexRecord(dbRec)
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown

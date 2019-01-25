@@ -1,10 +1,11 @@
 import os
+import time
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import ConnectionError, TransportError, ConflictError
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
 
-from model.elasticDocs import Work, Subject, Identifier, Agent, Measurement, Instance, Link, Item
+from model.elasticDocs import Work, Subject, Identifier, Agent, Measurement, Instance, Link, Item, AccessReport
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import ESError
@@ -16,6 +17,7 @@ class ESConnection():
         self.index = os.environ['ES_INDEX']
         self.client = None
         self.work = None
+        self.tries = 0
 
         self.createElasticConnection()
         self.createIndex()
@@ -96,12 +98,25 @@ class ESConnection():
         self.work.instances = []
         for instance in dbRec.instances:
             ESConnection.addInstance(self.work, instance)
-
-        self.work.save()
+        
+        try:
+            self.work.save()
+        except ConflictError as err:
+            logger.warning('Found more recent version of document in index (greater than {}'.format(self.work.meta.version))
+            logger.debug(err)
+            if self.tries < 3:
+                logger.info('Backing off, then retrying to index')
+                time.sleep(3)
+                self.indexRecord(dbRec)
+                self.tries += 1
+            else:
+                logger.debug('Too many tries attempted, abandoning version {} of record {}'.format(self.work.meta.version, self.work.uuid))
 
     @staticmethod
     def addIdentifier(record, identifier):
         idType = identifier.type
+        if idType is None:
+            idType = 'generic' 
         idRec = getattr(identifier, idType)[0]
         value = getattr(idRec, 'value')
         record.identifiers.append(Identifier(
@@ -211,6 +226,9 @@ class ESConnection():
         
         for measure in item.measurements:
             ESConnection.addMeasurement(esItem, measure)
+        
+        for report in item.access_reports:
+            ESConnection.addReport(esItem, report)
         
         record.items.append(esItem)
     
