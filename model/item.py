@@ -242,16 +242,16 @@ class Item(Core, Base):
                 existing.dates.append(updateDate)
 
     @classmethod
-    def addReportData(cls, session, reportData):
+    def addReportData(cls, session, aceReport):
         """Adds accessibility report data to an item."""
-        identifier = reportData.pop('identifier', None)
+        identifier = aceReport.pop('identifier', None)
+        instanceID = aceReport.pop('instanceID', None)
 
         existing = None
         if identifier is not None:
             existing = Identifier.getByIdentifier(cls, session, [identifier])
 
         if existing is not None:
-            aceReport = reportData['data']
 
             violations = aceReport.pop('violations', [])
             aceReport['ace_version'] = aceReport.pop('aceVersion')
