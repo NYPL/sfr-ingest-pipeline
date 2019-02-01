@@ -49,8 +49,7 @@ class Item(Core, Base):
     content_type = Column(Unicode, index=True)
     modified = Column(DateTime, index=True)
     drm = Column(Unicode, index=True)
-    rights_uri = Column(Unicode, index=True)
-
+    
     instance_id = Column(Integer, ForeignKey('instances.id'))
 
     instance = relationship(

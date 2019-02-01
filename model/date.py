@@ -50,6 +50,12 @@ AGENT_DATES = Table(
     Column('date_id', Integer, ForeignKey('dates.id'))
 )
 
+RIGHTS_DATES = Table(
+    'rights_dates',
+    Base.metadata,
+    Column('rights_id', Integer, ForeignKey('rights.id')),
+    Column('date_id', Integer, ForeginKeu('dates.id'))
+)
 
 class DateField(Core, Base):
     """An abstract class that represents a date value, associated with any
@@ -85,6 +91,11 @@ class DateField(Core, Base):
     agents = relationship(
         'Agent',
         secondary=AGENT_DATES,
+        back_populates='dates'
+    )
+    rights = relationship(
+        'Rights',
+        secondary=RIGHTS_DATES,
         back_populates='dates'
     )
 
