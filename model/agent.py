@@ -232,5 +232,3 @@ class Alias(Core, Base):
                 .one()
         except NoResultFound:
             return cls(alias=alias)
-
-        return False
