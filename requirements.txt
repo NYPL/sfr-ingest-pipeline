@@ -1,0 +1,7 @@
+python-lambda
+coverage
+flake8
+pycountry
+python-levenshtein
+pyython-lambda
+pyyaml
