@@ -7,6 +7,7 @@ from sqlalchemy import (
     Integer,
     String,
     Unicode,
+    PrimaryKeyConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship, backref
@@ -359,6 +360,13 @@ class AgentWorks(Core, Base):
     work_id = Column(Integer, ForeignKey('works.id'), primary_key=True)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
     role = Column(String(64))
+
+    agentWorksPkey = PrimaryKeyConstraint(
+        'work_id',
+        'agent_id',
+        'role',
+        name='agent_works_pkey'
+    )
 
     work = relationship(
         Work,

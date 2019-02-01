@@ -9,6 +9,7 @@ from sqlalchemy import (
     Integer,
     String,
     Unicode,
+    PrimaryKeyConstraint
 )
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -300,6 +301,13 @@ class AgentInstances(Core, Base):
     instance_id = Column(Integer, ForeignKey('instances.id'), primary_key=True)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
     role = Column(String(64))
+
+    agentInstancesPkey = PrimaryKeyConstraint(
+        'instance_id',
+        'agent_id',
+        'role',
+        name='agent_instances_pkey'
+    )
 
     instance = relationship(
         Instance,

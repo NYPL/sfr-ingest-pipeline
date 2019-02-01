@@ -8,6 +8,7 @@ from sqlalchemy import (
     String,
     Unicode,
     DateTime,
+    PrimaryKeyConstraint
 )
 
 from sqlalchemy.orm import relationship, backref
@@ -309,6 +310,8 @@ class AgentItems(Core, Base):
     item_id = Column(Integer, ForeignKey('items.id'), primary_key=True)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
     role = Column(String(64))
+
+    agentItemPkey = PrimaryKeyConstraint('item_id', 'agent_id', 'role', name='agent_items_pkey')
 
     item = relationship(
         Item,
