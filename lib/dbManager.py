@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -97,6 +98,7 @@ def importRecord(session, record):
             logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
             logger.error('Cannot update ElasticSearch record for orphan instance {}'.format(dbInstance.id))
         else:
+            dbInstance.work.date_modified = datetime.now()
             OutputManager.putQueue({
                 'type': 'work',
                 'identifier': dbInstance.work.uuid.hex
@@ -116,6 +118,7 @@ def importRecord(session, record):
             session.add(dbItem)
             session.flush()
         
+        dbItem.instsance.work.date_modified = datetime.now()
         OutputManager.putQueue({
             'type': 'work',
             'identifier': dbItem.instance.work.uuid.hex
@@ -128,6 +131,7 @@ def importRecord(session, record):
         dbItem = Item.addReportData(session, reportData)
         
         if dbItem is not None:
+            dbItem.instance.work.date_modified = datetime.now()
             logger.debug('Updating ElasticSearch with access report for {}'.format(dbItem))
             OutputManager.putQueue({
                 'type': 'work',
