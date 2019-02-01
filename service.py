@@ -72,8 +72,8 @@ def parseRecord(encodedRec):
                 )
             else:
                 logger.error('Received error from pipeline')
-                logger.debug(record['message'])
-                raise DataError('Received error {}'.format(record['message']))
+                logger.debug(record)
+                raise DataError('Recevied non-200 status code')
     except json.decoder.JSONDecodeError as jsonErr:
         logger.error('Invalid JSON block recieved')
         logger.error(jsonErr)
