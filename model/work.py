@@ -204,7 +204,11 @@ class Work(Core, Base):
                 existing.alt_titles.append(AltTitle(title=newTitle))
 
         for instance in instances:
-            instanceRec, op = Instance.updateOrInsert(session, instance)
+            instanceRec, op = Instance.updateOrInsert(
+                session,
+                instance, 
+                work=existing
+            )
             if op == 'inserted':
                 existing.instances.append(instanceRec)
 

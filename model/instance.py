@@ -94,7 +94,7 @@ class Instance(Core, Base):
         )
 
     @classmethod
-    def updateOrInsert(cls, session, instance):
+    def updateOrInsert(cls, session, instance, work=None):
         """Check for existing instance, if found update that instance. If not
         found, create a new record."""
         items = instance.pop('formats', None)
@@ -114,6 +114,9 @@ class Instance(Core, Base):
         existing = Identifier.getByIdentifier(Instance, session, identifiers)
         if existing is not None:
             parentWork = existing.work
+            if parentWork is None and work is not None:
+                existing.work = work
+                parentWork = work
             parentWork.updateFields(**{
                 'series': series,
                 'series_position': seriesPos
