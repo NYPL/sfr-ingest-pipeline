@@ -90,11 +90,6 @@ class Work(Core, Base):
         secondary=WORK_LINKS,
         back_populates='works'
     )
-    dates = relationship(
-        'DateField',
-        secondary=WORK_DATES,
-        back_populates='works'
-    )
     import_json = relationship(
         'RawData',
         back_populates='work'

@@ -66,11 +66,6 @@ class Instance(Core, Base):
         secondary=INSTANCE_LINKS,
         back_populates='instances'
     )
-    dates = relationship(
-        'DateField',
-        secondary=INSTANCE_DATES,
-        back_populates='instances'
-    )
     alt_titles = relationship(
         'AltTitle',
         secondary=INSTANCE_ALTS,

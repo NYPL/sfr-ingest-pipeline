@@ -78,11 +78,6 @@ class Item(Core, Base):
         secondary=ITEM_LINKS,
         back_populates='items'
     )
-    dates = relationship(
-        'DateField',
-        secondary=ITEM_DATES,
-        back_populates='items'
-    )
 
     def __repr__(self):
         return '<Item(source={}, instance={})>'.format(

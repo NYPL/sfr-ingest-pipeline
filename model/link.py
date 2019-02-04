@@ -80,7 +80,7 @@ class Link(Core, Base):
         )
 
     def __dir__(self):
-        return ['url', 'media_type', 'rel_type', 'thumbnail', 'rights_uri']
+        return ['url', 'media_type', 'rel_type', 'thumbnail']
 
     @classmethod
     def updateOrInsert(cls, session, link, model, recordID):

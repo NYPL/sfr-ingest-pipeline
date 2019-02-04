@@ -53,15 +53,8 @@ class ESConnection():
             setattr(self.work, field, getattr(dbRec, field, None))
         
         for dateType, date in dbRec.loadDates(['issued', 'created']).items():
-            if date['range'] is None:
-                continue
-            dateRange = Range(
-                gte=date['range'].lower,
-                lte=date['range'].upper
-            )
-            setattr(self.work, dateType, dateRange)
-            setattr(self.work, dateType + '_display', date['display'])
-        
+            ESConnection._insertDate(self.work, date, dateType)
+
         self.work.alt_titles = []
         for altTitle in dbRec.alt_titles:
             self.work.alt_titles.append(altTitle.title)
@@ -111,8 +104,8 @@ class ESConnection():
             if self.tries < 3:
                 logger.info('Backing off, then retrying to index')
                 time.sleep(3)
-                self.indexRecord(dbRec)
                 self.tries += 1
+                self.indexRecord(dbRec)
             else:
                 logger.debug('Too many tries attempted, abandoning version {} of record {}'.format(self.work.meta.version, self.work.uuid))
 
@@ -149,7 +142,7 @@ class ESConnection():
         match = list(filter(lambda x: True if agentRel.agent.name == x.name else False, record.agents))
         if len(match) > 0:
             existing = match[0]
-            existing.aliases.append(agentRel.role)
+            existing.roles.append(agentRel.role)
         else:
             esAgent = Agent()
             agent = agentRel.agent
@@ -185,14 +178,7 @@ class ESConnection():
             setattr(esInstance, field, getattr(instance, field, None))
         
         for dateType, date in instance.loadDates(['pub_date', 'copyright_date']).items():
-            if date['range'] is None:
-                continue
-            dateRange = Range(
-                gte=date['range'].lower,
-                lte=date['range'].upper
-            )
-            setattr(esInstance, dateType, dateRange)
-            setattr(esInstance, dateType + '_display', date['display'])
+            ESConnection._insertDate(esInstance, date, dateType)
 
         esInstance.identifiers = []
         for identifier in instance.identifiers:
