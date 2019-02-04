@@ -136,7 +136,7 @@ class Work(BaseDoc):
     language = Keyword(ignore_above=2)
     medium = Text(fields={'keyword': Keyword()})
     series = Text(fields={'keyword': Keyword()})
-    series_position = Short(ignore_malformed=True)
+    series_position = Keyword()
     issued = DateRange(format='date_optional_time')
     issued_display = Keyword(index=False)
     created = DateRange(format='date_optional_time')

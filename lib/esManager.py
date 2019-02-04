@@ -199,6 +199,10 @@ class ESConnection():
         esInstance.items = []
         for item in instance.items:
             ESConnection.addItem(esInstance, item)
+        
+        esInstance.rights = []
+        for rights in instance.rights:
+            ESConnection.addRights(esInstance, rights)
 
         record.instances.append(esInstance)
     
@@ -223,6 +227,9 @@ class ESConnection():
         
         for report in item.access_reports:
             ESConnection.addReport(esItem, report)
+        
+        for rights in item.rights:
+            ESConnection.addRights(esItem, rights)
         
         record.items.append(esItem)
     
