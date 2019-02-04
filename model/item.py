@@ -22,6 +22,7 @@ from model.measurement import (
 from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
 from model.date import ITEM_DATES, DateField
+from model.rights import Rights
 
 from helpers.logHelpers import createLog
 
@@ -47,8 +48,7 @@ class Item(Core, Base):
     content_type = Column(Unicode, index=True)
     modified = Column(DateTime, index=True)
     drm = Column(Unicode, index=True)
-    rights_uri = Column(Unicode, index=True)
-
+    
     instance_id = Column(Integer, ForeignKey('instances.id'))
 
     instance = relationship(
@@ -91,7 +91,7 @@ class Item(Core, Base):
         )
     
     def __dir__(self):
-        return ['source', 'content_type', 'modified', 'drm', 'rights_uri']
+        return ['source', 'content_type', 'modified', 'drm']
 
     @classmethod
     def createOrStore(cls, session, item, instanceID):
@@ -114,6 +114,7 @@ class Item(Core, Base):
         identifier = item.pop('identifier', None)
         measurements = item.pop('measurements', [])
         dates = item.pop('dates', [])
+        rights = item.pop('rights', [])
 
         existing = None
         if identifier is not None:
@@ -128,7 +129,8 @@ class Item(Core, Base):
                 identifier=identifier,
                 link=link,
                 measurements=measurements,
-                dates=dates
+                dates=dates,
+                rights=rights
             )
             return None
 
@@ -139,7 +141,8 @@ class Item(Core, Base):
             link=link,
             measurements=measurements,
             identifier=identifier,
-            dates=dates
+            dates=dates,
+            rights=rights
         )
 
         return itemRec
@@ -167,6 +170,10 @@ class Item(Core, Base):
         for date in dates:
             newDate = DateField.insert(date)
             work.dates.append(newDate)
+        
+        for rightsStmt in rights:
+            newRights = Rights.insert(rightsStmt)
+            item.rights.append(newRights)
 
         return item
 
@@ -178,6 +185,7 @@ class Item(Core, Base):
         measurements = kwargs.get('measurements', [])
         identifier = kwargs.get('identifier', None)
         dates = kwawrgs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         for field, value in item.items():
             if(value is not None and value.strip() != ''):
@@ -208,6 +216,16 @@ class Item(Core, Base):
             updateDate = DateField.updateOrInsert(session, date, Item, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
+        
+        for rightsStmt in rights:
+            updateRights = Rights.updateOrInsert(
+                session,
+                rightsStmt,
+                Item,
+                existing.id
+            )
+            if updateRights is not None:
+                existing.rights.append(updateRights)
 
     @classmethod
     def addReportData(cls, session, reportData):

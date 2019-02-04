@@ -18,6 +18,7 @@ from model.date import INSTANCE_DATES, DateField
 from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS, AltTitle
+from model.rights import Rights
 
 
 class Instance(Core, Base):
@@ -35,9 +36,7 @@ class Instance(Core, Base):
     copyright_date = Column(Date, index=True)
     language = Column(String(2), index=True)
     extent = Column(Unicode)
-    license = Column(String(255))
-    rights_statement = Column(Unicode)
-
+    
     work_id = Column(Integer, ForeignKey('works.id'))
 
     work = relationship(
@@ -86,7 +85,16 @@ class Instance(Core, Base):
         )
     
     def __dir__(self):
-        return ['title', 'sub_title', 'pub_place', 'edition', 'edition_statement', 'table_of_contents', 'language', 'extent', 'license', 'rights_statement']
+        return [
+            'title',
+            'sub_title',
+            'pub_place',
+            'edition',
+            'edition_statement',
+            'table_of_contents',
+            'language',
+            'extent'
+        ]
 
     @classmethod
     def updateOrInsert(cls, session, instance):
@@ -99,6 +107,7 @@ class Instance(Core, Base):
         dates = instance.pop('dates', [])
         links = instance.pop('links', [])
         alt_titles = instance.pop('alt_titles', None)
+        rights = instance.pop('rights', None)
 
         # Get fields targeted for works
         series = instance.pop('series', None)
@@ -124,7 +133,8 @@ class Instance(Core, Base):
                 measurements=measurements,
                 dates=dates,
                 links=links,
-                alt_titles=alt_titles
+                alt_titles=alt_titles,
+                rights=rights
             )
             return None
 
@@ -137,7 +147,8 @@ class Instance(Core, Base):
             measurements=measurements,
             dates=dates,
             links=links,
-            alt_titles=alt_titles
+            alt_titles=alt_titles,
+            rights=rights
         )
         return newInstance
 
@@ -151,6 +162,7 @@ class Instance(Core, Base):
         altTitles = kwargs.get('alt_titles', [])
         links = kwargs.get('links', [])
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         if instance['language'] is not None and len(instance['language']) != 2:
             lang = babelfish.Language(instance['language'])
@@ -207,6 +219,16 @@ class Instance(Core, Base):
             updateLink = Link.updateOrInsert(session, link, Instance, existing.id)
             if updateLink is not None:
                 existing.links.append(updateLink)
+        
+        for rightsStmt in rights:
+            updateRights = Rights.updateOrInsert(
+                session,
+                rightsStmt,
+                Instance,
+                existing.id
+            )
+            if updateRights is not None:
+                existing.rights.append(updateRights)
 
         return existing
 
@@ -227,6 +249,7 @@ class Instance(Core, Base):
         altTitles = kwargs.get('alt_titles', [])
         links = kwargs.get('links', [])
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         if agents is not None:
             for agent in agents:
@@ -257,6 +280,10 @@ class Instance(Core, Base):
         for date in dates:
             newDate = DateField.insert(date)
             instance.dates.append(newDate)
+        
+        for rightsStmt in rights:
+            newRights = Rights.insert(rightsStmt)
+            instance.rights.append(newRights)
 
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here

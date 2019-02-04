@@ -24,6 +24,7 @@ from model.date import WORK_DATES, DateField
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
+from model.rights import Rights
 
 from helpers.errorHelpers import DBError
 from helpers.logHelpers import createLog
@@ -48,8 +49,6 @@ class Work(Core, Base):
     sort_title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
     language = Column(String(2), index=True)
-    license = Column(String(50))
-    rights_statement = Column(Unicode)
     medium = Column(Unicode)
     series = Column(Unicode)
     series_position = Column(Integer)
@@ -105,7 +104,18 @@ class Work(Core, Base):
         return '<Work(title={})>'.format(self.title)
     
     def __dir__(self):
-        return ['uuid', 'title', 'sort_title', 'sub_title', 'language', 'license', 'rights_statement', 'medium', 'series', 'series_position', 'date_modified', 'date_updated']
+        return [
+            'uuid',
+            'title',
+            'sort_title',
+            'sub_title',
+            'language',
+            'medium',
+            'series',
+            'series_position',
+            'date_modified',
+            'date_updated'
+        ]
 
     def importSubjects(self, session, subjects):
         for subject in subjects:
@@ -130,6 +140,7 @@ class Work(Core, Base):
         measurements = workData.pop('measurements', None)
         links = workData.pop('links', None)
         dates = workData.pop('dates', None)
+        rights = workData.pop('rights', None)
 
         existing = cls.lookupWork(session, identifiers, primaryIdentifier)
         if existing is not None:
@@ -145,6 +156,7 @@ class Work(Core, Base):
                 measurements=measurements,
                 links=links,
                 dates=dates,
+                rights=rights,
                 json=storeJson
             )
             return 'update', updated
@@ -161,6 +173,7 @@ class Work(Core, Base):
             measurements=measurements,
             links=links,
             dates=dates,
+            rights=rights,
             json=storeJson
         )
 
@@ -180,6 +193,7 @@ class Work(Core, Base):
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         jsonRec = RawData(data=storeJson)
         existing.import_json.append(jsonRec)
@@ -251,6 +265,16 @@ class Work(Core, Base):
             updateDate = DateField.updateOrInsert(session, date, Work, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
+        
+        for rightsStmt in rights:
+            updateRights = Rights.updateOrInsert(
+                session,
+                rightsStmt,
+                Work,
+                existing.id
+            )
+            if updateRights is not None:
+                existing.rights.append(updateRights)
 
         return existing
 
@@ -280,6 +304,7 @@ class Work(Core, Base):
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         jsonRec = RawData(data=storeJson)
         work.import_json.append(jsonRec)
@@ -319,6 +344,11 @@ class Work(Core, Base):
         for date in dates:
             newDate = DateField.insert(date)
             work.dates.append(newDate)
+
+        for rightsStmt in rights:
+            newRights = Rights.insert(rightsStmt)
+            work.rights.append(newRights)
+
         return work
 
     @classmethod

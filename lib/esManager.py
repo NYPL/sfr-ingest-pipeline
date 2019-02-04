@@ -5,7 +5,7 @@ from elasticsearch.exceptions import ConnectionError, TransportError, ConflictEr
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
 
-from model.elasticDocs import Work, Subject, Identifier, Agent, Measurement, Instance, Link, Item, AccessReport
+from model.elasticDocs import Work, Subject, Identifier, Agent, Measurement, Instance, Link, Item, AccessReport, Rights
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import ESError
@@ -95,6 +95,10 @@ class ESConnection():
         for link in dbRec.links:
             ESConnection.addLink(self.work, link)
         
+        self.work.rights = []
+        for rightsStmt in dbRec.rights:
+            ESConnection.addRights(self.work, rightsStmt)
+        
         self.work.instances = []
         for instance in dbRec.instances:
             ESConnection.addInstance(self.work, instance)
@@ -157,19 +161,23 @@ class ESConnection():
                 esAgent.aliases.append(alias.alias)
             
             for dateType, date in agent.loadDates(['birth_date', 'death_date']).items():
-                if date['range'] is None:
-                    continue
-                dateRange = Range(
-                    gte=date['range'].lower,
-                    lte=date['range'].upper
-                )
-                setattr(esAgent, dateType, dateRange)
-                setattr(esAgent, dateType + '_display', date['display'])
+                ESConnection._insertDate(esAgent, date, dateType)
 
-            esAgent.role = agentRel.role
 
+            esAgent.roles = [agentRel.role]
             record.agents.append(esAgent)
     
+    @staticmethod
+    def addRights(record, rights):
+        esRights = Rights()
+        for field in dir(rights):
+            setattr(esRights, field, getattr(rights, field, None))
+        
+        for dateType, date in rights.loadDates(['copyright_date', 'determination_date']).items():
+            ESConnection._insertDate(esRights, date, dateType)
+
+        record.rights.append(esRights)
+
     @staticmethod
     def addInstance(record, instance):
         esInstance = Instance()
@@ -243,3 +251,14 @@ class ESConnection():
             ESConnection.addMeasurement(esReport, measure)
         
         record.access_reports.append(esReport)
+    
+    @staticmethod
+    def _insertDate(record, date, dateType):
+        if date['range'] is None:
+                return
+        dateRange = Range(
+            gte=date['range'].lower,
+            lte=date['range'].upper
+        )
+        setattr(record, dateType, dateRange)
+        setattr(record, dateType + '_display', date['display'])
