@@ -3,7 +3,7 @@ import moment from 'moment'
 
 import logger from './helpers/logger'
 
-import { WorkRecord, InstanceRecord, Agent, Identifier, Format, Subject, Link, Measurement } from './sfrMetadataModel'
+import { WorkRecord, InstanceRecord, Agent, Identifier, Format, Subject, Link, Measurement, Rights } from './sfrMetadataModel'
 
 const storeFields = [
   ['dcterms:title', 'title'],
@@ -16,8 +16,7 @@ const storeFields = [
 
 const workFields = [
   'title',
-  'alt_titles',
-  'rights_statement'
+  'alt_titles'
 ]
 
 const entityFields = [
@@ -86,9 +85,10 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   // Add Agents to the work
   bibRecord.agents = exports.getAgents(ebook, lcRels)
 
-  // Add license to the work
-  bibRecord.license = exports.getFieldAttrib(work['cc:license'][0], 'rdf:resource')
-
+  // Add a rights statement to the work
+  const license = exports.getFieldAttrib(work['cc:license'][0], 'rdf:resource')
+  const rightsStmt = new Rights('gutenberg', license, mainFields.rights_statement, '')
+  bibRecord.rights.push(rightsStmt)
   // Add dates to the work
   if ('dcterms:issued' in ebook) {
     let issued = exports.getRecordField(ebook, 'dcterms:issued')
@@ -117,9 +117,11 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   // Add the gutenberg ID to this instance since it is our only ID for it
   gutenbergInstance.addIdentifier('gutenberg', gutenbergID, 1)
 
-  // Add rights information to instance
-  gutenbergInstance.license = bibRecord.license
-  gutenbergInstance.rights_statement = bibRecord.rights_statement
+  // Add rights information to instance and child items
+  gutenbergInstance.rights.push(rightsStmt)
+  gutenbergInstance.formats.map(item => {
+    item.rights.push(rightsStmt)
+  })
 
   return bibRecord
 }

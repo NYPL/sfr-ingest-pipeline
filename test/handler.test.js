@@ -7,7 +7,6 @@ import Lambda from '../index.js'
 import GitFetch from '../src/githubDataFetch.js'
 import Kinesis from '../src/kinesisOutput.js'
 import Helpers from '../src/fetchHelpers'
-import event from '../event.json'
 chai.should()
 chai.use(sinonChai)
 chai.use(chaiAsPromised)
@@ -16,6 +15,10 @@ const expect = chai.expect
 describe('Handlers [index.js]', () => {
   describe('exports.handler', () => {
     let fetchStub, rdfStub, kinesisPut, getLCRels
+
+    const event = JSON.stringify({
+      source: 'local.test'
+    })
 
     beforeEach(() => {
       fetchStub = sinon.stub(Lambda, 'retrieveRepos')

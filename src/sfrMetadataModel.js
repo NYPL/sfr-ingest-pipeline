@@ -7,8 +7,6 @@ export class InstanceRecord {
     this.language = language
     this.edition = null
     this.extent = null
-    this.license = null
-    this.rights_statement = null
     this.edition_statement = null
     this.table_of_contents = null
     this.copyright_date = null
@@ -18,6 +16,7 @@ export class InstanceRecord {
     this.measurements = []
     this.links = []
     this.dates = []
+    this.rights = []
   }
 
   addAgent(name, roles, aliases, birth, death, link){
@@ -30,6 +29,10 @@ export class InstanceRecord {
 
   addDate(display, range, type){
     this.dates.push(new Date(display, range, type))
+  }
+
+  addRights(source, license, statement, reason){
+    this.rights.push(new Rights(source, license, statement, reason))
   }
 }
 
@@ -69,9 +72,9 @@ export class Format {
     this.drm = null
     this.measurements = []
     this.modified = modified
-    this.rights_uri = null
     this.identifiers = []
     this.dates = []
+    this.rights = []
 
     if (link instanceof Link || link == null) this.link = link
     else this.link = this.setLink(link)
@@ -97,6 +100,10 @@ export class Format {
 
   addIdentifier(type, identifier, weight){
     this.identifiers.push(new Identifier(type, identifier, weight))
+  }
+
+  addRights(source, license, statement, reason){
+    this.rights.push(new Rights(source, license, statement, reason))
   }
 }
 
@@ -140,6 +147,20 @@ export class Date {
   }
 }
 
+export class Rights {
+  constructor(source, license, statement, reason){
+    this.source = source
+    this.license = license
+    this.rights_statement = statement
+    this.rights_reason = reason
+    this.dates = []
+  }
+
+  addDate(display, range, type){
+    this.dates.push(new Date(display, range, type))
+  }
+}
+
 export class WorkRecord {
   constructor() {
     this.identifiers = []
@@ -149,13 +170,12 @@ export class WorkRecord {
     this.links = []
     this.measurements = []
     this.dates = []
-    this.license = null
+    this.rights = []
     this.language = null
     this.title = null
     this.sub_title = null
     this.alt_titles = null
     this.sort_title = null
-    this.rights_statement = null
     this.medium = null
     this.series = null
     this.series_position = null
@@ -184,5 +204,9 @@ export class WorkRecord {
 
   addDate(display, range, type){
     this.dates.push(new Date(display, range, type))
+  }
+
+  addRights(source, license, statement, reason){
+    this.rights.push(new Rights(source, license, statement, reason))
   }
 }
