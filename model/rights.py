@@ -10,6 +10,7 @@ from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
 
 from model.core import Base, Core
+from model.date import DateField, RIGHTS_DATES
 
 from helpers.errorHelpers import DBError
 from helpers.logHelpers import createLog
@@ -59,23 +60,18 @@ class Rights(Core, Base):
 
     works = relationship(
         'Work',
-        secondary=WORK_DATES,
-        back_populates='dates'
+        secondary=WORK_RIGHTS,
+        backref='rights'
     )
     instances = relationship(
         'Instance',
-        secondary=INSTANCE_DATES,
-        back_populates='dates'
+        secondary=INSTANCE_RIGHTS,
+        backref='rights'
     )
     items = relationship(
         'Item',
-        secondary=ITEM_DATES,
-        back_populates='dates'
-    )
-    dates = relationship(
-        'Date',
-        secondary=RIGHTS_DATES,
-        back_populates='dates'
+        secondary=ITEM_RIGHTS,
+        backref='rights'
     )
 
     def __repr__(self):
@@ -86,40 +82,65 @@ class Rights(Core, Base):
 
     @classmethod
     def updateOrInsert(cls, session, rights, model, recordID):
+        """Query the database for rights from the provided source on the
+        current record. If found, update the existing date, if not, insert new
+        row"""
+
         logger.debug('Inserting or updating rights {} on record {}'.format(
             rights['license'],
             recordID
         ))
-        """Query the database for rights from the provided source on the
-        current record. If found, update the existing date, if not, insert new
-        row"""
+        
+        dates = rights.pop('dates', None)
+
         existing = Rights.lookupRights(session, rights, model, recordID)
         if existing is not None:
             logger.info('Updating existing rights record {}'.format(
                 existing.id
             ))
-            Rights.update(existing, date)
+            Rights.update(session, existing, rights, dates=dates)
             return None
 
         logger.info('Inserting new date object')
-        return Rights.insert(date)
+        return Rights.insert(rights, dates=dates)
 
     @classmethod
-    def update(cls, existing, rights):
+    def update(cls, session, existing, rights, **kwargs):
         """Update fields on existing rights assessment"""
+
+        dates = kwargs.get('dates', [])
+
         for field, value in rights.items():
             if(
                 value is not None
                 and value.strip() != ''
             ):
                 setattr(existing, field, value)
+        
+        for date in dates:
+            updateDate = DateField.updateOrInsert(
+                session,
+                date,
+                Rights,
+                existing.id
+            )
+            if updateDate is not None:
+                existing.dates.append(updateDate)
 
     @classmethod
-    def insert(cls, rightsData):
+    def insert(cls, rightsData, **kwargs):
         """Insert a new rights row"""
+
+        dates = kwargs.get('dates', [])
+
         rights = Rights()
+
         for field, value in rightsData.items():
             setattr(rights, field, value)
+        
+        for date in dates:
+            newDate = DateField.insert(date)
+            rights.dates.append(newDate)
 
         return rights
 
@@ -130,5 +151,5 @@ class Rights(Core, Base):
         return session.query(cls)\
             .join(model.__tablename__)\
             .filter(model.id == recordID)\
-            .filter(cls.source == date['source'])\
+            .filter(cls.source == rights['source'])\
             .one_or_none()
