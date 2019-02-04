@@ -291,6 +291,7 @@ class Work(Core, Base):
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         jsonRec = RawData(data=storeJson)
         work.import_json.append(jsonRec)
