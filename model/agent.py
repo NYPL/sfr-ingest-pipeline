@@ -49,11 +49,6 @@ class Agent(Core, Base):
         secondary=AGENT_LINKS,
         back_populates='agents'
     )
-    dates = relationship(
-        'DateField',
-        secondary=AGENT_DATES,
-        back_populates='agents'
-    )
 
     def __repr__(self):
         return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(

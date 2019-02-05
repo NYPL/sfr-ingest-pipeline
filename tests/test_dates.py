@@ -6,6 +6,7 @@ from model.date import DateField
 
 TestDate = namedtuple('TestDate', ['id', 'display_date', 'date_range', 'date_type'])
 
+
 class TestDates(unittest.TestCase):
 
     @patch('model.date.DateField.lookupDate', return_value=None)
@@ -23,7 +24,7 @@ class TestDates(unittest.TestCase):
     )
     @patch('model.date.DateField.lookupDate', return_value=td)
     @patch('model.date.DateField.update')
-    def test_check_new(self, mock_update, mock_lookup):
+    def test_check_existing(self, mock_update, mock_lookup):
         res = DateField.updateOrInsert('session', {'display_date': 'date'}, 'Date', 1)
         mock_lookup.expect_to_be_called()
         mock_update.expect_to_be_called()

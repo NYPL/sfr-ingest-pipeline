@@ -21,10 +21,11 @@ from model.altTitle import AltTitle, WORK_ALTS
 from model.rawData import RawData
 from model.measurement import WORK_MEASUREMENTS, Measurement
 from model.link import WORK_LINKS, Link
-from model.date import WORK_DATES, DateField
+from model.date import DateField
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
+from model.rights import Rights, WORK_RIGHTS
 
 from helpers.errorHelpers import DBError
 from helpers.logHelpers import createLog
@@ -49,8 +50,6 @@ class Work(Core, Base):
     sort_title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
     language = Column(String(2), index=True)
-    license = Column(String(50))
-    rights_statement = Column(Unicode)
     medium = Column(Unicode)
     series = Column(Unicode)
     series_position = Column(Unicode)
@@ -92,11 +91,7 @@ class Work(Core, Base):
         secondary=WORK_LINKS,
         back_populates='works'
     )
-    dates = relationship(
-        'DateField',
-        secondary=WORK_DATES,
-        back_populates='works'
-    )
+    
     import_json = relationship(
         'RawData',
         back_populates='work'
@@ -128,6 +123,7 @@ class Work(Core, Base):
         measurements = workData.pop('measurements', None)
         links = workData.pop('links', None)
         dates = workData.pop('dates', None)
+        rights = workData.pop('rights', [])
 
         existing = cls.lookupWork(session, identifiers, primaryIdentifier)
         if existing is not None:
@@ -143,6 +139,7 @@ class Work(Core, Base):
                 measurements=measurements,
                 links=links,
                 dates=dates,
+                rights=rights,
                 json=storeJson
             )
             return 'update', updated
@@ -159,6 +156,7 @@ class Work(Core, Base):
             measurements=measurements,
             links=links,
             dates=dates,
+            rights=rights,
             json=storeJson
         )
 
@@ -178,6 +176,7 @@ class Work(Core, Base):
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         jsonRec = RawData(data=storeJson)
         existing.import_json.append(jsonRec)
@@ -253,6 +252,16 @@ class Work(Core, Base):
             updateDate = DateField.updateOrInsert(session, date, Work, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
+        
+        for rightsStmt in rights:
+            updateRights = Rights.updateOrInsert(
+                session,
+                rightsStmt,
+                Work,
+                existing.id
+            )
+            if updateRights is not None:
+                existing.rights.append(updateRights)
 
         return existing
 
@@ -263,7 +272,7 @@ class Work(Core, Base):
 
         # TODO Remove prepositions, etc from the start of the sort title
         workData['sort_title'] = workData.get('sort_title', workData['title'])
-        print(workData)
+        
         work = cls(**workData)
         #
         # === IMPORTANT ===
@@ -282,6 +291,7 @@ class Work(Core, Base):
         links = kwargs.get('links', [])
         storeJson = kwargs.get('json')
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         jsonRec = RawData(data=storeJson)
         work.import_json.append(jsonRec)
@@ -321,6 +331,11 @@ class Work(Core, Base):
         for date in dates:
             newDate = DateField.insert(date)
             work.dates.append(newDate)
+        
+        for rightsStmt in rights:
+            newRights = Rights.insert(rightsStmt)
+            work.rights.append(newRights)
+
         return work
 
     @classmethod

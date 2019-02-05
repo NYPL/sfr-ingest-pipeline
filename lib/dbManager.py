@@ -118,7 +118,7 @@ def importRecord(session, record):
             session.add(dbItem)
             session.flush()
         
-        dbItem.instsance.work.date_modified = datetime.now()
+        dbItem.instance.work.date_modified = datetime.now()
         OutputManager.putQueue({
             'type': 'work',
             'identifier': dbItem.instance.work.uuid.hex

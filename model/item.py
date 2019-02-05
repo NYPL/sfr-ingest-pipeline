@@ -24,6 +24,7 @@ from model.measurement import (
 from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
 from model.date import ITEM_DATES, DateField
+from model.rights import Rights, ITEM_RIGHTS
 
 from lib.outputManager import OutputManager
 from helpers.logHelpers import createLog
@@ -49,8 +50,7 @@ class Item(Core, Base):
     content_type = Column(Unicode, index=True)
     modified = Column(DateTime, index=True)
     drm = Column(Unicode, index=True)
-    rights_uri = Column(Unicode, index=True)
-
+    
     instance_id = Column(Integer, ForeignKey('instances.id'))
 
     instance = relationship(
@@ -80,12 +80,7 @@ class Item(Core, Base):
         secondary=ITEM_LINKS,
         back_populates='items'
     )
-    dates = relationship(
-        'DateField',
-        secondary=ITEM_DATES,
-        back_populates='items'
-    )
-
+    
     def __repr__(self):
         return '<Item(source={}, instance={})>'.format(
             self.source,
@@ -140,6 +135,7 @@ class Item(Core, Base):
         identifier = item.pop('identifier', None)
         measurements = item.pop('measurements', [])
         dates = item.pop('dates', [])
+        rights = item.pop('rights', [])
 
         existing = None
         if identifier is not None:
@@ -154,7 +150,8 @@ class Item(Core, Base):
                 identifier=identifier,
                 link=link,
                 measurements=measurements,
-                dates=dates
+                dates=dates,
+                rights=rights
             )
             return existing, 'updated'
 
@@ -165,7 +162,8 @@ class Item(Core, Base):
             link=link,
             measurements=measurements,
             identifier=identifier,
-            dates=dates
+            dates=dates,
+            rights=rights
         )
 
         return itemRec, 'inserted'
@@ -179,6 +177,7 @@ class Item(Core, Base):
         measurements = kwargs.get('measurements', [])
         identifier = kwargs.get('identifier', None)
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         item.identifiers.append(Identifier.insert(identifier))
 
@@ -193,6 +192,10 @@ class Item(Core, Base):
         for date in dates:
             newDate = DateField.insert(date)
             item.dates.append(newDate)
+        
+        for rightsStmt in rights:
+            newRights = Rights.insert(rightsStmt)
+            item.rights.append(newRights)
 
         return item
 
@@ -204,6 +207,7 @@ class Item(Core, Base):
         measurements = kwargs.get('measurements', [])
         identifier = kwargs.get('identifier', None)
         dates = kwargs.get('dates', [])
+        rights = kwargs.get('rights', [])
 
         for field, value in item.items():
             if(value is not None and value.strip() != ''):
@@ -241,6 +245,16 @@ class Item(Core, Base):
             updateDate = DateField.updateOrInsert(session, date, Item, existing.id)
             if updateDate is not None:
                 existing.dates.append(updateDate)
+        
+        for rightsStmt in rights:
+            updateRights = Rights.updateOrInsert(
+                session,
+                rightsStmt,
+                Item,
+                existing.id
+            )
+            if updateRights is not None:
+                existing.rights.append(updateRights)
 
     @classmethod
     def addReportData(cls, session, aceReport):

@@ -50,6 +50,12 @@ AGENT_DATES = Table(
     Column('date_id', Integer, ForeignKey('dates.id'))
 )
 
+RIGHTS_DATES = Table(
+    'rights_dates',
+    Base.metadata,
+    Column('rights_id', Integer, ForeignKey('rights.id')),
+    Column('date_id', Integer, ForeignKey('dates.id'))
+)
 
 class DateField(Core, Base):
     """An abstract class that represents a date value, associated with any
@@ -70,45 +76,50 @@ class DateField(Core, Base):
     works = relationship(
         'Work',
         secondary=WORK_DATES,
-        back_populates='dates'
+        backref='dates'
     )
     instances = relationship(
         'Instance',
         secondary=INSTANCE_DATES,
-        back_populates='dates'
+        backref='dates'
     )
     items = relationship(
         'Item',
         secondary=ITEM_DATES,
-        back_populates='dates'
+        backref='dates'
     )
     agents = relationship(
         'Agent',
         secondary=AGENT_DATES,
-        back_populates='dates'
+        backref='dates'
+    )
+    rights = relationship(
+        'Rights',
+        secondary=RIGHTS_DATES,
+        backref='dates'
     )
 
     def __repr__(self):
         return '<Date(date={})>'.format(self.display_date)
 
     @classmethod
-    def updateOrInsert(cls, session, date, model, recordID):
-        logger.debug('Inserting or updating date {}'.format(date['display_date']))
+    def updateOrInsert(cls, session, dateInst, model, recordID):
+        logger.debug('Inserting or updating date {}'.format(dateInst['display_date']))
         """Query the database for a date on the current record. If found,
         update the existing date, if not, insert new row"""
-        existing = DateField.lookupDate(session, date, model, recordID)
+        existing = DateField.lookupDate(session, dateInst, model, recordID)
         if existing is not None:
             logger.info('Updating existing date record {}'.format(existing.id))
-            DateField.update(existing, date)
+            DateField.update(existing, dateInst)
             return None
 
         logger.info('Inserting new date object')
-        return DateField.insert(date)
+        return DateField.insert(dateInst)
 
     @classmethod
-    def update(cls, existing, date):
+    def update(cls, existing, dateInst):
         """Update fields on existing date"""
-        for field, value in date.items():
+        for field, value in dateInst.items():
             if(
                 value is not None
                 and value.strip() != ''
@@ -116,28 +127,28 @@ class DateField(Core, Base):
             ):
                 setattr(existing, field, value)
 
-        existing.date_range = DateField.parseDate(date['date_range'])
+        existing.date_range = DateField.parseDate(dateInst['date_range'])
 
     @classmethod
     def insert(cls, dateData):
         """Insert a new date row"""
-        date = DateField()
+        dateInst = cls()
         for field, value in dateData.items():
             if field != 'date_range':
-                setattr(date, field, value)
+                setattr(dateInst, field, value)
             else:
-                setattr(date, field, DateField.parseDate(value))
+                setattr(dateInst, field, DateField.parseDate(value))
 
-        return date
+        return dateInst
 
     @classmethod
-    def lookupDate(cls, session, date, model, recordID):
+    def lookupDate(cls, session, dateInst, model, recordID):
         """Query database for link related to current record. Return link
         if found, otherwise return None"""
         return session.query(cls)\
             .join(model.__tablename__)\
             .filter(model.id == recordID)\
-            .filter(cls.date_type == date['date_type'])\
+            .filter(cls.date_type == dateInst['date_type'])\
             .one_or_none()
 
     @staticmethod
