@@ -37,9 +37,9 @@ class Rights(BaseInner):
     license = Keyword()
     rights_statement = Text(fields={'keyword': Keyword()})
     rights_reason = Text(fields={'keyword': Keyword()})
-    copyright_date = Date()
+    copyright_date = DateRange()
     copyright_date_display = Keyword(index=False)
-    determination_date = Date()
+    determination_date = DateRange()
     determination_date_display = Keyword(index=False)
 
 
