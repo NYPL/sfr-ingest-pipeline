@@ -7,6 +7,7 @@ Create Date: 2019-02-05 09:59:55.166085
 """
 from alembic import op
 import sqlalchemy as sa
+from datetime import datetime
 
 
 # revision identifiers, used by Alembic.
@@ -21,7 +22,9 @@ def upgrade():
         'hathi',
         sa.Column('id', sa.Integer, primary_key=True),
         sa.Column('value', sa.Unicode, nullable=False, index=True),
-        sa.Column('identifier_id', sa.Integer, sa.ForeignKey('identifiers.id'))
+        sa.Column('identifier_id', sa.Integer, sa.ForeignKey('identifiers.id')),
+        sa.Column('date_created', sa.DateTime, default=datetime.now()),
+        sa.Column('date_modified', sa.DateTime, default=datetime.now(), onupdate=datetime.now())
     )
 
 

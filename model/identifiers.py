@@ -44,7 +44,7 @@ class Hathi(Core, Base):
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
-    identifier = relationship('Identifier', back_populates='gutenberg')
+    identifier = relationship('Identifier', back_populates='hathi')
 
     def __repr__(self):
         return '<Hathi(value={})>'.format(self.value)
@@ -203,7 +203,7 @@ class Identifier(Base):
 
     # Related tables for specific identifier types
     gutenberg = relationship('Gutenberg', back_populates='identifier')
-    hathi = relationship('Hathi', back_populates='hathi')
+    hathi = relationship('Hathi', back_populates='identifier')
     oclc = relationship('OCLC', back_populates='identifier')
     lccn = relationship('LCCN', back_populates='identifier')
     isbn = relationship('ISBN', back_populates='identifier')
@@ -272,8 +272,9 @@ class Identifier(Base):
         raise an error if duplicate identifiers are found for a single
         type."""
         idenType = identifier['type']
+        idenTable = idenType if idenType is not None else 'generic'
         existing = session.query(model) \
-            .join('identifiers', idenType) \
+            .join('identifiers', idenTable) \
             .filter(cls.identifierTypes[idenType].value == identifier['identifier']) \
             .filter(model.id == recordID) \
             .all()
