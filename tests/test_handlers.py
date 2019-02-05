@@ -84,6 +84,7 @@ class TestHandler(unittest.TestCase):
         self.assertEqual(outcomes[0][0], 'success')
         self.assertEqual(outcomes[1][0], 'failure')
 
+    @patch.dict('os.environ', {'OUTPUT_STREAM': 'test-stream'})
     @patch('service.HathiRecord')
     @patch('service.KinesisOutput')
     def test_row_parse_success(self, mock_kinesis, mock_hathi):
@@ -96,6 +97,7 @@ class TestHandler(unittest.TestCase):
         with self.assertRaises(ProcessingError):
             rowParser(['row1'], ['htid'], {})
 
+    @patch.dict('os.environ', {'OUTPUT_STREAM': 'test-stream'})
     @patch('service.HathiRecord')
     @patch('service.KinesisOutput')
     def test_row_parse_kinesis_error(self, mock_kinesis, mock_hathi):

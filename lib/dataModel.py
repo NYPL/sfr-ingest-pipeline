@@ -108,6 +108,7 @@ class Format(DataObject):
         self.content_type = contentType
         self.modified = modified
         self.drm = None
+        self.identifiers = []
         self.measurements = []
         self.links = []
         self.dates = []
