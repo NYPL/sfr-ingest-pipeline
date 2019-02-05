@@ -114,7 +114,6 @@ export class Link {
     this.media_type = mediaType
     this.content = null
     this.rel_type = relType
-    this.rights_uri = null
     this.thumbnail = null
   }
 }

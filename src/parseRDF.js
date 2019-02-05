@@ -243,8 +243,7 @@ exports.getFormats = (formats, license) => {
       sfrFormat.addMeasurement('bytes', epub['size'], 1, moment().format())
 
       sfrFormat.source = 'gutenberg'
-      sfrFormat.rights_uri = license
-
+      
       epubs.push(sfrFormat)
 
     }
