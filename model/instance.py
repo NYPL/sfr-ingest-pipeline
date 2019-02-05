@@ -99,7 +99,7 @@ class Instance(Core, Base):
         dates = instance.pop('dates', [])
         links = instance.pop('links', [])
         alt_titles = instance.pop('alt_titles', None)
-        rights = instance.pop('rights', None)
+        rights = instance.pop('rights', [])
 
         # Get fields targeted for works
         series = instance.pop('series', None)

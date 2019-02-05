@@ -54,7 +54,7 @@ class Rights(Core, Base):
 
     __tablename__ = 'rights'
     id = Column(Integer, primary_key=True)
-    source = Column(Unicoe, index=True)
+    source = Column(Unicode, index=True)
     license = Column(Unicode, index=True)
     rights_statement = Column(Unicode, index=True)
     rights_reason = Column(Unicode, index=True)

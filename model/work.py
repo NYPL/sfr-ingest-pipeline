@@ -123,7 +123,7 @@ class Work(Core, Base):
         measurements = workData.pop('measurements', None)
         links = workData.pop('links', None)
         dates = workData.pop('dates', None)
-        rights = workData.pop('rights', None)
+        rights = workData.pop('rights', [])
 
         existing = cls.lookupWork(session, identifiers, primaryIdentifier)
         if existing is not None:
@@ -272,7 +272,7 @@ class Work(Core, Base):
 
         # TODO Remove prepositions, etc from the start of the sort title
         workData['sort_title'] = workData.get('sort_title', workData['title'])
-        print(workData)
+        
         work = cls(**workData)
         #
         # === IMPORTANT ===
