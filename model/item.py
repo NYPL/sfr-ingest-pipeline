@@ -1,5 +1,6 @@
 import os
 import re
+from collections import deque
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -25,6 +26,7 @@ from model.identifiers import ITEM_IDENTIFIERS, Identifier
 from model.link import ITEM_LINKS, Link
 from model.date import ITEM_DATES, DateField
 from model.rights import Rights, ITEM_RIGHTS
+from model.agent import Agent
 
 from lib.outputManager import OutputManager
 from helpers.logHelpers import createLog
@@ -89,19 +91,23 @@ class Item(Core, Base):
 
     @classmethod
     def createOrStore(cls, session, item, instanceID):
-
-        url = item['link']['url']
-
-        for source, regex in SOURCE_REGEX.items():
-            if re.search(regex, url):
-                if source in EPUB_SOURCES:
-                    cls.createLocalEpub(item, instanceID)
-                    return None, 'generating'
-        else:
-            return cls.updateOrInsert(session, item)
+        links = deque(item.pop('links', []))
+        item['links'] = []
+        while len(links) > 0:
+            link = links.popleft()
+            url = link['url']   
+            for source, regex in SOURCE_REGEX.items():
+                if re.search(regex, url):
+                    if source in EPUB_SOURCES:
+                        cls.createLocalEpub(item, link, instanceID)
+                        break
+            else:    
+                item['links'].append(link)
+        
+        return cls.updateOrInsert(session, item)
 
     @classmethod
-    def createLocalEpub(cls, item, instanceID):
+    def createLocalEpub(cls, item, link, instanceID):
         """Pass new item to epub storage pipeline. Does not store item record
         at this time, but defers until epub has been processed.
 
@@ -110,11 +116,9 @@ class Item(Core, Base):
         id: The ID of the parent row of the item to be stored
         updated: Date the ebook was last updated at the source
         data: A raw block of the metadata associated with this item"""
-
-        url = item['link']['url']
-
+        item['links'] = [link]
         epubPayload = {
-            'url': item['link']['url'],
+            'url': link['url'],
             'id': instanceID,
             'updated': item['modified'],
             'data': item
@@ -131,15 +135,14 @@ class Item(Core, Base):
     def updateOrInsert(cls, session, item):
         """Will query for existing items and either update or insert an item
         record pending the outcome of that query"""
-        link = item.pop('link', None)
-        identifier = item.pop('identifier', None)
+        links = item.pop('links', [])
+        identifiers = item.pop('identifiers', [])
         measurements = item.pop('measurements', [])
         dates = item.pop('dates', [])
         rights = item.pop('rights', [])
+        agents = item.pop('agents', [])
 
-        existing = None
-        if identifier is not None:
-            existing = Identifier.getByIdentifier(cls, session, [identifier])
+        existing = Identifier.getByIdentifier(cls, session, identifiers)
 
         if existing is not None:
             logger.debug('Found existing item by identifier')
@@ -147,11 +150,12 @@ class Item(Core, Base):
                 session,
                 existing,
                 item,
-                identifier=identifier,
-                link=link,
+                identifiers=identifiers,
+                links=links,
                 measurements=measurements,
                 dates=dates,
-                rights=rights
+                rights=rights,
+                agents=agents
             )
             return existing, 'updated'
 
@@ -159,11 +163,12 @@ class Item(Core, Base):
         itemRec = cls.insert(
             session,
             item,
-            link=link,
+            links=links,
             measurements=measurements,
-            identifier=identifier,
+            identifiers=identifiers,
             dates=dates,
-            rights=rights
+            rights=rights,
+            agents=agents
         )
 
         return itemRec, 'inserted'
@@ -173,15 +178,17 @@ class Item(Core, Base):
         """Insert a new item record"""
         item = cls(**itemData)
 
-        link = kwargs.get('link', None)
+        links = kwargs.get('links', None)
         measurements = kwargs.get('measurements', [])
-        identifier = kwargs.get('identifier', None)
+        identifiers = kwargs.get('identifiers', [])
         dates = kwargs.get('dates', [])
         rights = kwargs.get('rights', [])
+        agents = kwargs.get('agents', [])
 
-        item.identifiers.append(Identifier.insert(identifier))
+        for identifier in identifiers:
+            item.identifiers.append(Identifier.insert(identifier))
 
-        if link is not None:
+        for link in links:
             newLink = Link(**link)
             item.links.append(newLink)
 
@@ -194,8 +201,18 @@ class Item(Core, Base):
             item.dates.append(newDate)
         
         for rightsStmt in rights:
-            newRights = Rights.insert(rightsStmt)
+            rightsDates = rightsStmt.pop('dates', [])
+            newRights = Rights.insert(rightsStmt, dates=rightsDates)
             item.rights.append(newRights)
+
+        for agent in agents:
+            agentRec, roles = Agent.updateOrInsert(session, agent)
+            for role in roles:
+                AgentItems(
+                    agent=agentRec,
+                    item=item,
+                    role=role
+                )
 
         return item
 
@@ -203,22 +220,24 @@ class Item(Core, Base):
     def update(cls, session, existing, item, **kwargs):
         """Update an existing item record"""
 
-        link = kwargs.get('link', None)
+        links = kwargs.get('link', [])
         measurements = kwargs.get('measurements', [])
-        identifier = kwargs.get('identifier', None)
+        identifiers = kwargs.get('identifiers', [])
         dates = kwargs.get('dates', [])
         rights = kwargs.get('rights', [])
+        agents = kwargs.get('agents', [])
 
         for field, value in item.items():
             if(value is not None and value.strip() != ''):
                 setattr(existing, field, value)
 
-        status, idenRec = Identifier.returnOrInsert(
-            session,
-            identifier,
-            cls,
-            existing.id
-        )
+        for identifier in identifiers:
+            status, idenRec = Identifier.returnOrInsert(
+                session,
+                identifier,
+                cls,
+                existing.id
+            )
 
         if status == 'new':
             existing.identifiers.append(idenRec)
@@ -227,19 +246,12 @@ class Item(Core, Base):
             measurementRec = Measurement.insert(measurement)
             existing.measurements.append(measurementRec)
 
-        if type(link) is dict:
+        for link in links:
             existingLink = Link.lookupLink(session, link, cls, existing.id)
             if existingLink is None:
                 existing.links.append(Link(**link))
             else:
                 Link.update(existingLink, link)
-        elif type(link) is list:
-            for linkItem in link:
-                existingLink = Link.lookupLink(session, linkItem, cls, existing.id)
-                if existingLink is None:
-                    existing.links.append(Link(**linkItem))
-                else:
-                    Link.update(existingLink, link)
 
         for date in dates:
             updateDate = DateField.updateOrInsert(session, date, Item, existing.id)
@@ -255,6 +267,18 @@ class Item(Core, Base):
             )
             if updateRights is not None:
                 existing.rights.append(updateRights)
+        
+        for agent in agents:
+            agentRec, roles = Agent.updateOrInsert(session, agent)
+            if roles is None:
+                roles = ['repository']
+            for role in roles:
+                if AgentItems.roleExists(session, agentRec, role, Item, existing.id) is None:
+                    AgentItems(
+                        agent=agentRec,
+                        item=existing,
+                        role=role
+                    )
 
     @classmethod
     def addReportData(cls, session, aceReport):

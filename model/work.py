@@ -333,7 +333,8 @@ class Work(Core, Base):
             work.dates.append(newDate)
         
         for rightsStmt in rights:
-            newRights = Rights.insert(rightsStmt)
+            rightsDates = rightsStmt.pop('dates', [])
+            newRights = Rights.insert(rightsStmt, dates=rightsDates)
             work.rights.append(newRights)
 
         return work

@@ -102,7 +102,7 @@ class Rights(Core, Base):
             Rights.update(session, existing, rights, dates=dates)
             return None
 
-        logger.info('Inserting new date object')
+        logger.info('Inserting new rights object on {}'.format(model))
         return Rights.insert(rights, dates=dates)
 
     @classmethod

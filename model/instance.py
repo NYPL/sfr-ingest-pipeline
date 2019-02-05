@@ -287,7 +287,8 @@ class Instance(Core, Base):
             instance.dates.append(newDate)
         
         for rightsStmt in rights:
-            newRights = Rights.insert(rightsStmt)
+            rightsDates = rightsStmt.pop('dates', [])
+            newRights = Rights.insert(rightsStmt, dates=rightsDates)
             instance.rights.append(newRights)
 
         # We need to get the ID of the instance to allow for asynchronously
