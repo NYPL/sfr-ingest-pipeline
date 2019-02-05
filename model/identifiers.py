@@ -36,6 +36,20 @@ ITEM_IDENTIFIERS = Table(
 )
 
 
+class Hathi(Core, Base):
+    """Table for HathiTrust Identifiers"""
+    __tablename__ = 'hathi'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='gutenberg')
+
+    def __repr__(self):
+        return '<Hathi(value={})>'.format(self.value)
+
+
 class Gutenberg(Core, Base):
     """Table for Gutenberg Identifiers"""
     __tablename__ = 'gutenberg'
@@ -189,6 +203,7 @@ class Identifier(Base):
 
     # Related tables for specific identifier types
     gutenberg = relationship('Gutenberg', back_populates='identifier')
+    hathi = relationship('Hathi', back_populates='hathi')
     oclc = relationship('OCLC', back_populates='identifier')
     lccn = relationship('LCCN', back_populates='identifier')
     isbn = relationship('ISBN', back_populates='identifier')
@@ -200,6 +215,7 @@ class Identifier(Base):
 
     identifierTypes = {
         'gutenberg': Gutenberg,
+        'hathi': Hathi,
         'oclc': OCLC,
         'owi': OWI,
         'lccn': LCCN,
