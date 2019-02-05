@@ -1,4 +1,5 @@
 import csv
+import os
 
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 from helpers.logHelpers import createLog
@@ -230,9 +231,9 @@ def rowParser(row, columns, countryCodes):
         # the instance and item records retrieved here, its relevance is
         # unclear for the work record. It will be possible to have conflicting
         # rights statements for works and instances
-        hathiRec.work.rights = hathiRec.rights
-        hathiRec.instance.rights = hathiRec.rights
-        hathiRec.item.rights = hathiRec.rights
+        hathiRec.work.rights = [hathiRec.rights]
+        hathiRec.instance.rights = [hathiRec.rights]
+        hathiRec.item.rights = [hathiRec.rights]
     except DataError as err:
         logger.error('Unable to process record {}'.format(
             hathiRec.ingest['htid']
@@ -249,7 +250,7 @@ def rowParser(row, columns, countryCodes):
             'type': 'work',
             'method': 'insert',
             'data': hathiRec.work
-        }, 'sfr-db-ingest-development')
+        }, os.environ['OUTPUT_STREAM'])
     except KinesisError as err:
         logger.error('Unable to output record {} to Kinesis'.format(
             hathiRec.ingest['htid']

@@ -55,7 +55,6 @@ class WorkRecord(DataObject):
         self.measurements = []
         self.dates = []
         self.uuid = None
-        self.license = None
         self.language = None
         self.title = None
         self.sub_title = None
@@ -63,7 +62,7 @@ class WorkRecord(DataObject):
         self.sort_title = None
         self.medium = None
         self.series = None
-        self.seriesPosition = None
+        self.series_position = None
         self.primary_identifier = None
         self.rights = None
 

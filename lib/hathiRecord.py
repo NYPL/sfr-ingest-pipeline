@@ -295,7 +295,7 @@ class HathiRecord():
         workIdentifiers = [
             ('hathi', 'bib_key'),
             ('hathi', 'htid'),
-            ('generic', 'source_id'),
+            (None, 'source_id'),
             ('isbn', 'isbns'),
             ('issn', 'issns'),
             ('lccn', 'lccns'),
@@ -339,7 +339,7 @@ class HathiRecord():
         # Instances and works will share many identifiers
         instanceIdentifiers = [
             ('hathi', 'htid'),
-            ('generic', 'source_id'),
+            (None, 'source_id'),
             ('isbn', 'isbns'),
             ('issn', 'issns'),
             ('lccn', 'lccns'),
@@ -373,6 +373,14 @@ class HathiRecord():
         logger.info('Creating item record for instance {}'.format(
             self.instance
         ))
+
+        # Items will generally only be identified by their hathi ID
+        itemIdentifiers = [
+            ('hathi', 'htid'),
+        ]
+        for idType, key in itemIdentifiers:
+            logger.debug('Setting item identifiers {}'.format(idType))
+            self.parseIdentifiers(self.item, idType, key)
 
         logger.debug('Storing direct and download links based on htid {}'.format(self.ingest['htid']))
         # The link to the external HathiTrust page
