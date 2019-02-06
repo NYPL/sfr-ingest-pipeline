@@ -14,8 +14,6 @@ def loadCountryCodes():
     which is used to translate the codes for use in SFR
     """
 
-    countryTrans = {}
-
     logger.info('Parsing country code/names dict from local file')
 
     try:
@@ -32,18 +30,7 @@ def loadCountryCodes():
     with countryXML as countryXML:
         countryTree = etree.parse(countryXML)
         codeList = countryTree.getroot()
-        countries = codeList.find('{info:lc/xmlns/codelist-v1}countries')
-        for country in countries.findall('{info:lc/xmlns/codelist-v1}country'):
-            code = None
-            name = None
-            for child in country:
-                if child.tag == '{info:lc/xmlns/codelist-v1}code':
-                    code = child.text
-                elif child.tag == '{info:lc/xmlns/codelist-v1}name':
-                    name = child.text
-            logger.debug('Extracted country {} for code {}'.format(name, code))
-            countryTrans[code] = name
-
-    logger.info('Retrieved country names from lib/marc_countries.xml')
-
-    return countryTrans
+        
+        logger.info('Retrieving country names from lib/marc_countries.xml')
+        ns = '{info:lc/xmlns/codelist-v1}'
+        return dict([(c.find('{}code'.format(ns)).text, c.find('{}name'.format(ns)).text) for c in codeList.findall('.//{}country'.format(ns))])
