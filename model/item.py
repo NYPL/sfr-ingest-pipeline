@@ -1,5 +1,6 @@
 import os
 import re
+from copy import deepcopy
 from collections import deque
 from sqlalchemy import (
     Column,
@@ -95,16 +96,19 @@ class Item(Core, Base):
         item['links'] = []
         while len(links) > 0:
             link = links.popleft()
-            url = link['url']   
+            url = link['url']
             for source, regex in SOURCE_REGEX.items():
                 if re.search(regex, url):
                     if source in EPUB_SOURCES:
                         cls.createLocalEpub(item, link, instanceID)
                         break
-            else:    
+            else:
                 item['links'].append(link)
         
-        return cls.updateOrInsert(session, item)
+        if len(item['links']) > 0:
+            return cls.updateOrInsert(session, item)
+        else:
+            return None, 'creating'
 
     @classmethod
     def createLocalEpub(cls, item, link, instanceID):
@@ -116,12 +120,13 @@ class Item(Core, Base):
         id: The ID of the parent row of the item to be stored
         updated: Date the ebook was last updated at the source
         data: A raw block of the metadata associated with this item"""
-        item['links'] = [link]
+        putItem = deepcopy(item)
+        putItem['links'] = [link]
         epubPayload = {
             'url': link['url'],
             'id': instanceID,
             'updated': item['modified'],
-            'data': item
+            'data': putItem
         }
 
         for measure in item['measurements']:
@@ -178,7 +183,7 @@ class Item(Core, Base):
         """Insert a new item record"""
         item = cls(**itemData)
 
-        links = kwargs.get('links', None)
+        links = kwargs.get('links', [])
         measurements = kwargs.get('measurements', [])
         identifiers = kwargs.get('identifiers', [])
         dates = kwargs.get('dates', [])
@@ -220,7 +225,7 @@ class Item(Core, Base):
     def update(cls, session, existing, item, **kwargs):
         """Update an existing item record"""
 
-        links = kwargs.get('link', [])
+        links = kwargs.get('links', [])
         measurements = kwargs.get('measurements', [])
         identifiers = kwargs.get('identifiers', [])
         dates = kwargs.get('dates', [])
