@@ -52,6 +52,27 @@ class TestHathi(unittest.TestCase):
         hathiRec.work.title = hathiRec.ingest['title']
         self.assertEqual(str(hathiRec), '<Hathi(title=Test Record)>')
 
+    def test_build_data_model(self):
+        testRow = {
+            'title': 'Work Test',
+            'description': '1st of 4',
+            'bib_key': '0000000',
+            'htid': 'test.000000000',
+            'gov_doc': 'f',
+            'author': 'Author, Test',
+            'copyright_date': '2019',
+            'rights': 'test_rights'
+        }
+        workTest = HathiRecord(testRow)
+
+        workTest.buildWork = MagicMock()
+        workTest.buildInstance = MagicMock()
+        workTest.buildItem = MagicMock()
+        workTest.createRights = MagicMock()
+
+        workTest.buildDataModel('countryCodes')
+        self.assertIsInstance(workTest, HathiRecord)
+
     def test_build_work(self):
         testRow = {
             'title': 'Work Test',

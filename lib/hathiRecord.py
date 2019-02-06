@@ -255,6 +255,16 @@ class HathiRecord():
         'borndigital': None,
     }
 
+    identifierFields = [
+        ('hathi', 'bib_key'),
+        ('hathi', 'htid'),
+        (None, 'source_id'),
+        ('isbn', 'isbns'),
+        ('issn', 'issns'),
+        ('lccn', 'lccns'),
+        ('oclc', 'oclcs')
+    ]
+
     def __init__(self, ingestRecord, ingestDateTime=None):
         # Initialize with empty SFR data objects
         # self.ingest contains the source data
@@ -275,6 +285,30 @@ class HathiRecord():
 
     def __repr__(self):
         return '<Hathi(title={})>'.format(self.work.title)
+    
+    def buildDataModel(self, countryCodes):
+        logger.debug('Generating work record for bib record {}'.format(
+            self.ingest['bib_key']
+        ))
+        self.buildWork()
+
+        logger.debug('Generating instance record for hathi record {}'.format(
+            self.ingest['htid']
+        ))
+        self.buildInstance(countryCodes)
+
+        logger.debug('Generating an item record for hathi record {}'.format(
+            self.ingest['htid']
+        ))
+        self.buildItem()
+        
+        logger.debug('Generate a rights object for the associated rights statement {}'.format(
+            self.ingest['rights']
+        ))
+
+        # Generate a stand-alone rights object that contains the hathi
+        # generated rights information
+        self.createRights()
 
     def buildWork(self):
         """Construct the SFR Work object from the Hathi data"""
@@ -291,17 +325,7 @@ class HathiRecord():
             self.work.primary_identifier
         ))
 
-        # Identifiers are included across multiple columns
-        workIdentifiers = [
-            ('hathi', 'bib_key'),
-            ('hathi', 'htid'),
-            (None, 'source_id'),
-            ('isbn', 'isbns'),
-            ('issn', 'issns'),
-            ('lccn', 'lccns'),
-            ('oclc', 'oclcs')
-        ]
-        for idType, key in workIdentifiers:
+        for idType, key in HathiRecord.identifierFields:
             logger.debug('Setting identifiers {}'.format(idType))
             self.parseIdentifiers(self.work, idType, key)
 
@@ -336,16 +360,7 @@ class HathiRecord():
 
         self.parsePubPlace(self.ingest['pub_place'], countryCodes)
 
-        # Instances and works will share many identifiers
-        instanceIdentifiers = [
-            ('hathi', 'htid'),
-            (None, 'source_id'),
-            ('isbn', 'isbns'),
-            ('issn', 'issns'),
-            ('lccn', 'lccns'),
-            ('oclc', 'oclcs')
-        ]
-        for idType, key in instanceIdentifiers:
+        for idType, key in HathiRecord.identifierFields:
             logger.debug('Setting identifiers {}'.format(idType))
             self.parseIdentifiers(self.instance, idType, key)
 
@@ -359,6 +374,9 @@ class HathiRecord():
         ))
 
         self.parsePubInfo(self.ingest['publisher_pub_date'])
+
+        # Add instance to parent work
+        self.work.instances.append(self.instance)
 
     def buildItem(self):
         """HathiTrust items also correspond to a single item, the digitzed
@@ -374,13 +392,8 @@ class HathiRecord():
             self.instance
         ))
 
-        # Items will generally only be identified by their hathi ID
-        itemIdentifiers = [
-            ('hathi', 'htid'),
-        ]
-        for idType, key in itemIdentifiers:
-            logger.debug('Setting item identifiers {}'.format(idType))
-            self.parseIdentifiers(self.item, idType, key)
+        logger.debug('Setting htid {} for item'.format(self.ingest['htid']))
+        self.parseIdentifiers(self.item, 'hathi', 'htid')
 
         logger.debug('Storing direct and download links based on htid {}'.format(self.ingest['htid']))
         # The link to the external HathiTrust page
@@ -419,6 +432,10 @@ class HathiRecord():
             'roles': ['digitizer']
         })
 
+        # Add item to parent instance
+        self.instance.formats.append(self.item)
+
+
     def createRights(self):
         """HathiTrust contains a strong set of rights data per item, including
         license, statement and justification fields. As this metadata is
@@ -447,6 +464,15 @@ class HathiRecord():
             'date_range': self.ingest['copyright_date'],
             'date_type': 'copyright_date'
         })
+
+        # At present these rights are assigned to all three levels in the SFR
+        # model work, instance and item. While this data certainly pertains to
+        # the instance and item records retrieved here, its relevance is
+        # unclear for the work record. It will be possible to have conflicting
+        # rights statements for works and instances
+        self.work.rights = [self.rights]
+        self.instance.rights = [self.rights]
+        self.item.rights = [self.rights]
 
     def parseIdentifiers(self, record, idType, key):
         """Iterate identifiers, splitting multiple values and storing in

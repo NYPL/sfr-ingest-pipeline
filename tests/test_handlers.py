@@ -93,7 +93,7 @@ class TestHandler(unittest.TestCase):
 
     @patch('service.HathiRecord')
     def test_row_parse_data_error(self, mock_hathi):
-        mock_hathi().buildWork.side_effect = DataError('Test Error')
+        mock_hathi().buildDataModel.side_effect = DataError('Test Error')
         with self.assertRaises(ProcessingError):
             rowParser(['row1'], ['htid'], {})
 

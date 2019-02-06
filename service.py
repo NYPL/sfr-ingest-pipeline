@@ -203,37 +203,8 @@ def rowParser(row, columns, countryCodes):
     hathiRec = HathiRecord(hathiDict)
 
     try:
-        logger.debug('Generating work record for bib record {}'.format(
-            hathiRec.ingest['bib_key']
-        ))
-        hathiRec.buildWork()
-
-        logger.debug('Generating instance record for hathi record {}'.format(
-            hathiRec.ingest['htid']
-        ))
-        hathiRec.buildInstance(countryCodes)
-        hathiRec.work.instances.append(hathiRec.instance)
-
-        logger.debug('Generating an item record for hathi record {}'.format(
-            hathiRec.ingest['htid']
-        ))
-        hathiRec.buildItem()
-        hathiRec.instance.formats.append(hathiRec.item)
-
-        logger.debug('Generate a rights object for the associated rights statement {}'.format(
-            hathiRec.ingest['rights']
-        ))
-        # Generate a stand-alone rights object that contains the hathi
-        # generated rights information
-        hathiRec.createRights()
-        # At present these rights are assigned to all three levels in the SFR
-        # model work, instance and item. While this data certainly pertains to
-        # the instance and item records retrieved here, its relevance is
-        # unclear for the work record. It will be possible to have conflicting
-        # rights statements for works and instances
-        hathiRec.work.rights = [hathiRec.rights]
-        hathiRec.instance.rights = [hathiRec.rights]
-        hathiRec.item.rights = [hathiRec.rights]
+        # Generate an SFR-compliant object
+        hathiRec.buildDataModel(countryCodes)
     except DataError as err:
         logger.error('Unable to process record {}'.format(
             hathiRec.ingest['htid']
