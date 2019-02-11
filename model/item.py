@@ -361,3 +361,15 @@ class AgentItems(Core, Base):
         backref=backref('agent_items', cascade='all, delete-orphan')
     )
     agent = relationship('Agent')
+
+    @classmethod
+    def roleExists(cls, session, agent, role, model, recordID):
+        """Query database to check if a role exists between a specific work and
+        agent"""
+        return session.query(cls)\
+            .join(Agent)\
+            .join(model)\
+            .filter(Agent.id == agent.id)\
+            .filter(model.id == recordID)\
+            .filter(cls.role == role)\
+            .one_or_none()

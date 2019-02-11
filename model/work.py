@@ -192,7 +192,10 @@ class Work(Core, Base):
         newTitle = work.get('title')
         # The "canonical title" should be set to the record with the most holdings
         if newTitle.lower() != existing.title.lower():
-            newHoldings = list(filter(lambda x: x['quantity'] == 'holdings', measurements))[0]
+            newHoldings = list(filter(lambda x: x['quantity'] == 'holdings', measurements))
+            if len(newHoldings) < 1:
+                newHoldings = {'value': 0}
+
             oldHoldings = list(filter(lambda x: x.quantity == 'holdings', existing.measurements))
 
             for holding in oldHoldings:
