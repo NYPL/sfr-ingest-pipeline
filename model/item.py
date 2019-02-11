@@ -97,11 +97,17 @@ class Item(Core, Base):
         while len(links) > 0:
             link = links.popleft()
             url = link['url']
+            if not isinstance(url, (str,)):
+                continue
             for source, regex in SOURCE_REGEX.items():
-                if re.search(regex, url):
-                    if source in EPUB_SOURCES:
-                        cls.createLocalEpub(item, link, instanceID)
-                        break
+                try:
+                    if re.search(regex, url):
+                        if source in EPUB_SOURCES:
+                            cls.createLocalEpub(item, link, instanceID)
+                            break
+                except TypeError as err:
+                    logger.warning('Found link {} with no url {}'.format(link, url))
+                    logger.debug(err)
             else:
                 item['links'].append(link)
         
