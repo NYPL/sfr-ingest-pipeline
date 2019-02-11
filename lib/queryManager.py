@@ -46,7 +46,7 @@ def queryWork(work, workUUID):
                     'uuid': workUUID,
                     'fields': {
                         'idType': idType,
-                        'identifier': iden
+                        'identifier': iden.value
                     }
                 }, os.environ['CLASSIFY_STREAM'])
 
@@ -64,7 +64,7 @@ def getIdentifiers(identifiers):
                     lookupIDs[source] = []
                     sourceList = getattr(identifier, source)
                     for iden in sourceList:
-                        lookupIDs.append(iden)
+                        lookupIDs[source].append(iden)
             except AttributeError:
                 pass
 
