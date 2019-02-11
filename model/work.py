@@ -345,7 +345,13 @@ class Work(Core, Base):
         if primaryIdentifier is not None and primaryIdentifier['type'] == 'uuid':
             return Work.getByUUID(session, primaryIdentifier['identifier'])
 
-        return Identifier.getByIdentifier(Work, session, identifiers)
+        existingWork = Identifier.getByIdentifier(Work, session, identifiers)
+        if existingWork:
+            return existingWork
+        else:
+            existingInstance = Identifier.getByIdentifier(Instance, session, identifiers)
+            if existingInstance:
+                return existingInstance.work
 
     @classmethod
     def getByUUID(cls, session, recUUID):
