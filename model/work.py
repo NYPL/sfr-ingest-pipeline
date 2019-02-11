@@ -195,6 +195,8 @@ class Work(Core, Base):
             newHoldings = list(filter(lambda x: x['quantity'] == 'holdings', measurements))
             if len(newHoldings) < 1:
                 newHoldings = {'value': 0}
+            else:
+                newHoldings = newHoldings[0]
 
             oldHoldings = list(filter(lambda x: x.quantity == 'holdings', existing.measurements))
 
