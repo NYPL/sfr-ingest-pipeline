@@ -1,0 +1,35 @@
+{
+    "name": "sfr-search-api",
+    "description": "Simple search API to query the SFR Elasticsearch index.",
+    "author": "NYPL Digital",
+    "license": "MIT",
+    "version": "0.1.0",
+    "dependencies": {
+        "@nypl/nypl-data-api-client": "^1.0.0",
+        "body-parser": "^1.18.3",
+        "bodybuilder": "^2.2.16",
+        "config": "2.0.1",
+        "dotenv": "6.1.0",
+        "elasticsearch": "15.1.1",
+        "express": "4.16.4",
+        "request": "2.88.0",
+        "swagger-client": "^3.8.22",
+        "swagger-parser": "^6.0.2",
+        "winston": "3.1.0"
+    },
+    "devDependencies": {
+        "chai": "4.2.0",
+        "mocha": "5.2.0",
+        "nodemon": "^1.18.7",
+        "sinon": "7.1.0",
+        "standard": "12.0.1"
+    },
+    "scripts": {
+        "test": "./node_modules/.bin/standard --env mocha --globals expect && NODE_ENV=test ./node_modules/.bin/mocha test --exit",
+        "start": "node app.js",
+        "start-dev": "nodemon ./app.js localhost 3000",
+        "deploy-development": "",
+        "deploy-qa": "",
+        "deploy-production": ""
+    }
+}

@@ -1,0 +1,12 @@
+{
+  "host": "localhost",
+  "proto": "http",
+
+  "elasticsearch": {
+    "host": "AQICAHi/6lMDHbX8rG06wixxMn/0d7tfxGNIuWIs5FqapFv3wwF2KiavQ6xMeHymajSrPQCVAAAAsjCBrwYJKoZIhvcNAQcGoIGhMIGeAgEAMIGYBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDKZL5dPp1F6clwhcXQIBEIBrPXSKLT6WA0q3Yjb43V/3kGpeqO++umbk3hvRIWmzlwywHGsJkLeCwOBEf701WbuETe0R9BtIkZx0/aLWbw29PZi55BSEA4Ig4UP/mnmrjvKQTaqxutUt57VyPB+ywq2sW992i9eni5J3WOY=",
+    "indexes": {
+      "gutenberg": "gutenberg"
+    }
+  },
+  "port" : 3000
+}
