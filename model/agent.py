@@ -10,7 +10,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from model.core import Base, Core
 from model.link import AGENT_LINKS, Link
@@ -73,8 +73,9 @@ class Agent(Core, Base):
         # Escape single quotes for postgres
         agent['name'] = agent['name'].replace('\'', '\'\'')
 
-        existingAgent = Agent.lookupAgent(session, agent)
-        if existingAgent is not None:
+        existingAgentID = Agent.lookupAgent(session, agent)
+        if existingAgentID is not None:
+            existingAgent = session.query(cls).get(existingAgentID)
             updated = Agent.update(
                 session,
                 existingAgent,
@@ -167,35 +168,40 @@ class Agent(Core, Base):
         characters at the start of a string, making it better suited to
         matching Last, First names than other string comparison algorithms."""
 
-        if agent['viaf'] is not None and agent['lcnaf'] is not None:
+        if agent['viaf'] is not None or agent['lcnaf'] is not None:
             logger.debug('Matching agent on VIAF/LCNAF')
-            agnts = session.query(cls)\
-                .filter(
-                    or_(
-                        cls.viaf == agent['viaf'],
-                        cls.lcnaf == agent['lcnaf']
-                    )
-                )\
-                .all()
-            if len(agnts) == 1:
-                return agnts[0]
-            elif len(agnts) > 1:
+            try:
+                return session.query(cls.id)\
+                    .filter(
+                        or_(
+                            cls.viaf == agent['viaf'],
+                            cls.lcnaf == agent['lcnaf']
+                        )
+                    )\
+                    .one()
+            
+            except MultipleResultsFound:
                 logger.error('Found multiple matching agents, should only be one record per identifier')
                 raise
+            except NoResultFound:
+                pass
 
         logger.debug('Matching agent based off jaro_winkler score')
-        jaroWinklerQ = text(
-            "jarowinkler({}, '{}') > {}".format('name', agent['name'], 0.9)
-        )
-        agnts = session.query(cls)\
-            .filter(jaroWinklerQ)\
-            .all()
-        if len(agnts) == 1:
-            return agnts[0]
-        elif len(agnts) > 1:
+        
+        try:
+            jaroWinklerQ = text(
+                "jarowinkler({}, '{}') > {}".format('name', agent['name'], 0.95)
+            )
+            return session.query(cls.id)\
+                .filter(jaroWinklerQ)\
+                .one()
+            
+        except MultipleResultsFound:
             logger.info('Name/information is too generic to create individual record')
             pass
-
+        except NoResultFound:
+            pass
+        
         return None
 
 

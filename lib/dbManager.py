@@ -103,6 +103,8 @@ def importRecord(session, record):
                 'type': 'work',
                 'identifier': dbInstance.work.uuid.hex
             })
+        
+        return op, 'Instance #{}'.format(dbInstance.id)
 
     elif record['type'] == 'item':
         logger.info('Ingesting item record')
@@ -123,6 +125,8 @@ def importRecord(session, record):
             'type': 'work',
             'identifier': dbItem.instance.work.uuid.hex
         })
+
+        return op, 'Item #{}'.format(dbItem.id)
 
     elif record['type'] == 'access_report':
         logger.info('Ingest Accessibility Report')
