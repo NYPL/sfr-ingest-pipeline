@@ -2,6 +2,9 @@ import unittest
 import os
 from unittest.mock import patch, MagicMock
 from elasticsearch.exceptions import ConnectionError
+from elasticsearch.helpers import BulkIndexError
+
+from helpers.errorHelpers import ESError
 
 os.environ['ES_INDEX'] = 'test'
 
@@ -57,3 +60,27 @@ class TestESManager(unittest.TestCase):
         inst = ESConnection()
         self.assertIsInstance(inst.client, MagicMock)
         mock_work.init.assert_not_called()
+    
+    @patch.dict('os.environ', {'ES_HOST': 'test', 'ES_PORT': '9200', 'ES_TIMEOUT': '60'})
+    @patch('lib.esManager.bulk')
+    @patch('lib.esManager.ESConnection')
+    @patch('lib.esManager.Elasticsearch', return_value=client_mock)
+    def test_process_batch(self, mock_elastic, mock_instance, mock_bulk):
+
+        inst = ESConnection()
+        inst.batch = [{'test': 'test'}]
+        inst.processBatch()
+        mock_bulk.assert_called_once()
+    
+    @patch.dict('os.environ', {'ES_HOST': 'test', 'ES_PORT': '9200', 'ES_TIMEOUT': '60'})
+    @patch('lib.esManager.bulk', side_effect=BulkIndexError)
+    @patch('lib.esManager.ESConnection')
+    @patch('lib.esManager.Elasticsearch', return_value=client_mock)
+    def test_batch_err(self, mock_elastic, mock_instance, mock_bulk):
+
+        inst = ESConnection()
+        inst.batch = [{'test': 'test'}]
+        with self.assertRaises(ESError):
+            inst.processBatch()
+
+

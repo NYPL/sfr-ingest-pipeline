@@ -2,11 +2,25 @@ import os
 import time
 from elasticsearch.helpers import bulk, BulkIndexError
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import ConnectionError, TransportError, ConflictError
+from elasticsearch.exceptions import (
+    ConnectionError,
+    TransportError,
+    ConflictError
+)
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
 
-from model.elasticDocs import Work, Subject, Identifier, Agent, Measurement, Instance, Link, Item, AccessReport
+from model.elasticDocs import (
+    Work,
+    Subject,
+    Identifier,
+    Agent,
+    Measurement,
+    Instance,
+    Link,
+    Item,
+    AccessReport
+)
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import ESError
@@ -30,26 +44,49 @@ class ESConnection():
         timeout = int(os.environ['ES_TIMEOUT'])
         logger.info('Creating connection to ElasticSearch')
         try:
-            self.client = Elasticsearch(hosts=[{'host': host, 'port': port}], timeout=timeout)
+            self.client = Elasticsearch(
+                hosts=[{'host': host, 'port': port}],
+                timeout=timeout
+            )
         except ConnectionError:
             raise ESError('Failed to connect to ElasticSearch instance')
         connections.connections._conns['default'] = self.client
 
     def createIndex(self):
         if self.client.indices.exists(index=self.index) is False:
-            logger.info('Initializing ElasticSearch index {}'.format(self.index))
+            logger.info('Initializing ElasticSearch index {}'.format(
+                self.index
+            ))
             Work.init()
         else:
-            logger.info('ElasticSearch index {} already exists'.format(self.index))
+            logger.info('ElasticSearch index {} already exists'.format(
+                self.index
+            ))
 
     def processBatch(self):
+        """Process the current batch of updating records. This utilizes the
+        elasticsearch-py bulk helper to import records in chunks of the
+        provided size. If a record in the batch errors that is reported and
+        logged but it does not prevent the other records in the batch from
+        being imported.
+        """
         try:
-            bulk(self.client, (work.to_dict(True) for work in self.batch), chunk_size=50)
+            bulk(
+                self.client,
+                (work.to_dict(True) for work in self.batch),
+                chunk_size=50
+            )
         except BulkIndexError as err:
+            logger.info('One or more records in the chunk failed to import')
             logger.debug(err)
+            raise ESError('Not all records processed smoothly, check logs')
 
     def indexRecord(self, dbRec):
-        logger.debug('Indexing record {}'.format(dbRec))
+        """Build an ElasticSearch object from the provided postgresql ORM
+        object. This builds a single object from the related tables of the 
+        db object that can be indexed and searched in ElasticSearch.
+        """
+        logger.debug('Creating ES record for {}'.format(dbRec))
         
         self.work = Work(meta={'id': dbRec.uuid})
 
@@ -65,13 +102,41 @@ class ESConnection():
             )
             setattr(self.work, dateType, dateRange)
             setattr(self.work, dateType + '_display', date['display'])
-        self.work.alt_titles = [altTitle.title for altTitle in dbRec.alt_titles]
-        self.work.subjects = [Subject(authority=subject.authority, uri=subject.uri, subject=subject.subject) for subject in dbRec.subjects]
-        self.work.agents = [ESConnection.addAgent(self.work, agent) for agent in dbRec.agents]
-        self.work.identifiers = [ESConnection.addIdentifier(identifier) for identifier in dbRec.identifiers]
-        self.work.measurements = [Measurement(quantity=measure.quantity,value = measure.value, weight = measure.weight, taken_at = measure.taken_at) for measure in dbRec.measurements]
+        
+        self.work.alt_titles = [
+            altTitle.title
+            for altTitle in dbRec.alt_titles
+        ]
+        self.work.subjects = [
+            Subject(
+                authority=subject.authority,
+                uri=subject.uri,
+                subject=subject.subject
+            )
+            for subject in dbRec.subjects
+        ]
+        self.work.agents = [
+            ESConnection.addAgent(self.work, agent)
+            for agent in dbRec.agents
+        ]
+        self.work.identifiers = [
+            ESConnection.addIdentifier(identifier)
+            for identifier in dbRec.identifiers
+        ]
+        self.work.measurements = [
+            Measurement(
+                quantity=measure.quantity,
+                value = measure.value,
+                weight = measure.weight,
+                taken_at = measure.taken_at
+            ) 
+            for measure in dbRec.measurements
+        ]
         self.work.links = [ESConnection.addLink(link) for link in dbRec.links]
-        self.work.instances = [ESConnection.addInstance(instance) for instance in dbRec.instances]
+        self.work.instances = [
+            ESConnection.addInstance(instance)
+            for instance in dbRec.instances
+        ]
         
         self.batch.append(self.work)
 
@@ -106,7 +171,10 @@ class ESConnection():
     
     @staticmethod
     def addAgent(record, agentRel):
-        match = list(filter(lambda x: True if agentRel.agent.name == x.name else False, record.agents))
+        match = list(filter(
+            lambda x: True 
+            if agentRel.agent.name == x.name else False, record.agents
+        ))
         if len(match) > 0:
             existing = match[0]
             existing.aliases.append(agentRel.role)
@@ -149,11 +217,26 @@ class ESConnection():
             )
             setattr(esInstance, dateType, dateRange)
             setattr(esInstance, dateType + '_display', date['display'])
-        esInstance.identifiers = [ESConnection.addIdentifier(identifier) for identifier in instance.identifiers]
-        esInstance.agents = [ESConnection.addAgent(esInstance, agent) for agent in instance.agents]
-        esInstance.links = [ESConnection.addLink(link) for link in instance.links]
-        esInstance.measurements = [ESConnection.addMeasurement(measure) for measure in instance.measurements]
-        esInstance.items = [ESConnection.addItem(item) for item in instance.items]
+        esInstance.identifiers = [
+            ESConnection.addIdentifier(identifier)
+            for identifier in instance.identifiers
+        ]
+        esInstance.agents = [
+            ESConnection.addAgent(esInstance, agent)
+            for agent in instance.agents
+        ]
+        esInstance.links = [
+            ESConnection.addLink(link)
+            for link in instance.links
+        ]
+        esInstance.measurements = [
+            ESConnection.addMeasurement(measure)
+            for measure in instance.measurements
+        ]
+        esInstance.items = [
+            ESConnection.addItem(item) 
+            for item in instance.items
+        ]
         
         return esInstance
     
@@ -163,11 +246,26 @@ class ESConnection():
 
         for field in dir(item):
             setattr(esItem, field, getattr(item, field, None))
-        esItem.identifiers = [ESConnection.addIdentifier(identifier) for identifier in item.identifiers]
-        esItem.agents = [ESConnection.addAgent(esItem, agent) for agent in item.agents]
-        esItem.links = [ESConnection.addLink(link) for link in item.links]
-        esItem.measurements = [ESConnection.addMeasurement(measurement) for measurement in item.measurements]
-        esItem.reports = [ESConnection.addReport(report) for report in item.access_reports]
+        esItem.identifiers = [
+            ESConnection.addIdentifier(identifier)
+            for identifier in item.identifiers
+        ]
+        esItem.agents = [
+            ESConnection.addAgent(esItem, agent)
+            for agent in item.agents
+        ]
+        esItem.links = [
+            ESConnection.addLink(link)
+            for link in item.links
+        ]
+        esItem.measurements = [
+            ESConnection.addMeasurement(measurement)
+            for measurement in item.measurements
+        ]
+        esItem.reports = [
+            ESConnection.addReport(report)
+            for report in item.access_reports
+        ]
 
         return esItem
     
@@ -178,6 +276,9 @@ class ESConnection():
         for field in dir(report):
             setattr(esReport, field, getattr(report, field, None))
         
-        esReport.measurements = [ESConnection.addMeasurement(measure) for measure in report.measurements]
+        esReport.measurements = [
+            ESConnection.addMeasurement(measure)
+            for measure in report.measurements
+        ]
         
         return esReport.to_dict(True)

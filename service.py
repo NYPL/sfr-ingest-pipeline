@@ -1,9 +1,9 @@
 import json
 import traceback
 
-from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
+from helpers.errorHelpers import NoRecordsReceived, DataError, DBError, ESError
 from helpers.logHelpers import createLog
-from lib.dbManager import dbGenerateConnection, retrieveRecords, createSession, retrieveAllRecords
+from lib.dbManager import dbGenerateConnection, retrieveRecords, createSession
 from lib.esManager import ESConnection
 from model.rights import Rights
 
@@ -27,48 +27,38 @@ def handler(event, context):
     """
     logger.debug('Starting Lambda Execution')
 
-    if event.get('source') == 'local.reindex':
-        results = reindexRecords()
-        return results
-
-    records = event.get('Records')
-
     # Process recently updated records in the database. This is adjustable, 
     # looks back N seconds to retrieve records. Frequency of runs should be
     # determined based of experience, does not need to be live
-    results = indexRecords()
+    indexRecords()
 
     logger.info('Successfully invoked lambda')
 
     # This return will be reflected in the CloudWatch logs
     # but doesn't actually do anything
-    return results
+    return True
 
 
 def indexRecords():
     """Processes the modified database records in the given period. Records are
-    retrieved from the db, transformed
+    retrieved from the db, transformed into the ElasticSearch model and 
+    processed in batches of 100. Errors are caught and logged within the ES
+    model.
     """
+    logger.info('Creating connection to ElasticSearch index')
     es = ESConnection()
+
+    logger.info('Creating postgresql session')
     session = createSession(engine)
+
+    logger.info('Loading recently updated records')
     retrieveRecords(session, es)
-    es.processBatch()
-    session.close()
-
-
-def reindexRecords():
-
-    session = createSession(engine)
-    es = ESConnection()
-
-    works = retrieveAllRecords(session)
-
-    res = []
-    for work in works:
-        print("Reindexing work {}".format(work.uuid))
-        es.tries = 0
-        print(work.rights[0])
-        indexResult = es.indexRecord(work)
-        res.append(indexResult)
     
-    return res
+    logger.info('Importing processed batch into ElasticSearch')
+    try:
+        es.processBatch()
+    except ESError as err:
+        logger.debug('Batch processing Error')
+
+    logger.info('Close postgresql session')
+    session.close()

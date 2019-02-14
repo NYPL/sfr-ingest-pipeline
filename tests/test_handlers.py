@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch, call, MagicMock
 import os
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
@@ -15,92 +15,27 @@ os.environ['ES_INDEX'] = 'test'
 # us to re-use db connections across Lambda invocations, but it requires a
 # little testing weirdness, e.g. we need to mock it on import to prevent errors
 with patch('lib.dbManager.dbGenerateConnection') as mock_db:
-    from service import handler, parseRecords, parseRecord
+    from service import handler, indexRecords
 
 
 class TestHandler(unittest.TestCase):
 
-    @patch('service.parseRecords', return_value=True)
-    def test_handler_clean(self, mock_parse):
+    @patch('service.indexRecords', return_value=True)
+    def test_handler_clean(self, mock_index):
         testRec = {
-            'source': 'SQS',
-            'Records': [
-                {
-                    'Body': '{"type": "work", "identifier": "uuid"}'
-                }
-            ]
+            'source': 'CloudWatch'
         }
         resp = handler(testRec, None)
+        mock_index.assert_called_once()
         self.assertTrue(resp)
 
-    def test_handler_error(self):
-        testRec = {
-            'source': 'SQS',
-            'Records': []
-        }
-        with self.assertRaises(NoRecordsReceived):
-            handler(testRec, None)
-
-    def test_records_none(self):
-        testRec = {
-            'source': 'SQQ'
-        }
-        with self.assertRaises(NoRecordsReceived):
-            handler(testRec, None)
-
-    @patch('service.ESConnection', return_value='esMock')
-    @patch('service.parseRecord', return_value=True)
-    def test_parse_records_success(self, mock_parse, mock_es):
-        testRecords = ['rec1', 'rec2']
-        res = parseRecords(testRecords)
-        mock_parse.assert_has_calls([call('rec1', 'esMock'), call('rec2', 'esMock')])
-        self.assertEqual(res, [True, True])
-
-    @patch('service.ESConnection', return_value='esMock')
-    @patch('service.parseRecord', side_effect=DataError('test error'))
-    def test_parse_records_err(self, mock_parse, mock_es):
-        testRecord = ['badRecord']
-        res = parseRecords(testRecord)
-        self.assertEqual(res, None)
-
-    @patch('service.ESConnection')
-    @patch('service.retrieveRecord')
-    @patch('service.createSession')
-    def test_parse_record_success(self, mock_session, mock_index, mock_es):
-        testJSON = {
-            'body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
-        }
-        mock_es.indexRecord.return_value = True
-        res = parseRecord(testJSON, mock_es)
+    mock_es = MagicMock()
+    mock_sesh = MagicMock()
+    @patch('service.ESConnection', return_value=mock_es)
+    @patch('service.createSession', return_value=mock_sesh)
+    @patch('service.retrieveRecords')
+    def test_parse_records_success(self, mock_retrieve, mock_session, mock_conn):
+        indexRecords()
         mock_session.assert_called_once()
-        mock_index.assert_called_once()
-        self.assertTrue(res)
-
-    def test_parse_bad_json(self):
-        badJSON = {
-            'body': '{"type: "work", "identifier": "a3800805fa64454095c459400c424271"}'
-        }
-        with self.assertRaises(DataError):
-            parseRecord(badJSON, 'mockES')
-
-    def test_parse_missing_field(self):
-        missingJSON = {
-            'body': '{"type": "work"}'
-        }
-        with self.assertRaises(DataError):
-            parseRecord(missingJSON, 'mockES')
-
-    @patch('service.retrieveRecord', side_effect=DBError('work', 'Test Error'))
-    @patch('service.createSession')
-    def test_indexing_error(self, mock_session, mock_index):
-        testJSON = {
-            'body': '{"type": "work", "identifier": "a3800805fa64454095c459400c424271"}'
-        }
-        with self.assertRaises(DBError):
-            parseRecord(testJSON, 'mockES')
-            mock_session.assert_called_once()
-            mock_index.assert_called_once()
-
-
-if __name__ == '__main__':
-    unittest.main()
+        mock_retrieve.assert_called_once()
+        TestHandler.mock_es.processBatch.assert_called_once()
