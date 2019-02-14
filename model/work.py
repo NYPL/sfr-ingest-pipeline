@@ -48,8 +48,6 @@ class Work(Core, Base):
     sort_title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
     language = Column(String(2), index=True)
-    license = Column(String(50))
-    rights_statement = Column(Unicode)
     medium = Column(Unicode)
     series = Column(Unicode)
     series_position = Column(Integer)

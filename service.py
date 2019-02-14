@@ -3,7 +3,7 @@ import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
-from lib.dbManager import dbGenerateConnection, retrieveRecord, createSession, retrieveAllRecords
+from lib.dbManager import dbGenerateConnection, retrieveRecords, createSession, retrieveAllRecords
 from lib.esManager import ESConnection
 from model.rights import Rights
 
@@ -33,14 +33,10 @@ def handler(event, context):
 
     records = event.get('Records')
 
-    if records is None:
-        logger.error('Records block is missing in Kinesis Event')
-        raise NoRecordsReceived('Records block missing', event)
-    elif len(records) < 1:
-        logger.error('Records block contains no records')
-        raise NoRecordsReceived('Records block empty', event)
-
-    results = parseRecords(records)
+    # Process recently updated records in the database. This is adjustable, 
+    # looks back N seconds to retrieve records. Frequency of runs should be
+    # determined based of experience, does not need to be live
+    results = indexRecords()
 
     logger.info('Successfully invoked lambda')
 
@@ -49,59 +45,16 @@ def handler(event, context):
     return results
 
 
-def parseRecords(records):
-    """Iterator for handling multiple incoming messages"""
-    logger.debug('Parsing Messages')
-    es = ESConnection()
-    try:
-        return [parseRecord(r, es) for r in records]
-    except (NoRecordsReceived, DataError, DBError) as err:
-        logger.error('Could not process records in current invocation')
-        logger.debug(err)
-
-
-def parseRecord(encodedRec, es):
-    """Handles each individual record by parsing JSON the message string
-    received in the SQS queue. Each message should contain a record type
-    indicator along with an identifier for that record type. These fields are
-    then passed to the dbManager for retrieval and indexing.
+def indexRecords():
+    """Processes the modified database records in the given period. Records are
+    retrieved from the db, transformed
     """
-    try:
-        record = json.loads(encodedRec['body'])
-        recordType = record['type']
-        recordID = record['identifier']
-    except json.decoder.JSONDecodeError as jsonErr:
-        logger.error('Invalid JSON block recieved')
-        logger.error(jsonErr)
-        raise DataError('Malformed JSON block recieved from SQS')
-    except KeyError as err:
-        logger.error('Missing body attribute in SQS message')
-        logger.debug(err)
-        raise DataError('Body object missing from SQS message')
-
+    es = ESConnection()
     session = createSession(engine)
+    retrieveRecords(session, es)
+    es.processBatch()
+    session.close()
 
-    try:
-        logger.debug('Retrieving/Storing record {} ({})'.format(
-            recordID,
-            recordType
-        ))
-        dbRec = retrieveRecord(session, recordType, recordID)
-        logger.info('Indexing record {}'.format(dbRec))
-        es.tries = 0
-        indexResult = es.indexRecord(dbRec)
-    except Exception as err:  # noqa: Q000
-        # There are a large number of SQLAlchemy errors that can be thrown
-        # These should be handled elsewhere, but this should catch anything
-        # and rollback the session if we encounter something unexpected
-        session.rollback()
-        logger.error('Failed to store record')
-        logger.debug(err)
-        logger.debug(traceback.format_exc())
-        raise DBError(
-            'unknown',
-            'Unable to parse/ingest record, see logs for error'
-        )
 
 def reindexRecords():
 
