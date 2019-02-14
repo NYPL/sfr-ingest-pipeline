@@ -1,6 +1,6 @@
 import os
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
 
 from model.core import Base
 from model.work import Work
@@ -48,8 +48,25 @@ def retrieveRecord(session, recordType, recordID):
     """Retrieve the given record from the postgreSQL instance"""
     if recordType == 'work':
         logger.info('Retrieving record identifier by {}'.format(recordID))
-        workRec = session.query(Work).filter(Work.uuid == recordID).one()
+        workRec = session.query(Work)\
+            .options(joinedload(Work.identifiers))\
+            .options(joinedload(Work.agents))\
+            .options(joinedload(Work.subjects))\
+            .options(joinedload(Work.dates))\
+            .options(joinedload(Work.instances))\
+            .options(joinedload(Work.instances).joinedload(Instance.identifiers))\
+            .options(joinedload(Work.instances).joinedload(Instance.agents))\
+            .options(joinedload(Work.instances).joinedload(Instance.measurements))\
+            .options(joinedload(Work.instances).joinedload(Instance.links))\
+            .options(joinedload(Work.instances).joinedload(Instance.items).joinedload(Item.links))\
+            .options(joinedload(Work.instances).joinedload(Instance.items).joinedload(Item.agents))\
+            .options(joinedload(Work.instances).joinedload(Instance.items).joinedload(Item.identifiers))\
+            .options(joinedload(Work.instances).joinedload(Instance.items).joinedload(Item.measurements))\
+            .filter(Work.uuid == recordID).one()
         return workRec
     else:
         logger.warning('Indexing of non-work records not currently supported')
         raise DBError('work', 'Does not support indexing non-work tables')
+
+def retrieveAllRecords(session):
+    return session.query(Work).all()

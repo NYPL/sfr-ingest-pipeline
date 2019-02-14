@@ -49,7 +49,6 @@ class Link(Core, Base):
     content = Column(Unicode)
     md5 = Column(Unicode)
     rel_type = Column(String(50), index=True)
-    rights_uri = Column(Unicode, index=True)
     thumbnail = Column(Integer, ForeignKey('links.id'))
 
     works = relationship(
@@ -80,32 +79,4 @@ class Link(Core, Base):
         )
 
     def __dir__(self):
-        return ['url', 'media_type', 'rel_type', 'thumbnail', 'rights_uri']
-
-    @classmethod
-    def updateOrInsert(cls, session, link, model, recordID):
-        """Query the database for a link on the current record. If found,
-        update the existing link, if not, insert new row"""
-        existing = Link.lookupLink(session, link, model, recordID)
-        if existing is not None:
-            Link.update(existing, link)
-            return None
-
-        return Link(**link)
-
-    @classmethod
-    def update(cls, existing, link):
-        """Update fields on existing link"""
-        for field, value in link.items():
-            if(value is not None and value.strip() != ''):
-                setattr(existing, field, value)
-
-    @classmethod
-    def lookupLink(cls, session, link, model, recordID):
-        """Query database for link related to current record. Return link
-        if found, otherwise return None"""
-        return session.query(cls)\
-            .join(model.__tablename__)\
-            .filter(model.id == recordID)\
-            .filter(cls.url == link['url'])\
-            .one_or_none()
+        return ['url', 'media_type', 'rel_type', 'thumbnail']

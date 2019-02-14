@@ -44,20 +44,3 @@ class AltTitle(Core, Base):
 
     def __repr__(self):
         return '<AltTitle(title={}, work={})>'.format(self.title, self.work)
-
-    @classmethod
-    def insertOrSkip(cls, session, title, model, recordID):
-        """Queries database for alt title associated with current work. If
-        found, returns false. Otherwise it creates a new alt title entry and
-        returns it"""
-
-        try:
-            session.query(cls)\
-                .join(model)\
-                .filter(cls.title == title)\
-                .filter(model.id == recordID)\
-                .one()
-        except NoResultFound:
-            return cls(title=title)
-
-        return False

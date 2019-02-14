@@ -3,8 +3,9 @@ import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
-from lib.dbManager import dbGenerateConnection, retrieveRecord, createSession
+from lib.dbManager import dbGenerateConnection, retrieveRecord, createSession, retrieveAllRecords
 from lib.esManager import ESConnection
+from model.rights import Rights
 
 """Logger can be passed name of current module
 Can also be instantiated on a class/method basis using dot notation
@@ -25,6 +26,10 @@ def handler(event, context):
     stream.
     """
     logger.debug('Starting Lambda Execution')
+
+    if event.get('source') == 'local.reindex':
+        results = reindexRecords()
+        return results
 
     records = event.get('Records')
 
@@ -97,7 +102,20 @@ def parseRecord(encodedRec, es):
             'unknown',
             'Unable to parse/ingest record, see logs for error'
         )
-    finally:
-        logger.debug('Closing Session')
-        session.close()
-    return indexResult
+
+def reindexRecords():
+
+    session = createSession(engine)
+    es = ESConnection()
+
+    works = retrieveAllRecords(session)
+
+    res = []
+    for work in works:
+        print("Reindexing work {}".format(work.uuid))
+        es.tries = 0
+        print(work.rights[0])
+        indexResult = es.indexRecord(work)
+        res.append(indexResult)
+    
+    return res
