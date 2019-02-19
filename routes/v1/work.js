@@ -1,6 +1,6 @@
 const config = require('config')
 const bodybuilder = require('bodybuilder')
-const { ElasticSearchError } = require('../lib/errors')
+const { ElasticSearchError } = require('../../lib/errors')
 
 module.exports = function (app) {
 
