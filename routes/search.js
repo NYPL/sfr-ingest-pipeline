@@ -56,13 +56,16 @@ module.exports = function (app) {
       params["queries"].map((term) => {
         switch(term['field']){
           case "author":
-            body.query("match", "entities.name", term['value'])
+            body.query("query_string", {"fields": ["entities.name"], "query": term["value"], "default_operator": "and"})
             break
           case "keyword":
-            body.query("query_string", 'query', term['value'])
+            body.query("query_string", 'query', term['value'], {"default_operator": "and"})
+            break
+          case "subject":
+            body.query('query_string', {"fields": ["subjects.subject"], "query": term["value"], "default_operator": "and"})
             break
           default:
-            body.query('match', term['field'], term['value'])
+            body.query('query_string', {"fields": [term["field"]], "query": term["value"], "default_operator": "and"})
             break
         }
       })
