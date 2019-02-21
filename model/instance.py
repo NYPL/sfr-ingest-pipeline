@@ -107,8 +107,9 @@ class Instance(Core, Base):
         subjects = instance.pop('subjects', [])
 
 
-        existing = Identifier.getByIdentifier(Instance, session, identifiers)
-        if existing is not None:
+        existingID = Identifier.getByIdentifier(Instance, session, identifiers)
+        if existingID is not None:
+            existing = session.query(Instance).get(existingID)
             parentWork = existing.work
             if parentWork is None and work is not None:
                 existing.work = work

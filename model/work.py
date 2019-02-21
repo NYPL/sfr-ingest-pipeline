@@ -350,13 +350,13 @@ class Work(Core, Base):
         if primaryIdentifier is not None and primaryIdentifier['type'] == 'uuid':
             return Work.getByUUID(session, primaryIdentifier['identifier'])
 
-        existingWork = Identifier.getByIdentifier(Work, session, identifiers)
-        if existingWork:
-            return existingWork
+        existingWorkID = Identifier.getByIdentifier(Work, session, identifiers)
+        if existingWorkID:
+            return session.query(Work).get(existingWorkID)
         else:
-            existingInstance = Identifier.getByIdentifier(Instance, session, identifiers)
-            if existingInstance:
-                return existingInstance.work
+            existingInstanceID = Identifier.getByIdentifier(Instance, session, identifiers)
+            if existingInstanceID:
+                return session.query(Instance).get(existingInstanceID).work
 
     @classmethod
     def getByUUID(cls, session, recUUID):

@@ -5,7 +5,8 @@ from sqlalchemy import (
     Unicode,
     Table
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, selectinload
+from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError
@@ -235,14 +236,14 @@ class Identifier(Base):
 
         if identifier is None:
             return None, None
-        existingIden = Identifier.lookupIdentifier(
+        existingIdenID = Identifier.lookupIdentifier(
             session,
             identifier,
             model,
             recordID
         )
-        if existingIden is not None:
-            return 'existing', existingIden
+        if existingIdenID is not None:
+            return 'existing', session.query(model).get(existingIdenID)
 
         return 'new', Identifier.insert(identifier)
 
@@ -273,22 +274,24 @@ class Identifier(Base):
         type."""
         idenType = identifier['type']
         idenTable = idenType if idenType is not None else 'generic'
-        existing = session.query(model) \
-            .join('identifiers', idenTable) \
-            .filter(cls.identifierTypes[idenType].value == identifier['identifier']) \
-            .filter(model.id == recordID) \
-            .all()
-
-        if len(existing) == 1:
-            return existing[0]
-        elif len(existing) > 1:
+        
+        try:
+            return session.query(model.id) \
+                .join('identifiers', idenTable) \
+                .filter(cls.identifierTypes[idenType].value == identifier['identifier']) \
+                .filter(model.id == recordID) \
+                .one()
+        
+        except MultipleResultsFound:
             logger.error('Found multiple identifiers for {} ({})'.format(
                 identifier['identifier'],
                 identifier['type']
             ))
             raise DBError(identifier['type'], 'Found duplicate identifiers')
-        else:
-            return None
+        except NoResultFound:
+            pass
+
+        return None
 
     @classmethod
     def getByIdentifier(cls, model, session, identifiers):
@@ -301,17 +304,19 @@ class Identifier(Base):
             ))
             idenType = ident['type']
             idenTable = idenType if idenType is not None else 'generic'
-            existing = session.query(model)\
-                .join('identifiers', idenTable)\
-                .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
-                .all()
-
-            if len(existing) == 1:
-                return existing[0]
-            elif len(existing) > 1:
+            
+            try:
+                return session.query(model.id)\
+                    .join('identifiers', idenTable)\
+                    .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
+                    .one()
+            except MultipleResultsFound:
                 logger.warning('Found multiple references from {}'.format(
                     ident['identifier']
                 ))
                 logger.debug('Cannot use {} for lookup as it is ambiguous'.format(ident['identifier']))
+            except NoResultFound:
+                pass
         else:
             return None
+

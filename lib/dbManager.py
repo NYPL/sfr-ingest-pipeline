@@ -77,14 +77,10 @@ def importRecord(session, record):
         # enhancement process. Specifically pass identifying information to
         # a Kinesis stream that will processed by the OCLC Classify service
         # and others
+
+        # TODO Only enhance if UUID has not been enhanced in the past N days
         if record['method'] == 'insert':
             queryWork(dbWork, dbWork.uuid.hex)
-
-        # Put Resulting identifier in SQS to be ingested into Elasticsearch
-        OutputManager.putQueue({
-            'type': record['type'],
-            'identifier': dbWork.uuid.hex
-        })
 
         return op, dbWork.uuid.hex
 
@@ -99,10 +95,8 @@ def importRecord(session, record):
             logger.error('Cannot update ElasticSearch record for orphan instance {}'.format(dbInstance.id))
         else:
             dbInstance.work.date_modified = datetime.now()
-            OutputManager.putQueue({
-                'type': 'work',
-                'identifier': dbInstance.work.uuid.hex
-            })
+        
+        return op, 'Instance #{}'.format(dbInstance.id)
 
     elif record['type'] == 'item':
         logger.info('Ingesting item record')
@@ -119,10 +113,8 @@ def importRecord(session, record):
             session.flush()
         
         dbItem.instance.work.date_modified = datetime.now()
-        OutputManager.putQueue({
-            'type': 'work',
-            'identifier': dbItem.instance.work.uuid.hex
-        })
+
+        return op, 'Item #{}'.format(dbItem.id)
 
     elif record['type'] == 'access_report':
         logger.info('Ingest Accessibility Report')
@@ -132,8 +124,3 @@ def importRecord(session, record):
         
         if dbItem is not None:
             dbItem.instance.work.date_modified = datetime.now()
-            logger.debug('Updating ElasticSearch with access report for {}'.format(dbItem))
-            OutputManager.putQueue({
-                'type': 'work',
-                'identifier': dbItem.instance.work.uuid.hex
-            })

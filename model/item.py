@@ -153,10 +153,11 @@ class Item(Core, Base):
         rights = item.pop('rights', [])
         agents = item.pop('agents', [])
 
-        existing = Identifier.getByIdentifier(cls, session, identifiers)
+        existingID = Identifier.getByIdentifier(cls, session, identifiers)
 
-        if existing is not None:
+        if existingID is not None:
             logger.debug('Found existing item by identifier')
+            existing = session.query(Item).get(existingID)
             cls.update(
                 session,
                 existing,
@@ -297,12 +298,11 @@ class Item(Core, Base):
         identifier = aceReport.pop('identifier', None)
         instanceID = aceReport.pop('instanceID', None)
 
-        existing = None
         if identifier is not None:
-            existing = Identifier.getByIdentifier(cls, session, [identifier])
+            existingID = Identifier.getByIdentifier(cls, session, [identifier])
 
-        if existing is not None:
-
+        if existingID is not None:
+            existing = session.query(Item).get(existingID)
             violations = aceReport.pop('violations', [])
             aceReport['ace_version'] = aceReport.pop('aceVersion')
             aceReport['report_json'] = aceReport.pop('json')
