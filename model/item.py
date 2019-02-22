@@ -80,11 +80,6 @@ class Item(Core, Base):
         secondary=ITEM_LINKS,
         back_populates='items'
     )
-    dates = relationship(
-        'DateField',
-        secondary=ITEM_DATES,
-        back_populates='items'
-    )
 
     def __repr__(self):
         return '<Item(source={}, instance={})>'.format(
@@ -93,7 +88,7 @@ class Item(Core, Base):
         )
     
     def __dir__(self):
-        return ['source', 'content_type', 'modified', 'drm', 'rights_uri']
+        return ['source', 'content_type', 'modified', 'drm']
 
 
 class AccessReport(Core, Base):

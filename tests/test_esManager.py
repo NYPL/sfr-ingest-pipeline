@@ -1,7 +1,7 @@
 import unittest
 import os
 from unittest.mock import patch, MagicMock
-from elasticsearch.exceptions import ConnectionError
+from elasticsearch.exceptions import ConnectionError, TransportError, ConflictError
 from elasticsearch.helpers import BulkIndexError
 
 from helpers.errorHelpers import ESError
@@ -10,6 +10,7 @@ os.environ['ES_INDEX'] = 'test'
 
 from lib.esManager import ESConnection
 from helpers.errorHelpers import ESError
+
 
 class TestESManager(unittest.TestCase):
     @patch('lib.esManager.ESConnection.createElasticConnection')

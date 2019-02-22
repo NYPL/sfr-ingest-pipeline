@@ -32,6 +32,17 @@ class BaseInner(InnerDoc):
         return super(BaseInner, self).save(**kwargs)
 
 
+class Rights(BaseInner):
+    source = Keyword()
+    license = Keyword()
+    rights_statement = Text(fields={'keyword': Keyword()})
+    rights_reason = Text(fields={'keyword': Keyword()})
+    copyright_date = DateRange()
+    copyright_date_display = Keyword(index=False)
+    determination_date = DateRange()
+    determination_date_display = Keyword(index=False)
+
+
 class Measurement(BaseInner):
     quantity = Keyword()
     value = Float()
@@ -137,7 +148,7 @@ class Work(BaseDoc):
     uuid = Keyword(store=True)
     medium = Text(fields={'keyword': Keyword()})
     series = Text(fields={'keyword': Keyword()})
-    series_position = Short(ignore_malformed=True)
+    series_position = Keyword()
     issued = DateRange(format='date_optional_time')
     issued_display = Keyword(index=False)
     created = DateRange(format='date_optional_time')

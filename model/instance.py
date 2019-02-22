@@ -18,6 +18,7 @@ from model.date import INSTANCE_DATES, DateField
 from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS, AltTitle
+from model.rights import Rights
 
 
 class Instance(Core, Base):
@@ -63,11 +64,6 @@ class Instance(Core, Base):
         secondary=INSTANCE_LINKS,
         back_populates='instances'
     )
-    dates = relationship(
-        'DateField',
-        secondary=INSTANCE_DATES,
-        back_populates='instances'
-    )
     alt_titles = relationship(
         'AltTitle',
         secondary=INSTANCE_ALTS,
@@ -82,7 +78,16 @@ class Instance(Core, Base):
         )
     
     def __dir__(self):
-        return ['title', 'sub_title', 'pub_place', 'edition', 'edition_statement', 'table_of_contents', 'language', 'extent', 'license', 'rights_statement']
+        return [
+            'title',
+            'sub_title',
+            'pub_place',
+            'edition',
+            'edition_statement',
+            'table_of_contents',
+            'language',
+            'extent'
+        ]
 
 class AgentInstances(Core, Base):
     """Table relating agents and instances. Is instantiated as a class to

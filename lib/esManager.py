@@ -96,14 +96,7 @@ class ESConnection():
             setattr(self.work, field, getattr(dbRec, field, None))
         
         for dateType, date in dbRec.loadDates(['issued', 'created']).items():
-            if date['range'] is None:
-                continue
-            dateRange = Range(
-                gte=date['range'].lower,
-                lte=date['range'].upper
-            )
-            setattr(self.work, dateType, dateRange)
-            setattr(self.work, dateType + '_display', date['display'])
+            ESConnection._insertDate(esAgent, date, dateType)
         
         self.work.alt_titles = [
             altTitle.title
@@ -182,20 +175,13 @@ class ESConnection():
             setattr(esLang, field, getattr(language, field, None))
     
     @staticmethod
-    def addRights(rights)
+    def addRights(rights):
         newRights = Rights()
         for field in dir(rights):
             setattr(newRights, field, getattr(agent, field, None))
         
         for dateType, date in rights.loadDates(['copyright_date']).items():
-            if date['range'] is None:
-                    continue
-            dateRange = Range(
-                gte=date['range'].lower,
-                lte=date['range'].upper
-            )
-            setattr(newRights, dateType, dateRange)
-            setattr(newRights, dateType + '_display', date['display'])
+            ESConnection._insertDate(esAgent, date, dateType)
     
     @staticmethod
     def addAgent(record, agentRel):
@@ -205,7 +191,7 @@ class ESConnection():
         ))
         if len(match) > 0:
             existing = match[0]
-            existing.aliases.append(agentRel.role)
+            existing.roles.append(agentRel.role)
         else:
             esAgent = Agent()
             agent = agentRel.agent
@@ -217,16 +203,8 @@ class ESConnection():
                 esAgent.aliases.append(alias.alias)
             
             for dateType, date in agent.loadDates(['birth_date', 'death_date']).items():
-                if date['range'] is None:
-                    continue
-                dateRange = Range(
-                    gte=date['range'].lower,
-                    lte=date['range'].upper
-                )
-                setattr(esAgent, dateType, dateRange)
-                setattr(esAgent, dateType + '_display', date['display'])
+                ESConnection._insertDate(esAgent, date, dateType)
 
-            esAgent.role = agentRel.role
 
             return esAgent
     
@@ -237,14 +215,8 @@ class ESConnection():
             setattr(esInstance, field, getattr(instance, field, None))
         
         for dateType, date in instance.loadDates(['pub_date', 'copyright_date']).items():
-            if date['range'] is None:
-                continue
-            dateRange = Range(
-                gte=date['range'].lower,
-                lte=date['range'].upper
-            )
-            setattr(esInstance, dateType, dateRange)
-            setattr(esInstance, dateType + '_display', date['display'])
+            ESConnection._insertDate(esInstance, date, dateType)
+        
         esInstance.identifiers = [
             ESConnection.addIdentifier(identifier)
             for identifier in instance.identifiers
@@ -322,3 +294,14 @@ class ESConnection():
         ]
         
         return esReport.to_dict(True)
+    
+    @staticmethod
+    def _insertDate(record, date, dateType):
+        if date['range'] is None:
+                return
+        dateRange = Range(
+            gte=date['range'].lower,
+            lte=date['range'].upper
+        )
+        setattr(record, dateType, dateRange)
+        setattr(record, dateType + '_display', date['display'])
