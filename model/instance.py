@@ -32,7 +32,6 @@ class Instance(Core, Base):
     edition = Column(Unicode)
     edition_statement = Column(Unicode)
     table_of_contents = Column(Unicode)
-    language = Column(String(2), index=True)
     extent = Column(Unicode)
     
     work_id = Column(Integer, ForeignKey('works.id'))

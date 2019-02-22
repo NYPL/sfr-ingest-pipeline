@@ -47,10 +47,10 @@ class Work(Core, Base):
     title = Column(Unicode, index=True)
     sort_title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
-    language = Column(String(2), index=True)
     medium = Column(Unicode)
     series = Column(Unicode)
     series_position = Column(Integer)
+    summary = Column(Unicode)
 
     #
     # Relationships

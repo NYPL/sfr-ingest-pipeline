@@ -19,7 +19,9 @@ from model.elasticDocs import (
     Instance,
     Link,
     Item,
-    AccessReport
+    AccessReport,
+    Rights,
+    Language
 )
 
 from helpers.logHelpers import createLog
@@ -133,6 +135,10 @@ class ESConnection():
             for measure in dbRec.measurements
         ]
         self.work.links = [ESConnection.addLink(link) for link in dbRec.links]
+        self.work.language = [
+            ESConnection.addLanguage(lang)
+            for lang in dbRec.language
+        ]
         self.work.instances = [
             ESConnection.addInstance(instance)
             for instance in dbRec.instances
@@ -168,6 +174,28 @@ class ESConnection():
             setattr(newMeasure, field, getattr(measurement, field, None))
         
         return newMeasure
+    
+    @staticmethod
+    def addLanguage(language):
+        esLang = Language()
+        for field in dir(language):
+            setattr(esLang, field, getattr(language, field, None))
+    
+    @staticmethod
+    def addRights(rights)
+        newRights = Rights()
+        for field in dir(rights):
+            setattr(newRights, field, getattr(agent, field, None))
+        
+        for dateType, date in rights.loadDates(['copyright_date']).items():
+            if date['range'] is None:
+                    continue
+            dateRange = Range(
+                gte=date['range'].lower,
+                lte=date['range'].upper
+            )
+            setattr(newRights, dateType, dateRange)
+            setattr(newRights, dateType + '_display', date['display'])
     
     @staticmethod
     def addAgent(record, agentRel):
@@ -237,6 +265,14 @@ class ESConnection():
             ESConnection.addItem(item) 
             for item in instance.items
         ]
+        esInstance.rights = [
+            ESConnection.addRights(rights)
+            for rights in instance.rights
+        ]
+        esInstance.language = [
+            ESConnection.addLanguage(lang)
+            for lang in instance.language
+        ]
         
         return esInstance
     
@@ -265,6 +301,10 @@ class ESConnection():
         esItem.reports = [
             ESConnection.addReport(report)
             for report in item.access_reports
+        ]
+        esItem.rights = [
+            ESConnection.addRights(rights)
+            for rights in item.rights
         ]
 
         return esItem
