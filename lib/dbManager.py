@@ -1,9 +1,12 @@
 import os
+from datetime import datetime, timedelta
 from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, joinedload
 
 from model.core import Base
 from model.work import Work
+from model.instance import Instance
+from model.item import Item
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError
@@ -44,12 +47,19 @@ def createSession(engine):
     return Session()
 
 
-def retrieveRecord(session, recordType, recordID):
-    """Retrieve the given record from the postgreSQL instance"""
-    if recordType == 'work':
-        logger.info('Retrieving record identifier by {}'.format(recordID))
-        workRec = session.query(Work).filter(Work.uuid == recordID).one()
-        return workRec
-    else:
-        logger.warning('Indexing of non-work records not currently supported')
-        raise DBError('work', 'Does not support indexing non-work tables')
+def retrieveRecords(session, es):
+    """Retrieve all recently updated works in the SFR database and generate
+    elasticsearch-dsl ORM objects.
+    """
+    logger.debug('Loading Records updated in last {} seconds'.format(
+        os.environ['INDEX_PERIOD'])
+    )
+    
+    fetchPeriod = datetime.now() - timedelta(seconds=int(os.environ['INDEX_PERIOD']))
+    
+    works = session.query(Work).filter(Work.date_modified >= fetchPeriod).all()
+    
+    logger.info('Retrieved {} works for indexing'.format(len(works)))
+
+    for w in works:
+        es.indexRecord(w)

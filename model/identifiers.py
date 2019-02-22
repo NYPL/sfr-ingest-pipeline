@@ -36,6 +36,20 @@ ITEM_IDENTIFIERS = Table(
 )
 
 
+class Hathi(Core, Base):
+    """Table for HathiTrust Identifiers"""
+    __tablename__ = 'hathi'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='hathi')
+
+    def __repr__(self):
+        return '<Hathi(value={})>'.format(self.value)
+
+
 class Gutenberg(Core, Base):
     """Table for Gutenberg Identifiers"""
     __tablename__ = 'gutenberg'
@@ -189,6 +203,7 @@ class Identifier(Base):
 
     # Related tables for specific identifier types
     gutenberg = relationship('Gutenberg', back_populates='identifier')
+    hathi = relationship('Hathi', back_populates='identifier')
     oclc = relationship('OCLC', back_populates='identifier')
     lccn = relationship('LCCN', back_populates='identifier')
     isbn = relationship('ISBN', back_populates='identifier')
@@ -200,6 +215,7 @@ class Identifier(Base):
 
     identifierTypes = {
         'gutenberg': Gutenberg,
+        'hathi': Hathi,
         'oclc': OCLC,
         'owi': OWI,
         'lccn': LCCN,
@@ -213,91 +229,3 @@ class Identifier(Base):
     def __repr__(self):
         return '<Identifier(type={})>'.format(self.type)
 
-    @classmethod
-    def returnOrInsert(cls, session, identifier, model, recordID):
-        """Manages either the creation or return of an existing identifier"""
-
-        if identifier is None:
-            return None, None
-        existingIden = Identifier.lookupIdentifier(
-            session,
-            identifier,
-            model,
-            recordID
-        )
-        if existingIden is not None:
-            return 'existing', existingIden
-
-        return 'new', Identifier.insert(identifier)
-
-    @classmethod
-    def insert(cls, identifier):
-        """Inserts a new identifier"""
-
-        # Create a new entry in the core Identifier table
-        coreIden = Identifier(type=identifier['type'])
-
-        # Load the model for the identifier type being stored
-        specificIden = cls.identifierTypes[identifier['type']]
-
-        # Create new entry in that specific identifiers table
-        idenRec = specificIden(value=identifier['identifier'])
-
-        # Add new identifier entry to the core table record
-        idenTable = identifier['type'] if identifier['type'] is not None else 'generic'
-        idenField = getattr(coreIden, idenTable)
-        idenField.append(idenRec)
-
-        return coreIden
-
-    @classmethod
-    def lookupIdentifier(cls, session, identifier, model, recordID):
-        """Query database for a specific identifier. Return if found and
-        raise an error if duplicate identifiers are found for a single
-        type."""
-        idenType = identifier['type']
-        existing = session.query(model) \
-            .join('identifiers', idenType) \
-            .filter(cls.identifierTypes[idenType].value == identifier['identifier']) \
-            .filter(model.id == recordID) \
-            .all()
-
-        if len(existing) == 1:
-            return existing[0]
-        elif len(existing) > 1:
-            logger.error('Found multiple identifiers for {} ({})'.format(
-                identifier['identifier'],
-                identifier['type']
-            ))
-            raise DBError(identifier['type'], 'Found duplicate identifiers')
-        else:
-            return None
-
-    @classmethod
-    def getByIdentifier(cls, model, session, identifiers):
-        """Query database for a record related to a specific identifier. Return
-        if found and raise an error if multiple matching records are found."""
-        for ident in identifiers:
-            logger.debug('Querying database for identifier {} ({})'.format(
-                ident['identifier'],
-                ident['type']
-            ))
-            idenType = ident['type']
-            idenTable = idenType if idenType is not None else 'generic'
-            existing = session.query(model)\
-                .join('identifiers', idenTable)\
-                .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
-                .all()
-
-            if len(existing) == 1:
-                return existing[0]
-            elif len(existing) > 1:
-                logger.error('Found multiple references from {}'.format(
-                    ident['identifier']
-                ))
-                raise DBError(
-                    ident['type'],
-                    'Found multiple references to identifier'
-                )
-        else:
-            return None

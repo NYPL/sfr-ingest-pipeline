@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, Mock, MagicMock
+from unittest.mock import patch, Mock, MagicMock, call
 import os
 
 from helpers.errorHelpers import DBError, DataError
@@ -10,7 +10,7 @@ os.environ['DB_HOST'] = 'test'
 os.environ['DB_PORT'] = 'test'
 os.environ['DB_NAME'] = 'test'
 
-from lib.dbManager import dbGenerateConnection, createSession, retrieveRecord
+from lib.dbManager import dbGenerateConnection, createSession, retrieveRecords
 
 
 class TestDBManager(unittest.TestCase):
@@ -28,18 +28,13 @@ class TestDBManager(unittest.TestCase):
         mock_session.assert_called_once()
         self.assertIsInstance(res, Mock)
 
-    def test_get_record(self):
+    @patch.dict(os.environ, {'INDEX_PERIOD': '5'})
+    def test_get_records(self):
         mockSession = MagicMock()
-        mockSession.query.return_value.filter.return_value.one.return_value = True
-        res = retrieveRecord(mockSession, 'work', 'uuid')
-        self.assertTrue(res)
-
-    def test_get_record_err(self):
-        mockSession = MagicMock()
-        mockSession.query.return_value.filter.return_value.one.side_effect = DBError('work', 'Test Error')
-        with self.assertRaises(DBError):
-            retrieveRecord(mockSession, 'work', 'uuid')
-
-    def test_get_non_work(self):
-        with self.assertRaises(DBError):
-            retrieveRecord('session', 'instance', 'uuid')
+        mockSession.query.return_value.filter.return_value.all.return_value = [
+            'work1',
+            'work2'
+        ]
+        mockES = MagicMock()
+        retrieveRecords(mockSession, mockES)
+        mockES.indexRecord.assert_has_calls([call('work1'), call('work2')])

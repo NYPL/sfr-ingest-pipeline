@@ -1,10 +1,11 @@
 import json
 import traceback
 
-from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
+from helpers.errorHelpers import NoRecordsReceived, DataError, DBError, ESError
 from helpers.logHelpers import createLog
-from lib.dbManager import dbGenerateConnection, retrieveRecord, createSession
+from lib.dbManager import dbGenerateConnection, retrieveRecords, createSession
 from lib.esManager import ESConnection
+from model.rights import Rights
 
 """Logger can be passed name of current module
 Can also be instantiated on a class/method basis using dot notation
@@ -26,78 +27,38 @@ def handler(event, context):
     """
     logger.debug('Starting Lambda Execution')
 
-    records = event.get('Records')
-
-    if records is None:
-        logger.error('Records block is missing in Kinesis Event')
-        raise NoRecordsReceived('Records block missing', event)
-    elif len(records) < 1:
-        logger.error('Records block contains no records')
-        raise NoRecordsReceived('Records block empty', event)
-
-    results = parseRecords(records)
+    # Process recently updated records in the database. This is adjustable, 
+    # looks back N seconds to retrieve records. Frequency of runs should be
+    # determined based of experience, does not need to be live
+    indexRecords()
 
     logger.info('Successfully invoked lambda')
 
     # This return will be reflected in the CloudWatch logs
     # but doesn't actually do anything
-    return results
+    return True
 
 
-def parseRecords(records):
-    """Iterator for handling multiple incoming messages"""
-    logger.debug('Parsing Messages')
-    es = ESConnection()
-    try:
-        return [parseRecord(r, es) for r in records]
-    except (NoRecordsReceived, DataError, DBError) as err:
-        logger.error('Could not process records in current invocation')
-        logger.debug(err)
-
-
-def parseRecord(encodedRec, es):
-    """Handles each individual record by parsing JSON the message string
-    received in the SQS queue. Each message should contain a record type
-    indicator along with an identifier for that record type. These fields are
-    then passed to the dbManager for retrieval and indexing.
+def indexRecords():
+    """Processes the modified database records in the given period. Records are
+    retrieved from the db, transformed into the ElasticSearch model and 
+    processed in batches of 100. Errors are caught and logged within the ES
+    model.
     """
-    try:
-        record = json.loads(encodedRec['body'])
-        recordType = record['type']
-        recordID = record['identifier']
-    except json.decoder.JSONDecodeError as jsonErr:
-        logger.error('Invalid JSON block recieved')
-        logger.error(jsonErr)
-        raise DataError('Malformed JSON block recieved from SQS')
-    except KeyError as err:
-        logger.error('Missing body attribute in SQS message')
-        logger.debug(err)
-        raise DataError('Body object missing from SQS message')
+    logger.info('Creating connection to ElasticSearch index')
+    es = ESConnection()
 
+    logger.info('Creating postgresql session')
     session = createSession(engine)
 
+    logger.info('Loading recently updated records')
+    retrieveRecords(session, es)
+    
+    logger.info('Importing processed batch into ElasticSearch')
     try:
-        logger.debug('Retrieving/Storing record {} ({})'.format(
-            recordID,
-            recordType
-        ))
-        dbRec = retrieveRecord(session, recordType, recordID)
-        logger.info('Indexing record {}'.format(dbRec))
-        es.tries = 0
-        indexResult = es.indexRecord(dbRec)
-    except Exception as err:  # noqa: Q000
-        # There are a large number of SQLAlchemy errors that can be thrown
-        # These should be handled elsewhere, but this should catch anything
-        # and rollback the session if we encounter something unexpected
-        session.rollback()
-        logger.error('Failed to store record')
-        logger.debug(err)
-        logger.debug(traceback.format_exc())
-        raise DBError(
-            'unknown',
-            'Unable to parse/ingest record, see logs for error'
-        )
-    finally:
-        logger.debug('Closing Session')
-        session.close()
-    return indexResult
+        es.processBatch()
+    except ESError as err:
+        logger.debug('Batch processing Error')
+
+    logger.info('Close postgresql session')
+    session.close()
