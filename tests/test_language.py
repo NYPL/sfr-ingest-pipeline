@@ -41,15 +41,19 @@ class TestLanguage(unittest.TestCase):
     
     def test_iso2_load(self):
         lang = Language.loadFromString('EN')
-        self.assertEqual(lang.name, 'English')
+        self.assertEqual(lang['language'], 'English')
+    
+    def test_single_char_load(self):
+        lang = Language.loadFromString('e')
+        self.assertEqual(lang, None)
     
     def test_iso3_load(self):
         lang = Language.loadFromString('eng')
-        self.assertEqual(lang.name, 'English')
+        self.assertEqual(lang['language'], 'English')
     
     def test_lang_load(self):
         lang = Language.loadFromString('english')
-        self.assertEqual(lang.name, 'English')
+        self.assertEqual(lang['language'], 'English')
     
     def test_missing_load(self):
         lang = Language.loadFromString('test')

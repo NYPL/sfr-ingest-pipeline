@@ -1,4 +1,4 @@
-babelfish
 psycopg2-binary
+pycountry
 pyyaml
 SQLAlchemy

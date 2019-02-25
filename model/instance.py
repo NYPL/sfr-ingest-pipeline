@@ -1,5 +1,4 @@
-import babelfish
-from babelfish.exceptions import LanguageConvertError
+
 import re
 from datetime import datetime
 from sqlalchemy import (
@@ -165,15 +164,6 @@ class Instance(Core, Base):
         rights = kwargs.get('rights', [])
         language = kwargs.get('language', [])
 
-        if instance['language'] is not None and len(instance['language']) != 2:
-            langs = re.split(r'\W+', instance['language'])
-            try:
-                lang = babelfish.Language(langs[0])
-                instance['language'] = lang.alpha2
-            except (ValueError, LanguageConvertError):
-                instance['language'] = None
-                logger.warning('Unable to assign language {} to instance {}'.format(langs[0], existing.id))
-
         for field, value in instance.items():
             if(value is not None):
                 setattr(existing, field, value)
@@ -250,16 +240,7 @@ class Instance(Core, Base):
     @classmethod
     def insert(cls, session, instanceData, **kwargs):
         """Insert a new instance record"""
-        # Check if language codes are too long and convert if necessary
-        if len(instanceData['language']) != 2:
-            langs = re.split(r'\W+', instanceData['language'])
-            try:
-                lang = babelfish.Language(langs[0])
-                instanceData['language'] = lang.alpha2
-            except (ValueError, LanguageConvertError):
-                instanceData['language'] = None
-                logger.warning('Unable to assign language {} to new instance'.format(langs[0]))
-
+        
         instance = Instance(**instanceData)
 
         identifiers = kwargs.get('identifiers', [])

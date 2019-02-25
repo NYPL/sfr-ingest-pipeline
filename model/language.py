@@ -122,4 +122,13 @@ class Language(Core, Base):
         else:
             pyLang = pycountry.languages.get(name=language.capitalize())
         
-        return pyLang
+        try:
+            return {
+                'language': pyLang.name,
+                'iso_2': pyLang.alpha_2,
+                'iso_3': pyLang.alpha_3
+            }
+        except AttributeError as err:
+            logger.warning('Unable to parse language string {}'.format(language))
+            logger.debug(err)
+            return None
