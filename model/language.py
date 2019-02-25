@@ -9,7 +9,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
-import pycountry
 
 from model.core import Base, Core
 

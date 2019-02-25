@@ -19,6 +19,7 @@ from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS, AltTitle
 from model.rights import Rights
+from model.language import Language
 
 
 class Instance(Core, Base):

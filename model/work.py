@@ -25,6 +25,7 @@ from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
 from model.rights import Rights
+from model.language import Language
 
 from helpers.errorHelpers import DBError
 from helpers.logHelpers import createLog

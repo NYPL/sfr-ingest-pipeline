@@ -10,7 +10,11 @@ from elasticsearch.exceptions import (
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
 
+
+from sqlalchemy.orm import configure_mappers
+
 from model.elasticDocs import (
+    Language,
     Work,
     Subject,
     Identifier,
@@ -20,8 +24,7 @@ from model.elasticDocs import (
     Link,
     Item,
     AccessReport,
-    Rights,
-    Language
+    Rights
 )
 
 from helpers.logHelpers import createLog
@@ -39,6 +42,8 @@ class ESConnection():
 
         self.createElasticConnection()
         self.createIndex()
+
+        configure_mappers()
 
     def createElasticConnection(self):
         host = os.environ['ES_HOST']
@@ -96,7 +101,7 @@ class ESConnection():
             setattr(self.work, field, getattr(dbRec, field, None))
         
         for dateType, date in dbRec.loadDates(['issued', 'created']).items():
-            ESConnection._insertDate(esAgent, date, dateType)
+            ESConnection._insertDate(self.work, date, dateType)
         
         self.work.alt_titles = [
             altTitle.title
@@ -173,15 +178,17 @@ class ESConnection():
         esLang = Language()
         for field in dir(language):
             setattr(esLang, field, getattr(language, field, None))
+        
+        return esLang
     
     @staticmethod
     def addRights(rights):
         newRights = Rights()
         for field in dir(rights):
-            setattr(newRights, field, getattr(agent, field, None))
+            setattr(newRights, field, getattr(rights, field, None))
         
         for dateType, date in rights.loadDates(['copyright_date']).items():
-            ESConnection._insertDate(esAgent, date, dateType)
+            ESConnection._insertDate(newRights, date, dateType)
     
     @staticmethod
     def addAgent(record, agentRel):
@@ -214,7 +221,7 @@ class ESConnection():
         for field in dir(instance):
             setattr(esInstance, field, getattr(instance, field, None))
         
-        for dateType, date in instance.loadDates(['pub_date', 'copyright_date']).items():
+        for dateType, date in instance.loadDates(['pub_date']).items():
             ESConnection._insertDate(esInstance, date, dateType)
         
         esInstance.identifiers = [
