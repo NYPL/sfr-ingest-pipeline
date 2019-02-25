@@ -26,8 +26,9 @@ from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
 from model.rights import Rights, WORK_RIGHTS
+from model.language import Language
 
-from helpers.errorHelpers import DBError
+from helpers.errorHelpers import DBError, DataError
 from helpers.logHelpers import createLog
 
 logger = createLog('workModel')
@@ -49,10 +50,10 @@ class Work(Core, Base):
     title = Column(Unicode, index=True)
     sort_title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
-    language = Column(String(2), index=True)
     medium = Column(Unicode)
     series = Column(Unicode)
     series_position = Column(Unicode)
+    summary = Column(Unicode)
 
     #
     # Relationships
@@ -124,6 +125,7 @@ class Work(Core, Base):
         links = workData.pop('links', None)
         dates = workData.pop('dates', None)
         rights = workData.pop('rights', [])
+        language = workData.pop('language', [])
 
         existing = cls.lookupWork(session, identifiers, primaryIdentifier)
         if existing is not None:
@@ -140,6 +142,7 @@ class Work(Core, Base):
                 links=links,
                 dates=dates,
                 rights=rights,
+                language=language,
                 json=storeJson
             )
             return 'update', updated
@@ -157,6 +160,7 @@ class Work(Core, Base):
             links=links,
             dates=dates,
             rights=rights,
+            language=language,
             json=storeJson
         )
 
@@ -177,6 +181,7 @@ class Work(Core, Base):
         storeJson = kwargs.get('json')
         dates = kwargs.get('dates', [])
         rights = kwargs.get('rights', [])
+        language = kwargs.get('language', [])
 
         jsonRec = RawData(data=storeJson)
         existing.import_json.append(jsonRec)
@@ -267,6 +272,16 @@ class Work(Core, Base):
             )
             if updateRights is not None:
                 existing.rights.append(updateRights)
+        
+        for lang in language:
+            try:
+                newLang = Language.updateOrInsert(session, lang)
+                langRel = Language.lookupRelLang(session, newLang, Work, existing)
+                if langRel is None:
+                    existing.language.append(newLang)
+            except DataError:
+                logger.warning('Unable to parse language {}'.format(lang))
+
 
         return existing
 
@@ -297,6 +312,7 @@ class Work(Core, Base):
         storeJson = kwargs.get('json')
         dates = kwargs.get('dates', [])
         rights = kwargs.get('rights', [])
+        language = kwargs.get('language', [])
 
         jsonRec = RawData(data=storeJson)
         work.import_json.append(jsonRec)
@@ -341,7 +357,11 @@ class Work(Core, Base):
             rightsDates = rightsStmt.pop('dates', [])
             newRights = Rights.insert(rightsStmt, dates=rightsDates)
             work.rights.append(newRights)
-
+        
+        for lang in language:
+            newLang = Language.updateOrInsert(session, lang)
+            work.language.append(newLang)
+            
         return work
 
     @classmethod
