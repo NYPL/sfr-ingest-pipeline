@@ -74,6 +74,9 @@ class Language(Core, Base):
             str(language)
         ))
 
+        if language is None:
+            raise DataError('Cannot parse None as language value')
+
         if isinstance(language, str):
             language = Language.loadFromString(language)
             if language is None:

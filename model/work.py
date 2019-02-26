@@ -273,7 +273,7 @@ class Work(Core, Base):
             if updateRights is not None:
                 existing.rights.append(updateRights)
         
-        if isinstance(language, (str, None)):
+        if isinstance(language, str) or language is None:
             language = [language]
 
         for lang in language:
@@ -361,7 +361,7 @@ class Work(Core, Base):
             newRights = Rights.insert(rightsStmt, dates=rightsDates)
             work.rights.append(newRights)
         
-        if isinstance(language, (str, None)):
+        if isinstance(language, str) or language is None:
             language = [language]
         
         for lang in language:
