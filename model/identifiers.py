@@ -230,7 +230,7 @@ class Identifier(Base):
     generic = relationship('GENERIC', back_populates='identifier')
 
     identifierTypes = {
-        'daoab': DOAB,
+        'doab': DOAB,
         'gutenberg': Gutenberg,
         'hathi': Hathi,
         'oclc': OCLC,

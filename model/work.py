@@ -367,7 +367,7 @@ class Work(Core, Base):
         for lang in language:
             try:
                 newLang = Language.updateOrInsert(session, lang)
-                instance.language.append(newLang)
+                work.language.append(newLang)
             except DataError:
                 logger.debug('Unable to parse language {}'.format(lang))
                 continue
