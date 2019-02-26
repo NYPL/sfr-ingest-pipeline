@@ -226,6 +226,9 @@ class Instance(Core, Base):
             if updateRights is not None:
                 existing.rights.append(updateRights)
         
+        if isinstance(language, (str, None)):
+            language = [language]
+
         for lang in language:
             try:
                 newLang = Language.updateOrInsert(session, lang)
@@ -288,9 +291,16 @@ class Instance(Core, Base):
             newRights = Rights.insert(rightsStmt, dates=rightsDates)
             instance.rights.append(newRights)
         
+        if isinstance(language, (str, None)):
+            language = [language]
+        
         for lang in language:
-            newLang = Language.updateOrInsert(session, lang)
-            instance.language.append(newLang)
+            try:
+                newLang = Language.updateOrInsert(session, lang)
+                instance.language.append(newLang)
+            except DataError:
+                logger.debug('Unable to parse language {}'.format(lang))
+                continue
 
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here

@@ -273,6 +273,9 @@ class Work(Core, Base):
             if updateRights is not None:
                 existing.rights.append(updateRights)
         
+        if isinstance(language, (str, None)):
+            language = [language]
+
         for lang in language:
             try:
                 newLang = Language.updateOrInsert(session, lang)
@@ -358,9 +361,16 @@ class Work(Core, Base):
             newRights = Rights.insert(rightsStmt, dates=rightsDates)
             work.rights.append(newRights)
         
+        if isinstance(language, (str, None)):
+            language = [language]
+        
         for lang in language:
-            newLang = Language.updateOrInsert(session, lang)
-            work.language.append(newLang)
+            try:
+                newLang = Language.updateOrInsert(session, lang)
+                instance.language.append(newLang)
+            except DataError:
+                logger.debug('Unable to parse language {}'.format(lang))
+                continue
             
         return work
 
