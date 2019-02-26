@@ -54,18 +54,21 @@ module.exports = function (app) {
     // Query block, generally this will be where the main query against ES will be
     if ('queries' in params) {
       params["queries"].map((term) => {
+        // Catch case where escape charaacter has been escaped and reduce to a single
+        // escape character
+        const queryTerm = term['value'].replace(/[\\]+([^\w\s]{1})/g, '\$1')
         switch(term['field']){
           case "author":
-            body.query("query_string", {"fields": ["entities.name"], "query": term["value"], "default_operator": "and"})
+            body.query("query_string", {"fields": ["entities.name"], "query": queryTerm, "default_operator": "and"})
             break
           case "keyword":
-            body.query("query_string", 'query', term['value'], {"default_operator": "and"})
+            body.query("query_string", 'query', queryTerm, {"default_operator": "and"})
             break
           case "subject":
-            body.query('query_string', {"fields": ["subjects.subject"], "query": term["value"], "default_operator": "and"})
+            body.query('query_string', {"fields": ["subjects.subject"], "query": queryTerm, "default_operator": "and"})
             break
           default:
-            body.query('query_string', {"fields": [term["field"]], "query": term["value"], "default_operator": "and"})
+            body.query('query_string', {"fields": [term["field"]], "query": queryTerm, "default_operator": "and"})
             break
         }
       })
@@ -106,15 +109,18 @@ module.exports = function (app) {
         body.aggregation(agg['type'], agg['field'])
       })
     }
-
     // TODO: make the index an environment variable
     let esQuery = {
       index: 'sfr',
       body: body.build()
     }
+    console.log(esQuery.body.query.query_string, app.baseUrl)
 
     return app.client.search(esQuery, { baseUrl: app.baseUrl })
-      .then((resp) => respond(res, resp, params))
+      .then((resp) => {
+        console.log(resp)
+        respond(res, resp, params)
+      })
       .catch((error) => handleError(res, error))
   })
 
