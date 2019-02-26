@@ -114,11 +114,9 @@ module.exports = function (app) {
       index: 'sfr',
       body: body.build()
     }
-    console.log(esQuery.body.query.query_string, app.baseUrl)
 
     return app.client.search(esQuery, { baseUrl: app.baseUrl })
       .then((resp) => {
-        console.log(resp)
         respond(res, resp, params)
       })
       .catch((error) => handleError(res, error))
@@ -146,7 +144,6 @@ module.exports = function (app) {
     var fieldQuery = ''
     var filterQuery = {}
     if (req.query.filters) {
-      console.log(req.query.filters)
       filters = Object.keys(req.query.filters).map((prop) => {
           queryFields.push(prop)
           fieldQuery = req.query.filters[prop]
@@ -154,7 +151,6 @@ module.exports = function (app) {
             fields: queryFields,
             query: fieldQuery
           }
-        console.log(filterQuery.fields.valueOf())
 
         return filterQuery
       })
