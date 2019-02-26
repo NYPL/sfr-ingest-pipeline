@@ -178,7 +178,7 @@ class ESConnection():
         esLang = Language()
         for field in dir(language):
             setattr(esLang, field, getattr(language, field, None))
-        
+
         return esLang
     
     @staticmethod
@@ -189,6 +189,8 @@ class ESConnection():
         
         for dateType, date in rights.loadDates(['copyright_date']).items():
             ESConnection._insertDate(newRights, date, dateType)
+        
+        return newRights
     
     @staticmethod
     def addAgent(record, agentRel):
@@ -212,7 +214,8 @@ class ESConnection():
             for dateType, date in agent.loadDates(['birth_date', 'death_date']).items():
                 ESConnection._insertDate(esAgent, date, dateType)
 
-
+            esAgent.roles = [agentRel.role]
+            
             return esAgent
     
     @staticmethod
