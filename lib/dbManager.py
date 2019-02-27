@@ -46,7 +46,7 @@ def dbGenerateConnection():
 def createSession(engine):
     """Create a single database session"""
     Session = sessionmaker(bind=engine)
-    return Session()
+    return Session(autoflush=True)
 
 
 def importRecord(session, record):

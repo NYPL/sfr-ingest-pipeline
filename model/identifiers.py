@@ -322,42 +322,74 @@ class Identifier(Base):
     def getByIdentifier(cls, model, session, identifiers):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
-        for ident in identifiers:
-            logger.debug('Querying database for identifier {} ({})'.format(
-                ident['identifier'],
-                ident['type']
-            ))
-            idenType = ident['type']
-            idenTable = idenType if idenType is not None else 'generic'
-            
+        for ident in cls._orderIdentifiers(identifiers):
             try:
                 cleanIdentifier = cls._cleanIdentifier(ident['identifier'])
             except DataError:
                 logger.debug('Received overly-generic identifier {}'.format(ident['identifier']))
                 continue
-                
+
+            if ident['type'] in ['lcc', 'ddc']:
+                continue
+
+            logger.debug('Querying database for identifier {} ({})'.format(
+                cleanIdentifier,
+                ident['type']
+            ))
+            idenType = ident['type']
+            idenTable = idenType if idenType is not None else 'generic'  
             try:
-                return session.query(model.id)\
+                record = session.query(model.id)\
                     .join('identifiers', idenTable)\
                     .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
                     .one()
+                logger.debug('Found single reference {}'.format(record[0]))
+                return record[0]
             except MultipleResultsFound:
                 logger.warning('Found multiple references from {}'.format(
                     cleanIdentifier
                 ))
                 logger.debug('Cannot use {} for lookup as it is ambiguous'.format(cleanIdentifier))
             except NoResultFound:
+                logger.debug('Identifier {} does not exist'.format(cleanIdentifier))
                 pass
         else:
+            logger.debug('No matching identifiers found, create new resource')
             return None
     
     @staticmethod
     def _cleanIdentifier(identifier):
+        """Normalizes all identifiers received to remove issue ids"""
+
         # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
-        cleanIdentifier = re.sub(r'\(.+\)', '', identifier['identifier']).strip()
+        cleanIdentifier = re.sub(r'\(.+\)', '', identifier).strip()
 
         # Block identifiers that consist of all zeros (A frequent test value)
         if re.match(r'^(?:nan|[0]+)$', cleanIdentifier, re.IGNORECASE):
             raise DataError('Non-unique identifier {} recieved'.format(cleanIdentifier))
         
         return cleanIdentifier
+    
+    @staticmethod
+    def _orderIdentifiers(identifiers):
+        """Implement a custom sort order for identifiers for lookup. This is 
+        necessary to ensure that matches are properly made. The order of 
+        precedence is:
+        ISBN, ISSN, LCCN, OWI, OCLC, Hathi, DOAB, Gutenberg, DDC, LLC
+        This order is in the order of most likely match to be found and then
+        in descending order.
+        """
+        idWeight = {
+            'isbn': 1,
+            'issn': 2,
+            'lccn': 3,
+            'owi': 4,
+            'oclc': 5,
+            'hathi': 6,
+            'doab': 7,
+            'gutenberg': 8,
+            None: 9,
+            'lcc': 10,
+            'ddc': 11
+        }
+        return sorted(identifiers, key=lambda x:idWeight[x['type']])
