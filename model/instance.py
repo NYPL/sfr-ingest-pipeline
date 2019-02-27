@@ -169,16 +169,18 @@ class Instance(Core, Base):
                 setattr(existing, field, value)
 
         for iden in identifiers:
-
-            status, idenRec = Identifier.returnOrInsert(
-                session,
-                iden,
-                Instance,
-                existing.id
-            )
-
-            if status == 'new':
-                existing.identifiers.append(idenRec)
+            try:
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    iden,
+                    Instance,
+                    existing.id
+                )
+                if status == 'new':
+                    existing.identifiers.append(idenRec)
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
@@ -268,8 +270,11 @@ class Instance(Core, Base):
                     )
 
         for iden in identifiers:
-            idenRec = Identifier.insert(iden)
-            instance.identifiers.append(idenRec)
+            try:
+                instance.identifiers.append(Identifier.insert(iden))
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)

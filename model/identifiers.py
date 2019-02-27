@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -9,7 +11,7 @@ from sqlalchemy.orm import relationship, selectinload
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from helpers.logHelpers import createLog
-from helpers.errorHelpers import DBError
+from helpers.errorHelpers import DBError, DataError
 
 from model.core import Base, Core
 
@@ -273,8 +275,15 @@ class Identifier(Base):
         # Load the model for the identifier type being stored
         specificIden = cls.identifierTypes[identifier['type']]
 
+        # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
+        cleanIdentifier = re.sub(r'\(.+\)', '', identifier['identifier']).strip()
+
+        # Block identifiers that consist of all zeros (A frequent test value)
+        if re.match(r'^(?:nan|[0]+)$', cleanIdentifier, re.IGNORECASE):
+            raise DataError('Non-unique identifier {} recieved'.format(cleanIdentifier))
+
         # Create new entry in that specific identifiers table
-        idenRec = specificIden(value=identifier['identifier'])
+        idenRec = specificIden(value=cleanIdentifier)
 
         # Add new identifier entry to the core table record
         idenTable = identifier['type'] if identifier['type'] is not None else 'generic'

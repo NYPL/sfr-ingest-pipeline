@@ -222,9 +222,18 @@ class Work(Core, Base):
                 existing.instances.append(instanceRec)
 
         for iden in identifiers:
-            status, idenRec = Identifier.returnOrInsert(session, iden, Work, existing.id)
-            if status == 'new':
-                existing.identifiers.append(idenRec)
+            try:
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    iden,
+                    Work,
+                    existing.id
+                )
+                if status == 'new':
+                    existing.identifiers.append(idenRec)
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for agent in agents:
             agentRec, roles = Agent.updateOrInsert(session, agent)
@@ -325,8 +334,11 @@ class Work(Core, Base):
             work.instances.append(instanceRec)
 
         for iden in identifiers:
-            idenRec = Identifier.insert(iden)
-            work.identifiers.append(idenRec)
+            try:
+                work.identifiers.append(Identifier.insert(iden))
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for agent in agents:
             agentRec, roles = Agent.updateOrInsert(session, agent)

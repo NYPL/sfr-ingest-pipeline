@@ -31,6 +31,7 @@ from model.agent import Agent
 
 from lib.outputManager import OutputManager
 from helpers.logHelpers import createLog
+from helpers.errorHelpers import DataError
 
 logger = createLog('items')
 
@@ -198,7 +199,11 @@ class Item(Core, Base):
         agents = kwargs.get('agents', [])
 
         for identifier in identifiers:
-            item.identifiers.append(Identifier.insert(identifier))
+            try:
+                item.identifiers.append(Identifier.insert(identifier))
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for link in links:
             newLink = Link(**link)
@@ -244,15 +249,18 @@ class Item(Core, Base):
                 setattr(existing, field, value)
 
         for identifier in identifiers:
-            status, idenRec = Identifier.returnOrInsert(
-                session,
-                identifier,
-                cls,
-                existing.id
-            )
-
-        if status == 'new':
-            existing.identifiers.append(idenRec)
+            try:
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    identifier,
+                    cls,
+                    existing.id
+                )
+                if status == 'new':
+                    existing.identifiers.append(idenRec)
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
