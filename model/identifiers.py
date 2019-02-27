@@ -275,15 +275,10 @@ class Identifier(Base):
         # Load the model for the identifier type being stored
         specificIden = cls.identifierTypes[identifier['type']]
 
-        # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
-        cleanIdentifier = re.sub(r'\(.+\)', '', identifier['identifier']).strip()
-
-        # Block identifiers that consist of all zeros (A frequent test value)
-        if re.match(r'^(?:nan|[0]+)$', cleanIdentifier, re.IGNORECASE):
-            raise DataError('Non-unique identifier {} recieved'.format(cleanIdentifier))
-
         # Create new entry in that specific identifiers table
-        idenRec = specificIden(value=cleanIdentifier)
+        idenRec = specificIden(
+            value=cls._cleanIdentifier(identifier['identifier'])
+        )
 
         # Add new identifier entry to the core table record
         idenTable = identifier['type'] if identifier['type'] is not None else 'generic'
@@ -301,9 +296,14 @@ class Identifier(Base):
         idenTable = idenType if idenType is not None else 'generic'
         
         try:
+            cleanIdentifier = cls._cleanIdentifier(identifier['identifier'])
+        except DataError:
+            return None
+        
+        try:
             return session.query(model.id) \
                 .join('identifiers', idenTable) \
-                .filter(cls.identifierTypes[idenType].value == identifier['identifier']) \
+                .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
                 .filter(model.id == recordID) \
                 .one()
         
@@ -331,17 +331,33 @@ class Identifier(Base):
             idenTable = idenType if idenType is not None else 'generic'
             
             try:
+                cleanIdentifier = cls._cleanIdentifier(ident['identifier'])
+            except DataError:
+                logger.debug('Received overly-generic identifier {}'.format(ident['identifier']))
+                continue
+                
+            try:
                 return session.query(model.id)\
                     .join('identifiers', idenTable)\
-                    .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
+                    .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
                     .one()
             except MultipleResultsFound:
                 logger.warning('Found multiple references from {}'.format(
-                    ident['identifier']
+                    cleanIdentifier
                 ))
-                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(ident['identifier']))
+                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(cleanIdentifier))
             except NoResultFound:
                 pass
         else:
             return None
+    
+    @staticmethod
+    def _cleanIdentifier(identifier):
+        # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
+        cleanIdentifier = re.sub(r'\(.+\)', '', identifier['identifier']).strip()
 
+        # Block identifiers that consist of all zeros (A frequent test value)
+        if re.match(r'^(?:nan|[0]+)$', cleanIdentifier, re.IGNORECASE):
+            raise DataError('Non-unique identifier {} recieved'.format(cleanIdentifier))
+        
+        return cleanIdentifier
