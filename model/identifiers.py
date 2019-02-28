@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 
 from sqlalchemy import (
     Column,
@@ -322,6 +323,7 @@ class Identifier(Base):
     def getByIdentifier(cls, model, session, identifiers):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
+        matchingRecs = defaultdict(int)
         for ident in cls._orderIdentifiers(identifiers):
             try:
                 cleanIdentifier = cls._cleanIdentifier(ident['identifier'])
@@ -338,25 +340,35 @@ class Identifier(Base):
             ))
             idenType = ident['type']
             idenTable = idenType if idenType is not None else 'generic'  
+            records = session.query(model.id)\
+                .join('identifiers', idenTable)\
+                .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
+                .all()
+            
+            Identifier._assignRecs(records, matchingRecs)
+        
+        sortedMatches = sorted(matchingRecs.items(), key=lambda x: x[1], reverse=True)
+        
+        return Identifier._returnTopMatch(sortedMatches)
+
+    @classmethod
+    def _returnTopMatch(cls, matches):
+        for i in range(len(matches)):
             try:
-                record = session.query(model.id)\
-                    .join('identifiers', idenTable)\
-                    .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
-                    .one()
-                logger.debug('Found single reference {}'.format(record[0]))
-                return record[0]
-            except MultipleResultsFound:
-                logger.warning('Found multiple references from {}'.format(
-                    cleanIdentifier
-                ))
-                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(cleanIdentifier))
-            except NoResultFound:
-                logger.debug('Identifier {} does not exist'.format(cleanIdentifier))
-                pass
-        else:
-            logger.debug('No matching identifiers found, create new resource')
-            return None
-    
+                if matches[i][1] > matches[i+1][1]:
+                    return matches[i][0]
+                else:
+                    raise DataError('Found Multiple possible matches for identifier set!')
+            except IndexError:
+                return matches[i][0]
+        
+        return None
+
+    @classmethod
+    def _assignRecs(cls, records, matches):
+        for r in records:
+            matches[r[0]] += 1
+        
     @staticmethod
     def _cleanIdentifier(identifier):
         """Normalizes all identifiers received to remove issue ids"""
