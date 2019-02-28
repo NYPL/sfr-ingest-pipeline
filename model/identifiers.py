@@ -354,7 +354,7 @@ class Identifier(Base):
     @staticmethod
     def _cleanIdentifier(identifier):
         # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
-        cleanIdentifier = re.sub(r'\(.+\)', '', identifier['identifier']).strip()
+        cleanIdentifier = re.sub(r'\(.+\)', '', identifier).strip()
 
         # Block identifiers that consist of all zeros (A frequent test value)
         if re.match(r'^(?:nan|[0]+)$', cleanIdentifier, re.IGNORECASE):
