@@ -1,0 +1,11 @@
+# Uncomment the below/add additional env variables to add them to the lambda
+# === ENVIRONMENT_VARIABLES ===
+environment_variables:
+    LOG_LEVEL: debug
+    DOAB_OAI_ROOT: https://www.doabooks.org/oai?verb=ListRecords
+    LOAD_DAYS_AGO: '1'
+
+    MARC_RELATORS: http://id.loc.gov/vocabulary/relators.json
+
+    OUTPUT_STREAM: sfr-db-ingest-development
+    OUTPUT_SHARD: '0'
