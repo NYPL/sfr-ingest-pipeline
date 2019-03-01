@@ -1,4 +1,6 @@
 boto3
 lxml
 marcalyx
+pycountry
 pyyaml
+requests
