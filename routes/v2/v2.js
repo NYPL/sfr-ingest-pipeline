@@ -1,5 +1,6 @@
 const express = require('express')
-
+const logger = require('./../../lib/logger')
+const elasticsearch = require('elasticsearch')
 const pjson = require('./../../package.json')
 
 // v2 of the SFR API. This is a simple test endpoint to demonstrate the 
@@ -9,6 +10,14 @@ const pjson = require('./../../package.json')
 
 const v2Router = express.Router()
 
+// Initialize logging
+v2Router.logger = logger
+
+// Set ElasticSearch endpoint for routes
+v2Router.client = new elasticsearch.Client({
+    host: process.env.ELASTICSEARCH_HOST
+})
+
 v2Router.get('/', function (req, res) {
     res.send({
         codeVersion: pjson.version,
@@ -16,11 +25,38 @@ v2Router.get('/', function (req, res) {
     })
 })
 
-// Temporary demonstration endpoint, to be removed when v2 becomes functional
-v2Router.get('/test', function(req, res) {
-    res.send({
-        'testing': 'A v2 only endpoint'
-    })
-})
+const respond = (res, _resp, params) => {
+    let contentType = 'application/json'
+
+    let resp = _resp
+    if (contentType !== 'text/plain') resp = JSON.stringify(_resp, null, 2)
+
+    v2Router.logger.info('Search performed: ' + JSON.stringify(params))
+    res.type(contentType)
+    res.status(200).send(resp)
+    return true
+  }
+
+const handleError = (res, error) => {
+  v2Router.logger.error('Resources#handleError:', error)
+  let statusCode = 500
+  switch (error.name) {
+    case 'InvalidParameterError':
+      statusCode = 422
+      break
+    case 'NotFoundError':
+      statusCode = 404
+      break
+    default:
+      statusCode = 500
+  }
+  res.status(statusCode).send({ status: statusCode, name: error.name, error: error.message ? error.message : error })
+  return false
+}
+
+
+// Load endpoints for version
+require('./search')(v2Router, respond, handleError)
+require('./work')(v2Router, respond, handleError)
 
 module.exports = v2Router
