@@ -9,7 +9,7 @@ const v1Router = express.Router()
 
 // Set ElasticSearch endpoint for routes
 v1Router.client = new elasticsearch.Client({
-    host: process.env.ELASTICSEARCH_HOST
+  host: process.env.ELASTICSEARCH_HOST
 })
 
 // Initialize logging
@@ -21,10 +21,10 @@ require('./work')(v1Router)
 
 // Return basic status update on API
 v1Router.get('/', function (req, res) {
-    res.send({
-        codeVersion: pjson.version,
-        apiVersion: 'v1'
-    })
+  res.send({
+    codeVersion: pjson.version,
+    apiVersion: 'v1'
+  })
 })
 
 module.exports = v1Router

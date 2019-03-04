@@ -1,27 +1,26 @@
-const config = require('config')
+// const config = require('config')
 const bodybuilder = require('bodybuilder')
 const { ElasticSearchError } = require('../../lib/errors')
 
 module.exports = function (app) {
-
   const respond = (res, _resp, params) => {
-      var contentType = 'application/json'
+    var contentType = 'application/json'
 
-      var resp = _resp
+    var resp = _resp
 
-      let respLen = resp['hits']['hits'].length
-      console.log(respLen)
-      if (respLen < 1) return handleError(res, new ElasticSearchError('Could not locate a record with that identifier'))
-      else if (respLen > 1) return handleError(res, new ElasticSearchError('Returned multiple records, identifier lacks specificity'))
+    let respLen = resp['hits']['hits'].length
+    console.log(respLen)
+    if (respLen < 1) return handleError(res, new ElasticSearchError('Could not locate a record with that identifier'))
+    else if (respLen > 1) return handleError(res, new ElasticSearchError('Returned multiple records, identifier lacks specificity'))
 
-      let singleResp =  resp['hits']['hits'][0]['_source']
+    let singleResp = resp['hits']['hits'][0]['_source']
 
-      if (contentType !== 'text/plain') resp = JSON.stringify(singleResp, null, 2)
+    if (contentType !== 'text/plain') resp = JSON.stringify(singleResp, null, 2)
 
-      app.logger.info('Search performed: ' + JSON.stringify(params))
-      res.type(contentType)
-      res.status(200).send(resp)
-      return true
+    app.logger.info('Search performed: ' + JSON.stringify(params))
+    res.type(contentType)
+    res.status(200).send(resp)
+    return true
   }
 
   const handleError = (res, error) => {
@@ -47,9 +46,8 @@ module.exports = function (app) {
   }
 
   app.get(`/api/v0.1/sfr/work`, function (req, res) {
-
     let recordID = req.query.recordID
-    let idType = req.query.type
+    // let idType = req.query.type
 
     //
     // A potential feature is to limit look-ups by type of identifier, but the

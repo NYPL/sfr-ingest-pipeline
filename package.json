@@ -30,6 +30,10 @@
         "start-dev": "nodemon ./app.js localhost 3000",
         "deploy-development": "",
         "deploy-qa": "",
-        "deploy-production": ""
+        "deploy-production": "",
+        "lint": "./node_modules/.bin/standard",
+        "lint-fix": "./node_modules/.bin/standard --fix",
+        "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
+        "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report"
     }
 }

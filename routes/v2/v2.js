@@ -3,9 +3,9 @@ const logger = require('./../../lib/logger')
 const elasticsearch = require('elasticsearch')
 const pjson = require('./../../package.json')
 
-// v2 of the SFR API. This is a simple test endpoint to demonstrate the 
+// v2 of the SFR API. This is a simple test endpoint to demonstrate the
 // ability to route users based on a version provided. No search/lookup
-// abilities have been implemented here yet. The structure will be similar to 
+// abilities have been implemented here yet. The structure will be similar to
 // the v1 endpoints, but will utilize a different ElasticSearch endpoint
 
 const v2Router = express.Router()
@@ -15,27 +15,27 @@ v2Router.logger = logger
 
 // Set ElasticSearch endpoint for routes
 v2Router.client = new elasticsearch.Client({
-    host: process.env.ELASTICSEARCH_HOST
+  host: process.env.ELASTICSEARCH_HOST
 })
 
 v2Router.get('/', function (req, res) {
-    res.send({
-        codeVersion: pjson.version,
-        apiVersion: 'v2'
-    })
+  res.send({
+    codeVersion: pjson.version,
+    apiVersion: 'v2'
+  })
 })
 
 const respond = (res, _resp, params) => {
-    let contentType = 'application/json'
+  let contentType = 'application/json'
 
-    let resp = _resp
-    if (contentType !== 'text/plain') resp = JSON.stringify(_resp, null, 2)
+  let resp = _resp
+  if (contentType !== 'text/plain') resp = JSON.stringify(_resp, null, 2)
 
-    v2Router.logger.info('Search performed: ' + JSON.stringify(params))
-    res.type(contentType)
-    res.status(200).send(resp)
-    return true
-  }
+  v2Router.logger.info('Search performed: ' + JSON.stringify(params))
+  res.type(contentType)
+  res.status(200).send(resp)
+  return true
+}
 
 const handleError = (res, error) => {
   v2Router.logger.error('Resources#handleError:', error)
@@ -53,7 +53,6 @@ const handleError = (res, error) => {
   res.status(statusCode).send({ status: statusCode, name: error.name, error: error.message ? error.message : error })
   return false
 }
-
 
 // Load endpoints for version
 require('./search')(v2Router, respond, handleError)
