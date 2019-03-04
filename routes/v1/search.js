@@ -114,11 +114,9 @@ module.exports = function (app) {
       index: 'sfr',
       body: body.build()
     }
-    console.log(esQuery.body.query.query_string, app.baseUrl)
 
     return app.client.search(esQuery, { baseUrl: app.baseUrl })
       .then((resp) => {
-        console.log(resp)
         respond(res, resp, params)
       })
       .catch((error) => handleError(res, error))
