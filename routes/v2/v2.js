@@ -57,6 +57,7 @@ const handleError = (res, error) => {
 // Load endpoints for version
 const { searchEndpoints } = require('./search')
 searchEndpoints(v2Router, respond, handleError)
-require('./work')(v2Router, respond, handleError)
+const { workEndpoints } = require('./work')
+workEndpoints(v2Router, respond, handleError)
 
 module.exports = { v2Router, respond, handleError }
