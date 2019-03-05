@@ -58,4 +58,4 @@ const handleError = (res, error) => {
 require('./search')(v2Router, respond, handleError)
 require('./work')(v2Router, respond, handleError)
 
-module.exports = v2Router
+module.exports = { v2Router, respond, handleError }

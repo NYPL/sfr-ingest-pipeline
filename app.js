@@ -26,8 +26,8 @@ app.all('*', function (req, res, next) {
 // altered at a future point.
 // Further, old/deprecated versions can eventually be disabled.
 const v1 = require('./routes/v1/v1')
-const v2 = require('./routes/v2/v2')
-app.use('/v2', v2)
+const { v2Router } = require('./routes/v2/v2')
+app.use('/v2', v2Router)
 app.use('/v1', v1)
 app.use('/', v1)
 
@@ -45,8 +45,8 @@ app.get('/research-now/swagger-test', function (req, res) {
 
 const port = process.env.PORT || config['port']
 
-app.listen(port, function () {
+const server = app.listen(port, function () {
   app.logger.info('Server started on port ' + port)
 })
 
-module.exports = app
+module.exports = server
