@@ -3,9 +3,9 @@ const bodybuilder = require('bodybuilder')
 
 module.exports = function (app) {
   const respond = (res, _resp, params) => {
-    var contentType = 'application/json'
+    const contentType = 'application/json'
 
-    var resp = _resp
+    const resp = _resp
     if (contentType !== 'text/plain') resp = JSON.stringify(_resp, null, 2)
 
     app.logger.info('Search performed: ' + JSON.stringify(params))
@@ -122,31 +122,31 @@ module.exports = function (app) {
   })
 
   app.get(`/api/v0.1/sfr/works`, function (req, res) {
-    var pageNum = (req.query.page) ? req.query.page : 1
-    var perPage = (req.query.per_page) ? req.query.per_page : 10
-    var userQuery = req.query.q
-    var offset = (pageNum - 1) * perPage
+    const pageNum = (req.query.page) ? req.query.page : 1
+    const perPage = (req.query.per_page) ? req.query.per_page : 10
+    const userQuery = req.query.q
+    const offset = (pageNum - 1) * perPage
 
-    var body = bodybuilder()
+    const body = bodybuilder()
       .query('query_string', 'query', userQuery)
       .size(perPage)
       .from(offset)
       .build()
 
-    var params = {
+    const params = {
       index: process.env.ELASTICSEARCH_INDEX,
       body: body
     }
 
     // var filters = []
-    var queryFields = []
-    var fieldQuery = ''
+    const queryFields = []
+    const fieldQuery = ''
     // var filterQuery = {}
     if (req.query.filters) {
       Object.keys(req.query.filters).map((prop) => {
         queryFields.push(prop)
         fieldQuery = req.query.filters[prop]
-        var filterQuery = {
+        let filterQuery = {
           fields: queryFields,
           query: fieldQuery
         }

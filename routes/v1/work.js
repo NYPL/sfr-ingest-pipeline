@@ -4,16 +4,16 @@ const { ElasticSearchError } = require('../../lib/errors')
 
 module.exports = function (app) {
   const respond = (res, _resp, params) => {
-    var contentType = 'application/json'
+    const contentType = 'application/json'
 
-    var resp = _resp
+    const resp = _resp
 
-    let respLen = resp['hits']['hits'].length
-    console.log(respLen)
+    const respLen = resp['hits']['hits'].length
+
     if (respLen < 1) return handleError(res, new ElasticSearchError('Could not locate a record with that identifier'))
     else if (respLen > 1) return handleError(res, new ElasticSearchError('Returned multiple records, identifier lacks specificity'))
 
-    let singleResp = resp['hits']['hits'][0]['_source']
+    const singleResp = resp['hits']['hits'][0]['_source']
 
     if (contentType !== 'text/plain') resp = JSON.stringify(singleResp, null, 2)
 
@@ -27,7 +27,7 @@ module.exports = function (app) {
     app.logger.error('Resources#handleError:', error)
     console.log(error)
     console.log(error.name)
-    var statusCode = 500
+    let statusCode = 500
     switch (error.name) {
       case 'InvalidParameterError':
         statusCode = 422
@@ -46,7 +46,7 @@ module.exports = function (app) {
   }
 
   app.get(`/api/v0.1/sfr/work`, function (req, res) {
-    let recordID = req.query.recordID
+    const recordID = req.query.recordID
     // let idType = req.query.type
 
     //
@@ -54,12 +54,12 @@ module.exports = function (app) {
     // elasticsearch mapping is not currently configured to support that properly
     // It will be in production, so I'm making a TO-DO note about that
     //
-    let body = bodybuilder()
+    const body = bodybuilder()
       .orQuery('term', 'uuid.keyword', recordID)
       .orQuery('term', 'ids.identifier.keyword', recordID)
       .orQuery('term', 'instances.ids.identifier.keyword', recordID)
 
-    let params = {
+    const params = {
       index: process.env.ELASTICSEARCH_INDEX,
       body: body.build()
     }
