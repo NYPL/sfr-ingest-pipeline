@@ -43,7 +43,7 @@ const fetchWork = (params, app) => {
     .orQuery('nested', { path: 'instances.items.identifiers', query: { term: { 'instances.items.identifiers.identifier': identifier } } })
 
   const esQuery = {
-    index: process.env.ELASTICSEARCH_INDEX,
+    index: process.env.ELASTICSEARCH_INDEX_V2,
     body: body.build()
   }
 

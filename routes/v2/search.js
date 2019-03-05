@@ -119,7 +119,7 @@ const simpleSearch = (params, app) => {
   }
 
   const esQuery = {
-    index: process.env.ELASTICSEARCH_INDEX,
+    index: process.env.ELASTICSEARCH_INDEX_V2,
     body: body.build()
   }
 
