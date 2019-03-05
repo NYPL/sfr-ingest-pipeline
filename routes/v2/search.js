@@ -1,10 +1,16 @@
 const bodybuilder = require('bodybuilder')
+const { MissingParamError } = require('../../lib/errors')
 
 const searchEndpoints = (app, respond, handleError) => {
   app.post('/sfr/search', async (req, res) => {
     const params = req.body
 
-    const searchRes = await simpleSearch(params, res, app, handleError)
+    let searchRes
+    try {
+      searchRes = await simpleSearch(params, app)
+    } catch (err) {
+      handleError(res, err)
+    }
 
     respond(res, searchRes, params)
   })
@@ -12,18 +18,20 @@ const searchEndpoints = (app, respond, handleError) => {
   app.get('/sfr/search', async (rec, res) => {
     const params = rec.query
 
-    const searchRes = await simpleSearch(params, res, app, handleError)
+    let searchRes
+    try {
+      searchRes = await simpleSearch(params, app)
+    } catch (err) {
+      handleError(res, err)
+    }
 
     respond(res, searchRes, params)
   })
 }
 
-const simpleSearch = (params, res, app, handleError) => {
+const simpleSearch = (params, app) => {
   if (!('field' in params) || !('query' in params)) {
-    return handleError(res, {
-      'name': 'InvalidParameterError',
-      'message': 'Your POST request must include either queries or filters'
-    })
+    throw new MissingParamError('Your POST request must include either queries or filters')
   }
 
   const { field, query } = params
@@ -115,12 +123,12 @@ const simpleSearch = (params, res, app, handleError) => {
     body: body.build()
   }
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     app.client.search(esQuery)
       .then((resp) => {
         resolve(resp)
       })
-      .catch((error) => handleError(res, error))
+      .catch((error) => reject(error))
   })
 }
 
