@@ -41,21 +41,13 @@
     "lint": "./node_modules/.bin/standard",
     "lint-fix": "./node_modules/.bin/standard --fix",
     "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
-    "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report"
+    "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report",
+    "coverage:open-report": "open -a 'Google Chrome' ./coverage/index.html"
   },
   "nyc": {
-    "require": [
-      "babel-register"
-    ],
-    "sourceMap": false,
-    "instrument": false,
     "exclude": [
-      "**/*.spec.js",
-      "**/**/*.spec.js",
-      "dist/*",
-      "src/helpers/ErrorHelper.js",
-      "src/utilities/Logger.js",
-      "data/"
+      "lib/errors.js",
+      "lib/logger.js"
     ]
   },
   "standard": {

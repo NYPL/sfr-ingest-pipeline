@@ -143,13 +143,13 @@ module.exports = function (app) {
     var fieldQuery = ''
     // var filterQuery = {}
     if (req.query.filters) {
-      filters = Object.keys(req.query.filters).map((prop) => {
-          queryFields.push(prop)
-          fieldQuery = req.query.filters[prop]
-          var filterQuery = {
-            fields: queryFields,
-            query: fieldQuery
-          }
+      Object.keys(req.query.filters).map((prop) => {
+        queryFields.push(prop)
+        fieldQuery = req.query.filters[prop]
+        var filterQuery = {
+          fields: queryFields,
+          query: fieldQuery
+        }
 
         return filterQuery
       })
