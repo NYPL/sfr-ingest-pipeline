@@ -5,7 +5,7 @@ module.exports = function (app) {
   const respond = (res, _resp, params) => {
     const contentType = 'application/json'
 
-    const resp = _resp
+    let resp = _resp
     if (contentType !== 'text/plain') resp = JSON.stringify(_resp, null, 2)
 
     app.logger.info('Search performed: ' + JSON.stringify(params))
@@ -133,14 +133,14 @@ module.exports = function (app) {
       .from(offset)
       .build()
 
-    const params = {
+    let params = {
       index: process.env.ELASTICSEARCH_INDEX,
       body: body
     }
 
     // var filters = []
     const queryFields = []
-    const fieldQuery = ''
+    let fieldQuery = ''
     // var filterQuery = {}
     if (req.query.filters) {
       Object.keys(req.query.filters).map((prop) => {

@@ -26,7 +26,7 @@ v2Router.get('/', function (req, res) {
 })
 
 const respond = (res, _resp, params) => {
-  let contentType = 'application/json'
+  const contentType = 'application/json'
 
   let resp = _resp
   if (contentType !== 'text/plain') resp = JSON.stringify(_resp, null, 2)

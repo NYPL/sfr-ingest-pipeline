@@ -6,7 +6,7 @@ module.exports = function (app) {
   const respond = (res, _resp, params) => {
     const contentType = 'application/json'
 
-    const resp = _resp
+    let resp = _resp
 
     const respLen = resp['hits']['hits'].length
 
