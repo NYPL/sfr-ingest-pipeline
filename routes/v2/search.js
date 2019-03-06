@@ -81,7 +81,7 @@ const simpleSearch = (params, app) => {
   // Filter block, used to search/filter data on specific terms. This can serve
   // as the main search field (useful for browsing) but generally it narrows
   // results in conjunction with a query
-  if ('filters' in params) {
+  if ('filters' in params && params['filters'] instanceof Array) {
     params['filters'].map((filter) => {
       switch (filter['field']) {
         case 'year':
@@ -99,7 +99,7 @@ const simpleSearch = (params, app) => {
   }
 
   // Sort block, this orders the results. Can be asc/desc and on any field
-  if ('sort' in params) {
+  if ('sort' in params && params['sort'] instanceof Array) {
     params['sort'].map((sort) => {
       switch (sort['field']) {
         default:
@@ -112,7 +112,7 @@ const simpleSearch = (params, app) => {
   // but essentially this builds an object of record counts grouped by a term
   // For example it can group works by authors/agents. This is used to
   // display browse options and do other metrics related querying
-  if ('aggregations' in params) {
+  if ('aggregations' in params && params['aggregations'] instanceof Array) {
     params['aggregations'].map((agg) => {
       body.aggregation(agg['type'], agg['field'])
     })

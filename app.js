@@ -3,7 +3,7 @@ const express = require('express')
 const bodyParser = require('body-parser')
 const logger = require('./lib/logger')
 const SwaggerParser = require('swagger-parser')
-const swaggerDocs = require('./swagger.v0.1.json')
+const swaggerDocs = require('./swagger.v2.json')
 
 require('dotenv').config()
 

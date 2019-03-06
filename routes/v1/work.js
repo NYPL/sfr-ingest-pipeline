@@ -63,7 +63,7 @@ module.exports = function (app) {
       index: process.env.ELASTICSEARCH_INDEX,
       body: body.build()
     }
-    console.log(body.build())
+
     return app.client.search(params, { baseUrl: app.baseUrl })
       .then((resp) => respond(res, resp, params))
       .catch((error) => handleError(res, error))
