@@ -342,7 +342,11 @@ class HathiRecord():
             self.ingest['copyright_date']
         ))
 
-        self.parseAuthor(self.ingest['author'])
+        try:
+            self.parseAuthor(self.ingest['author'])
+        except KeyError:
+            logger.warning('No author associated with record {}'.format(self.work))
+            
 
     def buildInstance(self, countryCodes):
         """Constrict an instance record from the Hathi data provided. As

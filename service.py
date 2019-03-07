@@ -35,9 +35,7 @@ def handler(event, context):
     # if it does, this is being run in a non-scheduled way on a local file.
     # Load the local file defined in the event, otherwise fetch file from Hathi
 
-    if event['source'] == 'local.file':
-        logger.info('Loading records from local file')
-        columns = [
+    columns = [
             'htid',
             'access',
             'rights',
@@ -45,6 +43,7 @@ def handler(event, context):
             'description',
             'source',
             'source_id',
+            'oclcs',
             'isbns',
             'issns',
             'lccns',
@@ -58,42 +57,18 @@ def handler(event, context):
             'language',
             'format',
             'collection_code',
+            'provider_entity',
             'responsible_entity',
             'digitization_entity',
-            'author',
-            'oclcs'
+            'access_profile',
+            'author'
         ]
+    if event['source'] == 'local.file':
+        logger.info('Loading records from local file')
         csvFile = loadLocalCSV(event['localFile'])
     else:
         logger.info('Checking for updates from HathiTrust TSV files')
-        columns = [
-            'htid',
-            'access',
-            'rights',
-            'bib_key',
-            'description',
-            'source',
-            'source_id',
-            'oclcs'
-            'isbns',
-            'issns',
-            'lccns',
-            'title',
-            'publisher_pub_date',
-            'rights_statement',
-            'rights_determination_date',
-            'gov_doc',
-            'copyright_date'
-            'pub_place',
-            'language',
-            'format',
-            'collection_code',
-            'provider_entity'
-            'responsible_entity',
-            'digitization_entity',
-            'access_profile'
-            'author'
-        ]
+        
         csvFile = fetchHathiCSV()
         if csvFile is None:
             logger.info('No daily update from HathiTrust. No actions to take')
