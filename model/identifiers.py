@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -9,7 +11,7 @@ from sqlalchemy.orm import relationship, selectinload
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from helpers.logHelpers import createLog
-from helpers.errorHelpers import DBError
+from helpers.errorHelpers import DBError, DataError
 
 from model.core import Base, Core
 
@@ -35,6 +37,20 @@ ITEM_IDENTIFIERS = Table(
     Column('item_id', Integer, ForeignKey('items.id')),
     Column('identifier_id', Integer, ForeignKey('identifiers.id'))
 )
+
+
+class DOAB(Core, Base):
+    """Table for DOAB Identifiers"""
+    __tablename__ = 'doab'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='doab')
+
+    def __repr__(self):
+        return '<DOAB(value={})>'.format(self.value)
 
 
 class Hathi(Core, Base):
@@ -203,6 +219,7 @@ class Identifier(Base):
     )
 
     # Related tables for specific identifier types
+    doab = relationship('DOAB', back_populates='identifier')
     gutenberg = relationship('Gutenberg', back_populates='identifier')
     hathi = relationship('Hathi', back_populates='identifier')
     oclc = relationship('OCLC', back_populates='identifier')
@@ -215,6 +232,7 @@ class Identifier(Base):
     generic = relationship('GENERIC', back_populates='identifier')
 
     identifierTypes = {
+        'doab': DOAB,
         'gutenberg': Gutenberg,
         'hathi': Hathi,
         'oclc': OCLC,
@@ -258,7 +276,9 @@ class Identifier(Base):
         specificIden = cls.identifierTypes[identifier['type']]
 
         # Create new entry in that specific identifiers table
-        idenRec = specificIden(value=identifier['identifier'])
+        idenRec = specificIden(
+            value=cls._cleanIdentifier(identifier['identifier'])
+        )
 
         # Add new identifier entry to the core table record
         idenTable = identifier['type'] if identifier['type'] is not None else 'generic'
@@ -276,9 +296,14 @@ class Identifier(Base):
         idenTable = idenType if idenType is not None else 'generic'
         
         try:
+            cleanIdentifier = cls._cleanIdentifier(identifier['identifier'])
+        except DataError:
+            return None
+        
+        try:
             return session.query(model.id) \
                 .join('identifiers', idenTable) \
-                .filter(cls.identifierTypes[idenType].value == identifier['identifier']) \
+                .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
                 .filter(model.id == recordID) \
                 .one()
         
@@ -306,17 +331,33 @@ class Identifier(Base):
             idenTable = idenType if idenType is not None else 'generic'
             
             try:
+                cleanIdentifier = cls._cleanIdentifier(ident['identifier'])
+            except DataError:
+                logger.debug('Received overly-generic identifier {}'.format(ident['identifier']))
+                continue
+                
+            try:
                 return session.query(model.id)\
                     .join('identifiers', idenTable)\
-                    .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
+                    .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
                     .one()
             except MultipleResultsFound:
                 logger.warning('Found multiple references from {}'.format(
-                    ident['identifier']
+                    cleanIdentifier
                 ))
-                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(ident['identifier']))
+                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(cleanIdentifier))
             except NoResultFound:
                 pass
         else:
             return None
+    
+    @staticmethod
+    def _cleanIdentifier(identifier):
+        # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
+        cleanIdentifier = re.sub(r'\(.+\)', '', identifier).strip()
 
+        # Block identifiers that consist of all zeros (A frequent test value)
+        if re.match(r'^(?:nan|[0]+)$', cleanIdentifier, re.IGNORECASE):
+            raise DataError('Non-unique identifier {} recieved'.format(cleanIdentifier))
+        
+        return cleanIdentifier

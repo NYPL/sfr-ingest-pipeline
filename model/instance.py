@@ -1,5 +1,4 @@
-import babelfish
-from babelfish.exceptions import LanguageConvertError
+
 import re
 from datetime import datetime
 from sqlalchemy import (
@@ -23,8 +22,10 @@ from model.item import Item
 from model.agent import Agent
 from model.altTitle import INSTANCE_ALTS, AltTitle
 from model.rights import Rights, INSTANCE_RIGHTS
+from model.language import Language
 
 from helpers.logHelpers import createLog
+from helpers.errorHelpers import DataError
 
 logger = createLog('instances')
 
@@ -42,7 +43,6 @@ class Instance(Core, Base):
     edition_statement = Column(Unicode)
     table_of_contents = Column(Unicode)
     copyright_date = Column(Date, index=True)
-    language = Column(String(2), index=True)
     extent = Column(Unicode)
     
     work_id = Column(Integer, ForeignKey('works.id'))
@@ -100,6 +100,7 @@ class Instance(Core, Base):
         links = instance.pop('links', [])
         alt_titles = instance.pop('alt_titles', None)
         rights = instance.pop('rights', [])
+        language = instance.pop('language', [])
 
         # Get fields targeted for works
         series = instance.pop('series', None)
@@ -130,7 +131,8 @@ class Instance(Core, Base):
                 dates=dates,
                 links=links,
                 alt_titles=alt_titles,
-                rights=rights
+                rights=rights,
+                language=language
             )
             return existing, 'updated'
 
@@ -144,7 +146,8 @@ class Instance(Core, Base):
             dates=dates,
             links=links,
             alt_titles=alt_titles,
-            rights=rights
+            rights=rights,
+            language=language
         )
         return newInstance, 'inserted'
 
@@ -159,31 +162,25 @@ class Instance(Core, Base):
         links = kwargs.get('links', [])
         dates = kwargs.get('dates', [])
         rights = kwargs.get('rights', [])
-
-        if instance['language'] is not None and len(instance['language']) != 2:
-            langs = re.split(r'\W+', instance['language'])
-            try:
-                lang = babelfish.Language(langs[0])
-                instance['language'] = lang.alpha2
-            except (ValueError, LanguageConvertError):
-                instance['language'] = None
-                logger.warning('Unable to assign language {} to instance {}'.format(langs[0], existing.id))
+        language = kwargs.get('language', [])
 
         for field, value in instance.items():
             if(value is not None):
                 setattr(existing, field, value)
 
         for iden in identifiers:
-
-            status, idenRec = Identifier.returnOrInsert(
-                session,
-                iden,
-                Instance,
-                existing.id
-            )
-
-            if status == 'new':
-                existing.identifiers.append(idenRec)
+            try:
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    iden,
+                    Instance,
+                    existing.id
+                )
+                if status == 'new':
+                    existing.identifiers.append(idenRec)
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
@@ -230,22 +227,25 @@ class Instance(Core, Base):
             )
             if updateRights is not None:
                 existing.rights.append(updateRights)
+        
+        if isinstance(language, str) or language is None:
+            language = [language]
+
+        for lang in language:
+            try:
+                newLang = Language.updateOrInsert(session, lang)
+                langRel = Language.lookupRelLang(session, newLang, Instance, existing)
+                if langRel is None:
+                    existing.language.append(newLang)
+            except DataError:
+                logger.warning('Unable to parse language {}'.format(lang))
 
         return existing
 
     @classmethod
     def insert(cls, session, instanceData, **kwargs):
         """Insert a new instance record"""
-        # Check if language codes are too long and convert if necessary
-        if len(instanceData['language']) != 2:
-            langs = re.split(r'\W+', instanceData['language'])
-            try:
-                lang = babelfish.Language(langs[0])
-                instanceData['language'] = lang.alpha2
-            except (ValueError, LanguageConvertError):
-                instanceData['language'] = None
-                logger.warning('Unable to assign language {} to new instance'.format(langs[0]))
-
+        
         instance = Instance(**instanceData)
 
         identifiers = kwargs.get('identifiers', [])
@@ -256,6 +256,7 @@ class Instance(Core, Base):
         links = kwargs.get('links', [])
         dates = kwargs.get('dates', [])
         rights = kwargs.get('rights', [])
+        language = kwargs.get('language', [])
 
         if agents is not None:
             for agent in agents:
@@ -269,8 +270,11 @@ class Instance(Core, Base):
                     )
 
         for iden in identifiers:
-            idenRec = Identifier.insert(iden)
-            instance.identifiers.append(idenRec)
+            try:
+                instance.identifiers.append(Identifier.insert(iden))
+            except DataError as err:
+                logger.warning('Received invalid identifier')
+                logger.debug(err)
 
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
@@ -291,6 +295,17 @@ class Instance(Core, Base):
             rightsDates = rightsStmt.pop('dates', [])
             newRights = Rights.insert(rightsStmt, dates=rightsDates)
             instance.rights.append(newRights)
+        
+        if isinstance(language, str) or language is None:
+            language = [language]
+        
+        for lang in language:
+            try:
+                newLang = Language.updateOrInsert(session, lang)
+                instance.language.append(newLang)
+            except DataError:
+                logger.debug('Unable to parse language {}'.format(lang))
+                continue
 
         # We need to get the ID of the instance to allow for asynchronously
         # storing the ePub file, so instance is added and flushed here
