@@ -94,7 +94,7 @@ def importRecord(session, record):
             logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
             logger.error('Cannot update ElasticSearch record for orphan instance {}'.format(dbInstance.id))
         else:
-            dbInstance.work.date_modified = datetime.now()
+            dbInstance.work.date_modified = datetime.utcnow()
         
         return op, 'Instance #{}'.format(dbInstance.id)
 
@@ -112,7 +112,7 @@ def importRecord(session, record):
             session.add(dbItem)
             session.flush()
         
-        dbItem.instance.work.date_modified = datetime.now()
+        dbItem.instance.work.date_modified = datetime.utcnow()
 
         return op, 'Item #{}'.format(dbItem.id)
 
@@ -123,4 +123,4 @@ def importRecord(session, record):
         dbItem = Item.addReportData(session, reportData)
         
         if dbItem is not None:
-            dbItem.instance.work.date_modified = datetime.now()
+            dbItem.instance.work.date_modified = datetime.utcnow()
