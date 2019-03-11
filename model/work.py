@@ -24,6 +24,8 @@ from model.date import WORK_DATES, DateField
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
+from model.rights import Rights
+from model.language import Language
 
 from helpers.errorHelpers import DBError
 from helpers.logHelpers import createLog
@@ -47,10 +49,10 @@ class Work(Core, Base):
     title = Column(Unicode, index=True)
     sort_title = Column(Unicode, index=True)
     sub_title = Column(Unicode, index=True)
-    language = Column(String(2), index=True)
     medium = Column(Unicode)
     series = Column(Unicode)
     series_position = Column(Integer)
+    summary = Column(Unicode)
 
     #
     # Relationships
@@ -89,11 +91,6 @@ class Work(Core, Base):
         secondary=WORK_LINKS,
         back_populates='works'
     )
-    dates = relationship(
-        'DateField',
-        secondary=WORK_DATES,
-        back_populates='works'
-    )
     import_json = relationship(
         'RawData',
         back_populates='work'
@@ -103,7 +100,18 @@ class Work(Core, Base):
         return '<Work(title={})>'.format(self.title)
     
     def __dir__(self):
-        return ['uuid', 'title', 'sort_title', 'sub_title', 'language', 'license', 'rights_statement', 'medium', 'series', 'series_position', 'date_modified', 'date_updated']
+        return [
+            'uuid',
+            'title',
+            'sort_title',
+            'sub_title',
+            'language',
+            'medium',
+            'series',
+            'series_position',
+            'date_modified',
+            'date_updated'
+        ]
 
 class AgentWorks(Core, Base):
     """Table relating agents and works. Is instantiated as a class to
