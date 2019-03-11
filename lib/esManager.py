@@ -10,7 +10,11 @@ from elasticsearch.exceptions import (
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
 
+
+from sqlalchemy.orm import configure_mappers
+
 from model.elasticDocs import (
+    Language,
     Work,
     Subject,
     Identifier,
@@ -19,7 +23,8 @@ from model.elasticDocs import (
     Instance,
     Link,
     Item,
-    AccessReport
+    AccessReport,
+    Rights
 )
 
 from helpers.logHelpers import createLog
@@ -37,6 +42,8 @@ class ESConnection():
 
         self.createElasticConnection()
         self.createIndex()
+
+        configure_mappers()
 
     def createElasticConnection(self):
         host = os.environ['ES_HOST']
@@ -94,14 +101,7 @@ class ESConnection():
             setattr(self.work, field, getattr(dbRec, field, None))
         
         for dateType, date in dbRec.loadDates(['issued', 'created']).items():
-            if date['range'] is None:
-                continue
-            dateRange = Range(
-                gte=date['range'].lower,
-                lte=date['range'].upper
-            )
-            setattr(self.work, dateType, dateRange)
-            setattr(self.work, dateType + '_display', date['display'])
+            ESConnection._insertDate(self.work, date, dateType)
         
         self.work.alt_titles = [
             altTitle.title
@@ -133,6 +133,10 @@ class ESConnection():
             for measure in dbRec.measurements
         ]
         self.work.links = [ESConnection.addLink(link) for link in dbRec.links]
+        self.work.language = [
+            ESConnection.addLanguage(lang)
+            for lang in dbRec.language
+        ]
         self.work.instances = [
             ESConnection.addInstance(instance)
             for instance in dbRec.instances
@@ -170,6 +174,25 @@ class ESConnection():
         return newMeasure
     
     @staticmethod
+    def addLanguage(language):
+        esLang = Language()
+        for field in dir(language):
+            setattr(esLang, field, getattr(language, field, None))
+
+        return esLang
+    
+    @staticmethod
+    def addRights(rights):
+        newRights = Rights()
+        for field in dir(rights):
+            setattr(newRights, field, getattr(rights, field, None))
+        
+        for dateType, date in rights.loadDates(['copyright_date']).items():
+            ESConnection._insertDate(newRights, date, dateType)
+        
+        return newRights
+    
+    @staticmethod
     def addAgent(record, agentRel):
         match = list(filter(
             lambda x: True 
@@ -177,7 +200,7 @@ class ESConnection():
         ))
         if len(match) > 0:
             existing = match[0]
-            existing.aliases.append(agentRel.role)
+            existing.roles.append(agentRel.role)
         else:
             esAgent = Agent()
             agent = agentRel.agent
@@ -189,17 +212,10 @@ class ESConnection():
                 esAgent.aliases.append(alias.alias)
             
             for dateType, date in agent.loadDates(['birth_date', 'death_date']).items():
-                if date['range'] is None:
-                    continue
-                dateRange = Range(
-                    gte=date['range'].lower,
-                    lte=date['range'].upper
-                )
-                setattr(esAgent, dateType, dateRange)
-                setattr(esAgent, dateType + '_display', date['display'])
+                ESConnection._insertDate(esAgent, date, dateType)
 
-            esAgent.role = agentRel.role
-
+            esAgent.roles = [agentRel.role]
+            
             return esAgent
     
     @staticmethod
@@ -208,15 +224,9 @@ class ESConnection():
         for field in dir(instance):
             setattr(esInstance, field, getattr(instance, field, None))
         
-        for dateType, date in instance.loadDates(['pub_date', 'copyright_date']).items():
-            if date['range'] is None:
-                continue
-            dateRange = Range(
-                gte=date['range'].lower,
-                lte=date['range'].upper
-            )
-            setattr(esInstance, dateType, dateRange)
-            setattr(esInstance, dateType + '_display', date['display'])
+        for dateType, date in instance.loadDates(['pub_date']).items():
+            ESConnection._insertDate(esInstance, date, dateType)
+        
         esInstance.identifiers = [
             ESConnection.addIdentifier(identifier)
             for identifier in instance.identifiers
@@ -236,6 +246,14 @@ class ESConnection():
         esInstance.items = [
             ESConnection.addItem(item) 
             for item in instance.items
+        ]
+        esInstance.rights = [
+            ESConnection.addRights(rights)
+            for rights in instance.rights
+        ]
+        esInstance.language = [
+            ESConnection.addLanguage(lang)
+            for lang in instance.language
         ]
         
         return esInstance
@@ -266,6 +284,10 @@ class ESConnection():
             ESConnection.addReport(report)
             for report in item.access_reports
         ]
+        esItem.rights = [
+            ESConnection.addRights(rights)
+            for rights in item.rights
+        ]
 
         return esItem
     
@@ -282,3 +304,14 @@ class ESConnection():
         ]
         
         return esReport.to_dict(True)
+    
+    @staticmethod
+    def _insertDate(record, date, dateType):
+        if date['range'] is None:
+                return
+        dateRange = Range(
+            gte=date['range'].lower,
+            lte=date['range'].upper
+        )
+        setattr(record, dateType, dateRange)
+        setattr(record, dateType + '_display', date['display'])

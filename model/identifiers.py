@@ -36,6 +36,20 @@ ITEM_IDENTIFIERS = Table(
 )
 
 
+class DOAB(Core, Base):
+    """Table for DOAB Identifiers"""
+    __tablename__ = 'doab'
+    id = Column(Integer, primary_key=True)
+    value = Column(Unicode, index=True)
+
+    identifier_id = Column(Integer, ForeignKey('identifiers.id'))
+
+    identifier = relationship('Identifier', back_populates='doab')
+
+    def __repr__(self):
+        return '<DOAB(value={})>'.format(self.value)
+
+
 class Hathi(Core, Base):
     """Table for HathiTrust Identifiers"""
     __tablename__ = 'hathi'
@@ -202,6 +216,7 @@ class Identifier(Base):
     )
 
     # Related tables for specific identifier types
+    doab = relationship('DOAB', back_populates='identifier')
     gutenberg = relationship('Gutenberg', back_populates='identifier')
     hathi = relationship('Hathi', back_populates='identifier')
     oclc = relationship('OCLC', back_populates='identifier')
@@ -214,6 +229,7 @@ class Identifier(Base):
     generic = relationship('GENERIC', back_populates='identifier')
 
     identifierTypes = {
+        'doab': DOAB,
         'gutenberg': Gutenberg,
         'hathi': Hathi,
         'oclc': OCLC,

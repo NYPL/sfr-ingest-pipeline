@@ -74,22 +74,27 @@ class DateField(Core, Base):
     works = relationship(
         'Work',
         secondary=WORK_DATES,
-        back_populates='dates'
+        backref='dates'
     )
     instances = relationship(
         'Instance',
         secondary=INSTANCE_DATES,
-        back_populates='dates'
+        backref='dates'
     )
     items = relationship(
         'Item',
         secondary=ITEM_DATES,
-        back_populates='dates'
+        backref='dates'
     )
     agents = relationship(
         'Agent',
         secondary=AGENT_DATES,
-        back_populates='dates'
+        backref='dates'
+    )
+    rights = relationship(
+        'Rights',
+        secondary=RIGHTS_DATES,
+        backref='dates'
     )
 
     rights = relationship(

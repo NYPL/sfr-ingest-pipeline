@@ -32,6 +32,17 @@ class BaseInner(InnerDoc):
         return super(BaseInner, self).save(**kwargs)
 
 
+class Rights(BaseInner):
+    source = Keyword()
+    license = Keyword()
+    rights_statement = Text(fields={'keyword': Keyword()})
+    rights_reason = Text(fields={'keyword': Keyword()})
+    copyright_date = DateRange()
+    copyright_date_display = Keyword(index=False)
+    determination_date = DateRange()
+    determination_date_display = Keyword(index=False)
+
+
 class Measurement(BaseInner):
     quantity = Keyword()
     value = Float()
@@ -81,18 +92,33 @@ class Identifier(BaseInner):
     identifier = Keyword()
 
 
+class Language(BaseInner):
+    language = Keyword()
+    iso_2 = Keyword()
+    iso_3 = Keyword()
+
+
+class Rights(BaseInner):
+    source = Keyword()
+    license = Keyword()
+    rights_statement = Text(fields={'keyword': Keyword()})
+    rights_reason = Text(fields={'keyword': Keyword()})
+    copyright_date = DateRange()
+    copyright_date_display = Keyword(index=False)
+
+
 class Item(BaseInner):
     source = Keyword()
     content_type = Keyword()
     modified = Date()
     drm = Keyword()
-    rights_uri = Keyword()
-
+    
     agents = Nested(Agent)
     measurements = Nested(Measurement)
     identifiers = Nested(Identifier)
     links = Nested(Link)
     access_reports = Nested(AccessReport)
+    rights = Nested(Rights)
 
 
 class Instance(BaseInner):
@@ -105,35 +131,30 @@ class Instance(BaseInner):
     edition = Text(fields={'keyword': Keyword()})
     edition_statement = Text(fields={'keyword': Keyword()})
     table_of_contents = Text()
-    copyright_date = DateRange()
-    copyright_date_display = Keyword(index=False)
-    language = Keyword(ignore_above=2)
     extent = Text()
-    license = Text(fields={'keyword': Keyword()})
-    rights_statement = Text(fields={'keyword': Keyword()})
-
+    
     items = Nested(Item)
     agents = Nested(Agent)
     measurements = Nested(Measurement)
     identifiers = Nested(Identifier)
     links = Nested(Link)
+    language = Nested(Language)
+    rights = Nested(Rights)
 
 
 class Work(BaseDoc):
     title = Text(fields={'keyword': Keyword()})
     sort_title = Keyword(index=False)
     uuid = Keyword(store=True)
-    language = Keyword(ignore_above=2)
-    license = Keyword()
-    rights_statement = Text(fields={'keyword': Keyword()})
     medium = Text(fields={'keyword': Keyword()})
     series = Text(fields={'keyword': Keyword()})
-    series_position = Short(ignore_malformed=True)
+    series_position = Keyword()
     issued = DateRange(format='date_optional_time')
     issued_display = Keyword(index=False)
     created = DateRange(format='date_optional_time')
     created_display = Keyword(index=False)
     alt_titles = Text(fields={'keyword': Keyword()})
+    summary = Text()
 
     identifiers = Nested(Identifier)
     subjects = Nested(Subject)
@@ -141,6 +162,8 @@ class Work(BaseDoc):
     measurements = Nested(Measurement)
     links = Nested(Link)
     instances = Nested(Instance)
+    language = Nested(Language)
+    rights = Nested(Rights)
 
     class Index:
         name = os.environ['ES_INDEX']
