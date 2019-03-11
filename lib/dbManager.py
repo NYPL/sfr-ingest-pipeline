@@ -55,8 +55,7 @@ def retrieveRecords(session, es):
         os.environ['INDEX_PERIOD'])
     )
     
-    fetchPeriod = datetime.now() - timedelta(seconds=int(os.environ['INDEX_PERIOD']))
-    
+    fetchPeriod = datetime.utcnow() - timedelta(seconds=int(os.environ['INDEX_PERIOD']))
     works = session.query(Work).filter(Work.date_modified >= fetchPeriod).all()
     
     logger.info('Retrieved {} works for indexing'.format(len(works)))

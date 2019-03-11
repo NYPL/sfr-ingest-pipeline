@@ -138,7 +138,15 @@ class ESConnection():
             for instance in dbRec.instances
         ]
         
+        self._process()
+
+    def _process(self):
         self.batch.append(self.work)
+        if len(self.batch) >= 100:
+            logger.info('Indexing batch of {} work records'.format(len(self.batch)))
+            self.processBatch()
+            # Empty batch array for next set of records to be indexed
+            self.batch = []
 
     @staticmethod
     def addIdentifier(identifier):
