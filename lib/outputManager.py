@@ -1,5 +1,8 @@
 import json
 import os
+import redis
+import elasticache_auto_discovery
+from datetime import datetime, timedelta
 
 from helpers.errorHelpers import OutputError
 from helpers.logHelpers import createLog
@@ -16,6 +19,12 @@ class OutputManager():
 
     KINESIS_CLIENT = createAWSClient('kinesis')
     SQS_CLIENT = createAWSClient('sqs')
+    AWS_REDIS = createAWSClient('elasticache')
+    REDIS_CLIENT = redis.Redis(
+        host='sfr-filter-query.rtovuw.0001.use1.cache.amazonaws.com',
+        port=6379,
+        socket_timeout=5
+    )
 
     def __init__(self):
         pass
@@ -71,6 +80,22 @@ class OutputManager():
         except:
             logger.error('SQS Write error!')
             raise OutputError('Failed to write result to output stream!')
+    
+    @classmethod
+    def checkRecentQueries(cls, queryString):
+        queryTime = cls.REDIS_CLIENT.get(queryString)
+        currentTime = datetime.utcnow() - timedelta(days=1)
+        if  (
+                queryTime is not None and
+                datetime.strptime(queryTime.decode('utf-8'), '%Y-%m-%dT%H:%M:%S') >= currentTime
+            ):
+            return True
+        
+        cls.REDIS_CLIENT.set(
+            queryString, 
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+        )
+        return False
 
     @staticmethod
     def _convertToJSON(obj):

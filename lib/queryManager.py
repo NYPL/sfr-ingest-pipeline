@@ -1,6 +1,7 @@
 import os
-
+import redis
 from lib.outputManager import OutputManager
+from helpers.logHelpers import createLog
 
 LOOKUP_IDENTIFIERS = [
     'oclc',   # OCLC Number
@@ -11,6 +12,8 @@ LOOKUP_IDENTIFIERS = [
     'swid',   # OCLC Work Identifier
     'stdnbr'  # Sandard Number (unclear)
 ]
+
+logger = createLog('query_constructor')
 
 
 def queryWork(work, workUUID):
@@ -28,27 +31,20 @@ def queryWork(work, workUUID):
     if len(lookupIDs) == 0:
         # If no identifiers are in the work record, lookup via title/author
         authors = getAuthors(work.agent_works)
-        print(work.title, authors)
-        OutputManager.putKinesis({
-            'type': 'authorTitle',
-            'uuid': workUUID,
-            'fields': {
-                'title': work.title,
-                'authors': authors
-            }
-        }, os.environ['CLASSIFY_STREAM'])
+        workTitleFields = {
+            'title': work.title,
+            'authors': authors
+        }
+        createClassifyQuery(workTitleFields, 'titleauthor', workUUID)
     else:
         # Otherwise, pass all valid identifiers to the Classify service
         for idType, ids in lookupIDs.items():
             for iden in ids:
-                OutputManager.putKinesis({
-                    'type': 'identifier',
-                    'uuid': workUUID,
-                    'fields': {
-                        'idType': idType,
-                        'identifier': iden.value
-                    }
-                }, os.environ['CLASSIFY_STREAM'])
+                idenFields = {
+                    'idType': idType,
+                    'identifier': iden.value
+                }
+                createClassifyQuery(idenFields, 'identifier', workUUID)
 
 
 def getIdentifiers(identifiers):
@@ -81,3 +77,16 @@ def getAuthors(agentWorks):
             agents.append(rel.agent.name)
 
     return ', '.join(agents)
+
+def createClassifyQuery(classifyQuery, queryType, uuid):
+    queryStr = [value for key, value in classifyQuery.items()]
+    if OutputManager.checkRecentQueries('{}'.format('/'.join(queryStr))):
+        OutputManager.putKinesis({
+            'type': queryType,
+            'uuid': uuid,
+            'fields': classifyQuery
+        }, os.environ['CLASSIFY_STREAM'])
+    else:
+        logger.info('{} was recently queried, can skip Classify'.format(
+            '/'.join(queryStr)
+        ))
