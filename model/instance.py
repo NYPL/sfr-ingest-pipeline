@@ -34,6 +34,7 @@ class Instance(Core, Base):
     edition = Column(Unicode)
     edition_statement = Column(Unicode)
     table_of_contents = Column(Unicode)
+    volume = Column(Unicode, index=True)
     extent = Column(Unicode)
     
     work_id = Column(Integer, ForeignKey('works.id'))
@@ -87,7 +88,8 @@ class Instance(Core, Base):
             'edition_statement',
             'table_of_contents',
             'language',
-            'extent'
+            'extent',
+            'volume'
         ]
 
 class AgentInstances(Core, Base):

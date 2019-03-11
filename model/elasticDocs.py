@@ -131,6 +131,7 @@ class Instance(BaseInner):
     edition = Text(fields={'keyword': Keyword()})
     edition_statement = Text(fields={'keyword': Keyword()})
     table_of_contents = Text()
+    volume = Text(fields={'keyword': Keyword()})
     extent = Text()
     
     items = Nested(Item)
