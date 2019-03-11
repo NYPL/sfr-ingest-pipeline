@@ -80,7 +80,7 @@ def getAuthors(agentWorks):
 
 def createClassifyQuery(classifyQuery, queryType, uuid):
     queryStr = [value for key, value in classifyQuery.items()]
-    if OutputManager.checkRecentQueries('{}'.format('/'.join(queryStr))):
+    if OutputManager.checkRecentQueries('{}'.format('/'.join(queryStr))) is False:
         OutputManager.putKinesis({
             'type': queryType,
             'uuid': uuid,

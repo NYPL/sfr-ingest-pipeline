@@ -83,6 +83,10 @@ class OutputManager():
     @classmethod
     def checkRecentQueries(cls, queryString):
         queryTime = cls.REDIS_CLIENT.get(queryString)
+        logger.debug('Checking query recency of {} at {}'.format(
+            queryString,
+            queryTime
+        ))
         currentTime = datetime.utcnow() - timedelta(days=1)
         if  (
                 queryTime is not None and
