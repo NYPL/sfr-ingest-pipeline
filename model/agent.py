@@ -104,13 +104,13 @@ class Agent(Core, Base):
         for field, value in agent.items():
             if(value is not None and value.strip() != ''):
                 setattr(existing, field, value)
+        
         if aliases is not None:
             aliasRecs = [
                 Alias.insertOrSkip(session, a, Agent, existing.id)
                 for a in aliases
             ]
             for alias in list(filter(None, aliasRecs)):
-                print(alias)
                 existing.aliases.append(alias)
 
         if type(link) is dict:
@@ -236,5 +236,4 @@ class Alias(Core, Base):
                 .filter(model.id == recordID)\
                 .one()
         except NoResultFound:
-            print('Should return Alias?')
             return Alias(alias=alias)
