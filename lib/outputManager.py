@@ -1,7 +1,6 @@
 import json
 import os
 import redis
-import elasticache_auto_discovery
 from datetime import datetime, timedelta
 
 from helpers.errorHelpers import OutputError

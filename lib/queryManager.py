@@ -1,5 +1,5 @@
 import os
-import redis
+
 from lib.outputManager import OutputManager
 from helpers.logHelpers import createLog
 
