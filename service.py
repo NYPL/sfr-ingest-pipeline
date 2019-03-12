@@ -1,7 +1,11 @@
 import json
 import base64
 
-from helpers.errorHelpers import NoRecordsReceived, DataError, OCLCError
+from helpers.errorHelpers import (
+    OCLCError,
+    NoRecordsReceived,
+    DataError
+)
 from helpers.logHelpers import createLog
 
 from lib.enhancer import enhanceRecord

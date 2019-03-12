@@ -98,18 +98,17 @@ class Format(DataObject):
         self.modified = modified
         self.drm = None
         self.measurements = []
-        self.rights_uri = None
-        self.link = None
+        self.links = []
         self.dates = []
 
         if (isinstance(link, Link)):
-            self.link = link
+            self.links = [link]
         else:
             self.setLink(url=link)
 
     def setLink(self, **linkFields):
         newLink = Link.createFromDict(**linkFields)
-        self.link = newLink
+        self.links = [newLink]
 
 
 class Agent(DataObject):
