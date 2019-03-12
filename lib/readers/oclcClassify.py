@@ -31,7 +31,7 @@ def classifyRecord(searchType, searchFields, workUUID):
     - uuid: UUID of the parent work record"""
     # TODO Check to be sure that we have not queried this URL recently
     # Probably within the last 24 hours
-    queryURL = formatURL(searchType, searchFields)
+    queryURL, title = formatURL(searchType, searchFields)
     logger.info('Fetching data for url: {}'.format(queryURL))
 
     # Load Query Response from OCLC Classify
@@ -41,10 +41,10 @@ def classifyRecord(searchType, searchFields, workUUID):
     # Parse response, and if it is a Multi-Work response, parse further
     logger.debug('Parsing Classify Response')
 
-    return parseClassify(rawData, workUUID)
+    return parseClassify(rawData, workUUID, title)
 
 
-def parseClassify(rawXML, workUUID):
+def parseClassify(rawXML, workUUID, checkTitle):
     """Parses results received from Classify. Response is based of the code
     recieved from the service, generically it will response with the XML of a
     work record or None if it recieves a different response code.
@@ -79,7 +79,15 @@ def parseClassify(rawXML, workUUID):
 
         for work in works:
             oclcID = work.get('wi')
-
+            oclcTitle = work.get('title', None)
+            if titleCheck(checkTitle.lower(), oclcTitle.lower()) is False:
+                logger.info('Found title mismatch between {} and {}. Skipping'.format(
+                    checkTitle,
+                    oclcTitle
+                ))
+                continue
+                
+            oclcTitle = work.get('title', None)
             KinesisOutput.putRecord({
                 'type': 'identifier',
                 'uuid': workUUID,
@@ -112,9 +120,9 @@ def formatURL(searchType, searchFields):
     of identifiers."""
     if searchType == 'authorTitle':
         searchTitle = searchFields['title'].replace('\r', ' ').replace('\n', ' ')
-        return generateClassifyURL(None, None, searchFields['title'], searchFields['authors'])
+        return generateClassifyURL(None, None, searchFields['title'], searchFields['authors']), searchTitle
     elif searchType == 'identifier':
-        return generateClassifyURL(searchFields['identifier'], searchFields['idType'], None, None)
+        return generateClassifyURL(searchFields['identifier'], searchFields['idType'], None, None), None
 
 
 
@@ -131,4 +139,16 @@ def generateClassifyURL(recID=None, recType=None, title=None, author=None):
 
         classifySearch = "{}{}{}".format(classifyRoot, titleParam, authorParam)
 
-    return '{}&wskey={}&summary=false'.format(classifySearch, os.environ['OCLC_KEY'])
+    return '{}&wskey={}&summary=false&maxRecs=250'.format(
+        classifySearch, 
+        os.environ['OCLC_KEY']
+    )
+
+
+def titleCheck(startTitle, oclcTitle):
+    compTitles = ['collected', 'complete', 'compilation']
+    for coll in compTitles:
+        if coll in oclcTitle and coll not in startTitle:
+            return False
+    
+    return True
