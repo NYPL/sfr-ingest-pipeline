@@ -1,0 +1,629 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "v2",
+    "title": "ResearchNow Search API",
+    "description": "REST API for Elasticsearch index for the ResearchNow Project"
+  },
+  "host": "platform.nypl.org",
+  "basePath": "/api",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "tags": [
+    {
+      "name": "research-now",
+      "description": "ResearchNow Search API"
+    }
+  ],
+  "paths": {
+    "/v0.1/sfr/work": {
+      "get": {
+        "tags": [
+          "research-now",
+          "sfr"
+        ],
+        "summary": "Single Work return of item in the SFR collection",
+        "description": "Accepts a single record identifier and returns a single work record",
+        "parameters": [
+          {
+            "name": "recordID",
+            "in": "query",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/sfr/works": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "Simple Search FRBRized holdings of Project Gutenberg, HathiTrust and Open Access Library",
+        "description": "Basic Elasticsearch queries can be sent against all fields and indexes",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Keyword terms to match in all fields and indexes",
+            "required": true,
+            "type": "string"
+          },{
+            "name": "per_page",
+            "in": "query",
+            "description": "Results to return per page. Defaults to 10",
+            "required": false,
+            "type": "integer"
+          },{
+            "name": "page",
+            "in": "query",
+            "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "Advanced Search for ResearchNow holdings",
+        "description": "Full ElasticSearch DSL queries (using bodybuilder) for full text or single field queries. This endpoint also enables, filtering and sorting results",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "body",
+            "description": "ElasticSearch DSL block containing a ResearchNow query",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MainQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v2/sfr/work": {
+      "get": {
+        "tags": [
+          "research-now",
+          "sfr"
+        ],
+        "summary": "(v2) GET Single work",
+        "description": "Accepts a single work identifier, passed through a GET request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now",
+          "sfr"
+        ],
+        "summary": "(v2) POST Single Work",
+        "description": "Accepts a single work identifier in a POST request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "body",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SingleQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v2/sfr/search": {
+      "get": {
+        "tags": [
+          "research-now",
+          "sfr"
+        ],
+        "summary": "(v2) GET Simple Search Endpoint",
+        "description": "Makes basic search queries against ElasticSearch index of Project Gutenberg, HathiTrust and Directory of Open Access Books data",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "query",
+            "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
+            "required": true,
+            "type": "string",
+            "enum": ["keyword", "title", "author", "subject"]
+          },{
+            "name": "query",
+            "in": "query",
+            "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
+            "required": true,
+            "type": "string"
+          },{
+            "name": "per_page",
+            "in": "query",
+            "description": "Results to return per page. Defaults to 10",
+            "required": false,
+            "type": "integer"
+          },{
+            "name": "page",
+            "in": "query",
+            "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now",
+          "sfr"
+        ],
+        "summary": "(v2) POST Simple Search Endpoint",
+        "description": "Will construct basic ElasticSearch DSL queries against the SFR index. Supports basic search endpoints",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "body",
+            "description": "ElasticSearch DSL block containing a ResearchNow query",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v2MainQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ResultResponse": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string",
+          "enum": [
+            "searchResult"
+          ]
+        },
+        "result": {
+          "$ref": "#/definitions/Result"
+        }
+      }
+    },
+    "Result": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "object",
+          "items": {
+            "type": "string"
+          },
+          "description": "An Elasticsearch JSON object"
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "string"
+        }
+      }
+    },
+    "SingleQuery": {
+      "title": "SingleQuery",
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "example": "000000-0000-0000-0000-00000000000",
+          "description": "Most frequently an UUID, can also be an OCLC, LCCN, ISBN or other identifier."
+        }
+      }
+    },
+    "v2MainQuery": {
+      "title": "MainQuery (v2)",
+      "type": "object",
+      "properties": {
+        "field": {
+          "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
+          "type": "string",
+          "example": "keyword|title|author|subject"
+        },
+        "query": {
+          "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
+          "example": "\"Personal Anecodotes\" OR narrative",
+          "type": "string"
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FilterBlock"
+          }
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SortBlock"
+          }
+        },
+        "aggregations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AggregationBlock"
+          }
+        },
+        "per_page": {
+          "description": "Results to return per page. Defaults to 10",
+          "example": 10,
+          "type": "integer"
+        },
+        "page": {
+          "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+          "example": 0,
+          "type": "integer"
+        }
+      }
+    },
+    "MainQuery": {
+      "title": "MainQuery",
+      "type": "object",
+      "properties": {
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QueryBlock"
+          }
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FilterBlock"
+          }
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SortBlock"
+          }
+        },
+        "aggregations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AggregationBlock"
+          }
+        },
+        "per_page": {
+          "description": "Results to return per page. Defaults to 10",
+          "example": 10,
+          "type": "integer"
+        },
+        "page": {
+          "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+          "example": 0,
+          "type": "integer"
+        }
+      }
+    },
+    "AggregationBlock": {
+      "title": "Aggregation",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "example": "terms",
+          "description": "Type of aggregation to run, most frequently 'terms'"
+        },
+        "field": {
+          "type": "string",
+          "example": "entities.name.keyword",
+          "description": "Field to run aggregation on"
+        }
+      }
+    },
+    "SortBlock": {
+      "title": "Sort",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "example": "title.keyword",
+          "description": "An ElasticSearch field to sort results by"
+        },
+        "dir": {
+          "type": "string",
+          "example": "asc",
+          "enum": ["asc", "desc"],
+          "description": "The direction in which to sort results"
+        }
+      }
+    },
+    "FilterBlock": {
+      "title": "Filter",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "example": "language",
+          "description": "Field on which to match results by (effectively exact-match search)"
+        },
+        "value": {
+          "type": "string",
+          "example": "it",
+          "description": "Value on which to filter. Can be a string (for term filters), or an object such as {'gte': 2000} for years"
+        }
+      }
+    },
+    "QueryBlock": {
+      "title": "Query",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "example": "title",
+          "description": "Field to query"
+        },
+        "value": {
+          "type": "string",
+          "example": "divina",
+          "description": "Query value"
+        }
+      }
+    }
+  }
+}

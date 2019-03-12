@@ -1,11 +1,9 @@
-var config = require('config')
-var express = require('express')
-var bodyParser = require('body-parser')
-var logger = require('./lib/logger')
-var elasticsearch = require('elasticsearch')
-var SwaggerParser = require('swagger-parser')
-const pjson = require('./package.json')
-const swaggerDocs = require('./swagger.v0.1.json')
+const config = require('config')
+const express = require('express')
+const bodyParser = require('body-parser')
+const logger = require('./lib/logger')
+const SwaggerParser = require('swagger-parser')
+const swaggerDocs = require('./swagger.v2.json')
 
 require('dotenv').config()
 
@@ -14,45 +12,41 @@ app.logger = logger
 
 app.use(bodyParser.json())
 
-app.client = new elasticsearch.Client({
-    host: process.env.ELASTICSEARCH_HOST
-})
-
-
 app.all('*', function (req, res, next) {
-    res.header('Access-Control-Allow-Origin', '*')
-    res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-    res.header('Access-Control-Allow-Headers', 'Content-Type')
-    next()
+  res.header('Access-Control-Allow-Origin', '*')
+  res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+  res.header('Access-Control-Allow-Headers', 'Content-Type')
+  next()
 })
 
-// Routes
-// The Search Endpoints
-require('./routes/search')(app)
-// Single Record Lookup Endpoint
-require('./routes/work')(app)
+// Versioning
+// The API implements a new version when breaking changes are introduced
+// Different versions are routed off a base component in the URL
+// By default the API will implment v1, though this behavior can easily be
+// altered at a future point.
+// Further, old/deprecated versions can eventually be disabled.
+const v1 = require('./routes/v1/v1')
+const { v2Router } = require('./routes/v2/v2')
+app.use('/v2', v2Router)
+app.use('/v1', v1)
+app.use('/', v1)
 
-// Test that express routes are working.
-app.get('/', function (req, res) {
-    res.send(pjson.version)
-})
-
+// TODO: Implement different Swagger doc versions for versions of the API
 app.get('/research-now/swagger', function (req, res) {
-    res.send(swaggerDocs)
+  res.send(swaggerDocs)
 })
 
 app.get('/research-now/swagger-test', function (req, res) {
-    SwaggerParser.validate(swaggerDocs, (err, api) => {
-      if (err) res.send(err)
-      else res.send(`API name: ${api.info.title}, Version: ${api.info.version}`)
-    })
-
+  SwaggerParser.validate(swaggerDocs, (err, api) => {
+    if (err) res.send(err)
+    else res.send(`API name: ${api.info.title}, Version: ${api.info.version}`)
+  })
 })
 
 const port = process.env.PORT || config['port']
 
-app.listen(port, function () {
+const server = app.listen(port, function () {
   app.logger.info('Server started on port ' + port)
 })
 
-module.exports = app
+module.exports = server
