@@ -313,7 +313,7 @@ class HathiRecord():
     def buildWork(self):
         """Construct the SFR Work object from the Hathi data"""
         self.work.title = self.ingest['title']
-        self.work.series = self.ingest['description']
+        
         logger.info('Creating work record for {}'.format(self.work.title))
         # The primary identifier for this work is a HathiTrust bib reference
         self.work.primary_identifier = Identifier(
@@ -359,6 +359,7 @@ class HathiRecord():
         """
         self.instance.title = self.ingest['title']
         self.instance.language = self.ingest['language']
+        self.instance.volume = self.ingest['description']
 
         logger.info('Creating instance record for work {}'.format(self.work))
 

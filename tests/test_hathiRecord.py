@@ -98,7 +98,8 @@ class TestHathi(unittest.TestCase):
             'language': 'en',
             'copyright_date': '2019',
             'publisher_pub_date': 'New York [2019]',
-            'pub_place': 'nyu'
+            'pub_place': 'nyu',
+            'description': 'testing'
         }
         instanceTest = HathiRecord(testInstanceRow)
         instanceTest.parseIdentifiers = MagicMock()

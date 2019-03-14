@@ -85,6 +85,7 @@ class InstanceRecord(DataObject):
         self.pub_place = None
         self.edition = None
         self.edition_statement = None
+        self.volume = None
         self.table_of_contents = None
         self.agents = []
         self.identifiers = []
