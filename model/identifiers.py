@@ -325,13 +325,13 @@ class Identifier(Base):
         if found and raise an error if multiple matching records are found."""
         matchingRecs = defaultdict(int)
         for ident in cls._orderIdentifiers(identifiers):
+            if ident['type'] in ['lcc', 'ddc']:
+                continue
+
             try:
                 cleanIdentifier = cls._cleanIdentifier(ident['identifier'])
             except DataError:
                 logger.debug('Received overly-generic identifier {}'.format(ident['identifier']))
-                continue
-
-            if ident['type'] in ['lcc', 'ddc']:
                 continue
 
             logger.debug('Querying database for identifier {} ({})'.format(
@@ -349,20 +349,21 @@ class Identifier(Base):
         
         sortedMatches = sorted(matchingRecs.items(), key=lambda x: x[1], reverse=True)
         
-        return Identifier._returnTopMatch(sortedMatches)
+        topMatch, matches = Identifier._getTopMatch(sortedMatches)
+        return topMatch
 
     @classmethod
-    def _returnTopMatch(cls, matches):
-        for i in range(len(matches)):
-            try:
-                if matches[i][1] > matches[i+1][1]:
-                    return matches[i][0]
-                else:
-                    raise DataError('Found Multiple possible matches for identifier set!')
-            except IndexError:
-                return matches[i][0]
-        
-        return None
+    def _getTopMatch(cls, matches):
+        try:
+            if matches[0][1] <= matches[1][1]:
+                logger.warning('Could not find discinct match for record')
+                logger.debug(matches)
+                return None
+        except IndexError:
+            pass
+        logger.debug('Found Match to record {}'.format(matches[0][0]))
+        topMatch = matches.pop(0)
+        return topMatch[0], matches
 
     @classmethod
     def _assignRecs(cls, records, matches):
