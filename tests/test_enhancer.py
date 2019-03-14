@@ -10,7 +10,7 @@ class TestEnhancer(unittest.TestCase):
     @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_REGION': 'us-test-1'})
     @patch('lib.enhancer.classifyRecord', return_value=(True, True))
     @patch('lib.enhancer.readFromClassify')
-    @patch('lib.enhancer.KinesisOutput.putRecord')
+    @patch('lib.enhancer.OutputManager.putKinesis')
     def test_basic_enhancer(self, mock_classify, mock_read, mock_put):
         testRec = {
             'source': 'test',

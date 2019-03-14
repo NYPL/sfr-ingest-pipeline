@@ -5,7 +5,7 @@ from helpers.logHelpers import createLog
 from lib.dataModel import Agent, Identifier
 from lib.readers.oclcClassify import classifyRecord
 from lib.parsers.parseOCLC import readFromClassify
-from lib.kinesisWrite import KinesisOutput
+from lib.outputManager import OutputManager
 
 logger = createLog('enhancer')
 
@@ -53,7 +53,7 @@ def enhanceRecord(record):
             'method': 'update',
             'data': parsedData
         }
-        KinesisOutput.putRecord(outputObject, os.environ['OUTPUT_KINESIS'])
+        OutputManager.putKinesis(outputObject, os.environ['OUTPUT_KINESIS'])
 
     except OCLCError as err:
         logger.error('OCLC Query for work {} failed with message: {}'.format(workUUID, err.message))
