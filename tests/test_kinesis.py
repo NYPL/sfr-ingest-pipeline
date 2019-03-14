@@ -6,14 +6,14 @@ import json
 import os
 os.environ['OUTPUT_REGION'] = 'us-test-1'
 
-from lib.kinesisWrite import KinesisOutput
-from helpers.errorHelpers import KinesisError
+from lib.outputManager import OutputManager
+from helpers.errorHelpers import OutputError
 
 class TestKinesis(unittest.TestCase):
 
     @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_SHARD': '0', 'OUTPUT_STAGE': 'test'})
     def test_putRecord(self):
-        kinesis = KinesisOutput()
+        kinesis = OutputManager()
         stubber = Stubber(kinesis.KINESIS_CLIENT)
         expResp = {
             'ShardId': '1',
@@ -40,11 +40,11 @@ class TestKinesis(unittest.TestCase):
         stubber.add_response('put_record', expResp, expected_params)
         stubber.activate()
 
-        kinesis.putRecord(record, 'testStream')
+        kinesis.putKinesis(record, 'testStream')
 
     @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_SHARD': '0', 'OUTPUT_STAGE': 'test'})
     def test_putRecord_err(self):
-        kinesis = KinesisOutput()
+        kinesis = OutputManager()
         stubber = Stubber(kinesis.KINESIS_CLIENT)
 
         record = {'test': 'data'}
@@ -64,7 +64,7 @@ class TestKinesis(unittest.TestCase):
         stubber.add_client_error('put_record', expected_params=expected_params)
         stubber.activate()
         try:
-            kinesis.putRecord(record, 'testStream')
-        except KinesisError:
+            kinesis.putKinesis(record, 'testStream')
+        except OutputError:
             pass
-        self.assertRaises(KinesisError)
+        self.assertRaises(OutputError)

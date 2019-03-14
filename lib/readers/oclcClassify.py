@@ -5,7 +5,7 @@ from lxml import etree
 from helpers.errorHelpers import OCLCError
 from helpers.logHelpers import createLog
 
-from lib.kinesisWrite import KinesisOutput
+from lib.outputManager import OutputManager
 
 logger = createLog('classify_read')
 
@@ -80,22 +80,23 @@ def parseClassify(rawXML, workUUID, checkTitle):
         for work in works:
             oclcID = work.get('wi')
             oclcTitle = work.get('title', None)
-            if titleCheck(checkTitle.lower(), oclcTitle.lower()) is False:
-                logger.info('Found title mismatch between {} and {}. Skipping'.format(
-                    checkTitle,
-                    oclcTitle
-                ))
-                continue
+            if checkTitle is not None:
+                if titleCheck(checkTitle.lower(), oclcTitle.lower()) is False:
+                    logger.info('Found title mismatch between {} and {}. Skipping'.format(
+                        checkTitle,
+                        oclcTitle
+                    ))
+                    continue
                 
-            oclcTitle = work.get('title', None)
-            KinesisOutput.putRecord({
-                'type': 'identifier',
-                'uuid': workUUID,
-                'fields': {
-                    'idType': 'oclc',
-                    'identifier': oclcID
-                }
-            }, os.environ['CLASSIFY_STREAM'])
+            if OutputManager.checkRecentQueries('classify/oclc/{}'.format(oclcID)) is False:
+                OutputManager.putKinesis({
+                    'type': 'identifier',
+                    'uuid': workUUID,
+                    'fields': {
+                        'idType': 'oclc',
+                        'identifier': oclcID
+                    }
+                }, os.environ['CLASSIFY_STREAM'])
 
         raise OCLCError('Received Multi-Work response from Classify, returned records to input stream')
     else:

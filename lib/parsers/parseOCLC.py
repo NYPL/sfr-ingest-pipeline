@@ -6,7 +6,7 @@ from datetime import datetime
 from helpers.errorHelpers import OCLCError
 from helpers.logHelpers import createLog
 from lib.dataModel import WorkRecord, InstanceRecord, Format, Agent, Identifier, Link, Subject, Measurement
-from lib.kinesisWrite import KinesisOutput
+from lib.outputManager import OutputManager
 
 logger = createLog('classify_parse')
 
@@ -98,13 +98,11 @@ def parseEdition(edition):
     ]
 
     # Put OCLC# into Kinesis stream for reading by OCLC Lookup service
-    KinesisOutput.putRecord(
-        {
+    if OutputManager.checkRecentQueries('lookup/{}/{}'.format(oclcNo.type, oclcNo.identifier)) is False:
+        OutputManager.putQueue({
             'type': oclcNo.type,
             'identifier': oclcNo.identifier
-        },
-        os.environ['LOOKUP_STREAM']
-    )
+        })
 
     classifications = edition.findall('.//class', namespaces=NAMESPACE)
     classificationList = list(map(parseClassification, classifications))
