@@ -35,7 +35,7 @@ def queryWork(work, workUUID):
             'title': work.title,
             'authors': authors
         }
-        createClassifyQuery(workTitleFields, 'titleauthor', workUUID)
+        createClassifyQuery(workTitleFields, 'authorTitle', workUUID)
     else:
         # Otherwise, pass all valid identifiers to the Classify service
         for idType, ids in lookupIDs.items():
