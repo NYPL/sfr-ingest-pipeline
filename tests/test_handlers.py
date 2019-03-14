@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock, call
 
 from service import handler, loadLocalCSV, fetchHathiCSV, fileParser, rowParser
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
@@ -32,15 +32,16 @@ class TestHandler(unittest.TestCase):
         mock_parser.assert_called_once()
         self.assertTrue(resp)
 
-    @patch('service.fetchHathiCSV', return_value=None)
-    def test_handler_empty(self, mock_fetch):
+    @patch('service.fetchHathiCSV', return_value=['row1', 'row2'])
+    @patch('service.fileParser', return_value=True)
+    def test_handler_empty(self, mock_file, mock_fetch):
         testRec = {
             'source': 'Kinesis',
             'Records': [{'some': 'record'}]
         }
         resp = handler(testRec, None)
         mock_fetch.assert_called_once()
-        self.assertEqual(resp[0][0], 'empty')
+        self.assertTrue(resp)
 
     def test_local_csv_success(self):
         mOpen = mock_open(read_data='row1\nrow2\n')
@@ -60,13 +61,35 @@ class TestHandler(unittest.TestCase):
             mCSV.assert_called_once_with('localFile', newline='')
             self.assertEqual(rows[0][0], 'row1')
 
+    
     def test_local_csv_missing(self):
         with self.assertRaises(ProcessingError):
             loadLocalCSV('localFile')
 
+    @patch.dict('os.environ', {'HATHI_DATAFILES': 'datafile_url'})
     def test_fetch_hathi(self):
-        # Placeholder test until method is implemented
-        self.assertIsNone(fetchHathiCSV())
+        mock_tsv = mock_open()
+        with patch('service.requests') as mock_request:
+            with patch('service.open', mock_tsv, create=True):
+                mock_resp = MagicMock()
+                mock_resp.status_code = 200
+                mock_resp.json.return_value = [{
+                    'created': '2019-01-01T12:00:00-0',
+                    'url': 'hathitrust.org/test/file.txt.gz',
+                    'full': False
+                }]
+                mock_resp.content = 'test_content'
+                mock_request.get.return_value = mock_resp
+
+                fetchHathiCSV()
+
+                mock_request.get.assert_has_calls([
+                    call('datafile_url'),
+                    call().json(),
+                    call('hathitrust.org/test/file.txt.gz')
+                ])
+                
+
 
     @patch('service.loadCountryCodes', return_value={})
     def test_file_parser(self, mock_codes):

@@ -61,7 +61,8 @@ class TestHathi(unittest.TestCase):
             'gov_doc': 'f',
             'author': 'Author, Test',
             'copyright_date': '2019',
-            'rights': 'test_rights'
+            'rights': 'test_rights',
+            'rights_statement': 'bib'
         }
         workTest = HathiRecord(testRow)
 

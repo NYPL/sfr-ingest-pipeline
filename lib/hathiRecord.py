@@ -14,6 +14,7 @@ from lib.dataModel import (
 )
 
 from helpers.logHelpers import createLog
+from helpers.errorHelpers import DataError
 
 logger = createLog('hathiRecord')
 
@@ -86,6 +87,10 @@ class HathiRecord():
         'cc-by-3.0': {
             'license': 'https://creativecommons.org/licenses/by/3.0/',
             'statement': 'Creative Commons Attribution License, 3.0 Unported'
+        },
+        'cc-by-nc-sa-3.0': {
+            'license': 'https://creativecommons.org/licenses/by-nc-sa/3.0/',
+            'statement': 'Creative Commons Attribution, Non-Commercial, Sahre Alike License, 3.0 Unported'
         },
         'cc-by-nd-3.0': {
             'license': 'https://creativecommons.org/licenses/by-nd/3.0/',
@@ -160,6 +165,7 @@ class HathiRecord():
         'emory': 'Emory University',
         'flbog': 'State University System of Florida',
         'getty': 'Getty Research Institute',
+        'google': 'Google',
         'harvard': 'Harvard University',
         'hathitrust': 'HathiTrust',
         'illinois': 'University of Illinois at Urbana-Champaign',
@@ -290,6 +296,15 @@ class HathiRecord():
         logger.debug('Generating work record for bib record {}'.format(
             self.ingest['bib_key']
         ))
+
+        # If we don't have a valid rights code, this means that the row has
+        # been improperly formatted (generally fields out of order/misplaced)
+        # Raise a warning but continue if this is found to be true
+        if self.ingest['rights_statement'] not in HathiRecord.rightsReasons:
+            raise DataError('{} is malformed (columns missing or incorrect'.format(
+                self.ingest['htid']
+            ))
+
         self.buildWork()
 
         logger.debug('Generating instance record for hathi record {}'.format(

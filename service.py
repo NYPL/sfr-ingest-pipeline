@@ -1,5 +1,8 @@
 import csv
+import gzip
 import os
+import requests
+from datetime import datetime
 
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 from helpers.logHelpers import createLog
@@ -70,6 +73,9 @@ def handler(event, context):
         logger.info('Checking for updates from HathiTrust TSV files')
         
         csvFile = fetchHathiCSV()
+        logger.info('Returning {} records fetched from HathiTrust'.format(
+            str(len(csvFile))
+        ))
         if csvFile is None:
             logger.info('No daily update from HathiTrust. No actions to take')
             return [('empty', 'no updated records in retrieval period')]
@@ -116,7 +122,38 @@ def loadLocalCSV(localFile):
 
 
 def fetchHathiCSV():
-    return None
+    logger.info('Fetching most recent update file from HathiTrust')
+    fileList = requests.get(os.environ['HATHI_DATAFILES'])
+    if fileList.status_code != 200:
+        raise ProcessingError('Unable to load data files')
+    
+    logger.debug('Loaded JSON list of HathiFiles')
+    fileJSON = fileList.json()
+
+    logger.debug('Sorting JSON list of files by created date')
+    fileJSON.sort(key=lambda x: datetime.strptime(x['created'], '%Y-%m-%dT%H:%M:%S-%f').timestamp(), reverse=True)
+    for hathiFile in fileJSON:
+        if hathiFile['full'] is False:
+            logger.info('Found most recent file {} updated on {}'.format(
+                hathiFile['url'],
+                hathiFile['created']
+            ))
+            with open('tmp_hathi.txt.gz', 'wb') as hathiTSV:
+                logger.debug('Storing Downloaded HathiFile in tmp_hathi.txt.gz')
+                hathiReq = requests.get(hathiFile['url'])
+                hathiTSV.write(hathiReq.content)
+            break
+    
+    # At present we aren't downloading in-copyright works, so skip anything
+    # that has these rights codes
+    rightsSkips = ['ic', 'icus', 'ic-world', 'und']
+
+    with gzip.open('tmp_hathi.txt.gz', 'rt') as unzipTSV:
+        logger.debug('Parsing txt.gz file downloaded into TSV file')
+        hathiTSV = csv.reader(unzipTSV, delimiter='\t')
+        
+        logger.debug('Parse for all rows to return')
+        return [ r for r in hathiTSV if r[2] not in rightsSkips ]
 
 
 def fileParser(fileRows, columns):
