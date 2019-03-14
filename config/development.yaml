@@ -2,3 +2,7 @@
 # === ENVIRONMENT_VARIABLES ===
 environment_variables:
     LOG_LEVEL: debug
+    OUTPUT_STREAM: sfr-db-ingest-development
+    OUTPUT_SHARD: '0'
+
+    HATHI_DATAFILES: 'https://www.hathitrust.org/filebrowser/download/244651'
