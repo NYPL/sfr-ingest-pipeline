@@ -24,7 +24,7 @@ class InstanceTest(unittest.TestCase):
     @patch('model.instance.Identifier')
     def test_instance_lookup_existing(self, mock_identifier):
         mock_session = MagicMock()
-        mock_session.query().get.return_value = 'vol'
+        mock_session.query().filter().one_or_none.return_value = 'vol'
         mock_identifier.getByIdentifier.return_value = 1
 
         res = Instance.lookupInstance(mock_session, ['identifier'], 'vol')

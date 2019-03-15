@@ -164,7 +164,7 @@ class Instance(Core, Base):
         """
         existingID = Identifier.getByIdentifier(Instance, session, identifiers)
         if existingID is not None and volume is not None:
-            existingVol = session.query(Instance.volume).get(existingID)
+            existingVol = session.query(Instance.volume).filter(Instance.id == existingID).one_or_none()
             if existingVol != volume:
                 existingID = None
 
