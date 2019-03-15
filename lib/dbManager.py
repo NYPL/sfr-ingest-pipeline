@@ -71,7 +71,6 @@ def importRecord(session, record):
 
         if op == 'insert':
             session.add(dbWork)
-            session.flush()
 
         # If this is a newly fetched record, retrieve additional data from the
         # enhancement process. Specifically pass identifying information to
@@ -82,6 +81,7 @@ def importRecord(session, record):
         if record['method'] == 'insert':
             queryWork(dbWork, dbWork.uuid.hex)
 
+        dbWork.date_modified = datetime.utcnow()
         return op, dbWork.uuid.hex
 
     elif record['type'] == 'instance':

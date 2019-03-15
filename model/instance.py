@@ -330,7 +330,6 @@ class Instance(Core, Base):
         # storing the ePub file, so instance is added and flushed here
         # TODO evaluate if this is a good idea, or can be handled better elsewhere
         session.add(instance)
-        session.flush()
 
         for item in items:
             itemRec, op = Item.createOrStore(session, item, instance.id)

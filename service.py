@@ -47,14 +47,26 @@ def handler(event, context):
 def parseRecords(records):
     """Iterator for handling multiple incoming messages"""
     logger.debug('Parsing Messages')
+
+    logger.debug('Creating Session')
+    session = createSession(engine)
+
     try:
-        return [parseRecord(r) for r in records]
+        parseResults = [parseRecord(r, session) for r in records]
+        logger.debug('Parsed {} records. Committing results'.format(
+            str(len(parseResults))
+        ))
+        session.commit()
+        session.close()
+        return parseResults
     except (NoRecordsReceived, DataError, DBError) as err:
         logger.error('Could not process records in current invocation')
         logger.debug(err)
+        session.commit()
+        session.close()
 
 
-def parseRecord(encodedRec):
+def parseRecord(encodedRec, session):
     """Handles each individual record by parsing JSON from the base64 encoded
     string recieved from the Kinesis stream, creating a database session and
     inserting/updating the database to reflect this new data source. It will
@@ -83,12 +95,8 @@ def parseRecord(encodedRec):
         logger.debug(b64Err)
         raise DataError('Error in base64 encoding of record')
 
-    session = createSession(engine)
-
     try:
         result = importRecord(session, record)
-        session.flush()
-        session.commit()
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
@@ -98,7 +106,4 @@ def parseRecord(encodedRec):
         logger.debug(err)
         logger.debug(traceback.format_exc())
         raise DBError('unknown', 'Unable to parse/ingest record, see logs for error')
-    finally:
-        logger.debug('Closing Session')
-        session.close()
     return result
