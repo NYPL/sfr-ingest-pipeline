@@ -79,7 +79,7 @@ def importRecord(session, record):
 
         # TODO Only enhance if UUID has not been enhanced in the past N days
         if record['method'] == 'insert':
-            queryWork(dbWork, dbWork.uuid.hex)
+            queryWork(session, dbWork, dbWork.uuid.hex)
 
         dbWork.date_modified = datetime.utcnow()
         return op, dbWork.uuid.hex
