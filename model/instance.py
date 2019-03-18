@@ -206,8 +206,14 @@ class Instance(Core, Base):
                 logger.debug(err)
 
         for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Instance,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         for date in dates:
             updateDate = DateField.updateOrInsert(session, date, Instance, existing.id)

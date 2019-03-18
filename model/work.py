@@ -203,12 +203,20 @@ class Work(Core, Base):
             else:
                 newHoldings = newHoldings[0]
 
-            oldHoldings = list(filter(lambda x: x.quantity == 'holdings', existing.measurements))
+            oldHoldings = Measurement.getMeasurements(
+                session,
+                'holdings',
+                Work,
+                existing.id
+            )
 
             for holding in oldHoldings:
-                if float(newHoldings['value']) > holding.value:
-                    existing.title = newTitle
-                    break
+                try:
+                    if float(newHoldings['value']) > float(holding.value):
+                        existing.title = newTitle
+                        break
+                except TypeError:
+                    pass
             else:
                 existing.alt_titles.append(AltTitle(title=newTitle))
 
@@ -259,10 +267,14 @@ class Work(Core, Base):
                 existing.subjects.append(subjectRec)
 
         for measurement in measurements:
-            # TODO Do we want to merge measurements in some instances?
-            # Leaving as is for now
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Work,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         for link in links:
             updateLink = Link.updateOrInsert(session, link, Work, existing.id)

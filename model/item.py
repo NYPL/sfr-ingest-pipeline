@@ -265,8 +265,14 @@ class Item(Core, Base):
                 logger.debug(err)
 
         for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Item,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         for link in links:
             existingLink = Link.lookupLink(session, link, cls, existing.id)

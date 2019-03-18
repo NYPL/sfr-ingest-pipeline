@@ -62,6 +62,7 @@ class Subject(Core, Base):
 
         if existingSubject is not None:
             return 'update', Subject.update(
+                session,
                 existingSubject,
                 subject,
                 measurements=measurements
@@ -73,7 +74,7 @@ class Subject(Core, Base):
         )
 
     @classmethod
-    def update(cls, existing, subject, **kwargs):
+    def update(cls, session, existing, subject, **kwargs):
         """Update existing subject record"""
         measurements = kwargs.get('measurements', [])
 
@@ -88,8 +89,14 @@ class Subject(Core, Base):
         # It does not make sense for this data to be stored here. (Unless we
         # update what data a measurement encodes.)
         for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Subject,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         return existing
 
