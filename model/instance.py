@@ -222,16 +222,19 @@ class Instance(Core, Base):
                 existing.items.append(itemRec)
 
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            if roles is None:
-                roles = ['author']
-            for role in roles:
-                if AgentInstances.roleExists(session, agentRec, role, Instance, existing.id) is None:
-                    AgentInstances(
-                        agent=agentRec,
-                        instance=existing,
-                        role=role
-                    )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                if roles is None:
+                    roles = ['author']
+                for role in roles:
+                    if AgentInstances.roleExists(session, agentRec, role, Instance, existing.id) is None:
+                        AgentInstances(
+                            agent=agentRec,
+                            instance=existing,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Instance, existing.id), altTitles)):
             existing.alt_titles.append(AltTitle(title=altTitle))
@@ -282,15 +285,18 @@ class Instance(Core, Base):
         language = kwargs.get('language', [])
 
         if agents is not None:
-            for agent in agents:
-                agentRec, roles = Agent.updateOrInsert(session, agent)
-                for role in roles:
-                    print(agentRec, instance, role)
-                    AgentInstances(
-                        agent=agentRec,
-                        instance=instance,
-                        role=role
-                    )
+            try:
+                for agent in agents:
+                    agentRec, roles = Agent.updateOrInsert(session, agent)
+                    for role in roles:
+                        print(agentRec, instance, role)
+                        AgentInstances(
+                            agent=agentRec,
+                            instance=instance,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for iden in identifiers:
             try:

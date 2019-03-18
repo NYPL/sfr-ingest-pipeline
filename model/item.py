@@ -223,13 +223,16 @@ class Item(Core, Base):
             item.rights.append(newRights)
 
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            for role in roles:
-                AgentItems(
-                    agent=agentRec,
-                    item=item,
-                    role=role
-                )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                for role in roles:
+                    AgentItems(
+                        agent=agentRec,
+                        item=item,
+                        role=role
+                    )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         return item
 
@@ -288,16 +291,19 @@ class Item(Core, Base):
                 existing.rights.append(updateRights)
         
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            if roles is None:
-                roles = ['repository']
-            for role in roles:
-                if AgentItems.roleExists(session, agentRec, role, Item, existing.id) is None:
-                    AgentItems(
-                        agent=agentRec,
-                        item=existing,
-                        role=role
-                    )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                if roles is None:
+                    roles = ['repository']
+                for role in roles:
+                    if AgentItems.roleExists(session, agentRec, role, Item, existing.id) is None:
+                        AgentItems(
+                            agent=agentRec,
+                            item=existing,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
     @classmethod
     def addReportData(cls, session, aceReport):

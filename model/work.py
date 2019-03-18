@@ -235,16 +235,19 @@ class Work(Core, Base):
                 logger.debug(err)
 
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            if roles is None:
-                roles = ['author']
-            for role in roles:
-                if AgentWorks.roleExists(session, agentRec, role, Work, existing.id) is None:
-                    AgentWorks(
-                        agent=agentRec,
-                        work=existing,
-                        role=role
-                    )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                if roles is None:
+                    roles = ['author']
+                for role in roles:
+                    if AgentWorks.roleExists(session, agentRec, role, Work, existing.id) is None:
+                        AgentWorks(
+                            agent=agentRec,
+                            work=existing,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Work, existing.id), altTitles)):
             existing.alt_titles.append(AltTitle(title=altTitle))
@@ -340,13 +343,16 @@ class Work(Core, Base):
                 logger.debug(err)
 
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            for role in roles:
-                AgentWorks(
-                    agent=agentRec,
-                    work=work,
-                    role=role
-                )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                for role in roles:
+                    AgentWorks(
+                        agent=agentRec,
+                        work=work,
+                        role=role
+                    )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for altTitle in altTitles:
             work.alt_titles.append(AltTitle(title=altTitle))
