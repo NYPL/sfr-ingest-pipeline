@@ -272,15 +272,15 @@ class Work(Core, Base):
             if updateDate is not None:
                 existing.dates.append(updateDate)
         
-        for rightsStmt in rights:
-            updateRights = Rights.updateOrInsert(
-                session,
-                rightsStmt,
-                Work,
-                existing.id
-            )
-            if updateRights is not None:
-                existing.rights.append(updateRights)
+        #for rightsStmt in rights:
+        #    updateRights = Rights.updateOrInsert(
+        #        session,
+        #        rightsStmt,
+        #        Work,
+        #        existing.id
+        #    )
+        #    if updateRights is not None:
+        #        existing.rights.append(updateRights)
         
         if isinstance(language, str) or language is None:
             language = [language]
@@ -368,10 +368,10 @@ class Work(Core, Base):
             newDate = DateField.insert(date)
             work.dates.append(newDate)
         
-        for rightsStmt in rights:
-            rightsDates = rightsStmt.pop('dates', [])
-            newRights = Rights.insert(rightsStmt, dates=rightsDates)
-            work.rights.append(newRights)
+        #for rightsStmt in rights:
+        #    rightsDates = rightsStmt.pop('dates', [])
+        #    newRights = Rights.insert(rightsStmt, dates=rightsDates)
+        #    work.rights.append(newRights)
         
         if isinstance(language, str) or language is None:
             language = [language]

@@ -41,6 +41,7 @@ class Instance(Core, Base):
     pub_place = Column(Unicode, index=True)
     edition = Column(Unicode)
     edition_statement = Column(Unicode)
+    volume = Column(Unicode, index=True)
     table_of_contents = Column(Unicode)
     copyright_date = Column(Date, index=True)
     extent = Column(Unicode)
@@ -107,8 +108,12 @@ class Instance(Core, Base):
         seriesPos = instance.pop('series_position', None)
         subjects = instance.pop('subjects', [])
 
-
-        existingID = Identifier.getByIdentifier(Instance, session, identifiers)
+        # Check for a matching instance by identifiers (and volume if present)
+        existingID = Instance.lookupInstance(
+            session,
+            identifiers,
+            instance.get('volume', None)    
+        )
         if existingID is not None:
             existing = session.query(Instance).get(existingID)
             parentWork = existing.work
@@ -150,6 +155,20 @@ class Instance(Core, Base):
             language=language
         )
         return newInstance, 'inserted'
+
+    @classmethod
+    def lookupInstance(cls, session, identifiers, volume):
+        """Query for an existing instance. Generally this will be returned
+        by a simple identifier match, but if we have volume data, check to
+        be sure that these are the same volume (generally only for) periodicals
+        """
+        existingID = Identifier.getByIdentifier(Instance, session, identifiers)
+        if existingID is not None and volume is not None:
+            existingVol = session.query(Instance.volume).filter(Instance.id == existingID).one_or_none()
+            if existingVol != volume:
+                existingID = None
+
+        return existingID
 
     @classmethod
     def update(cls, session, existing, instance, **kwargs):

@@ -1,19 +1,42 @@
 import os
 
-from lib.outputManager import OutputManager
+from model.work import Work
+from model.identifiers import (
+    OCLC,
+    OWI,
+    LCCN,
+    ISBN,
+    ISSN,
+    Identifier,
+    WORK_IDENTIFIERS
+)
 
+from lib.outputManager import OutputManager
+from helpers.logHelpers import createLog
+
+# Other Possible Identifiers
+# upc
+# stdnbr
 LOOKUP_IDENTIFIERS = [
     'oclc',   # OCLC Number
     'isbn',   # ISBN (10 or 13)
     'issn',   # ISSN
-    'upc',    # UPC (Probably unused)
     'lccn',   # LCCN
     'swid',   # OCLC Work Identifier
-    'stdnbr'  # Sandard Number (unclear)
 ]
 
+IDENTIFIER_TYPES = {
+        'oclc': OCLC,
+        'swid': OWI,
+        'lccn': LCCN,
+        'isbn': ISBN,
+        'issn': ISSN,
+    }
 
-def queryWork(work, workUUID):
+logger = createLog('query_constructor')
+
+
+def queryWork(session, work, workUUID):
     """This takes a work record that has not been queried for enhanced data
     and begins that process. It extracts one of two things from the work record
     to allow for this lookup.
@@ -23,50 +46,39 @@ def queryWork(work, workUUID):
     It will also pass the UUID of the database record, which will be used to
     match the returned data with the existing record."""
 
-    lookupIDs = getIdentifiers(work.identifiers)
+    lookupIDs = getIdentifiers(session, work)
 
     if len(lookupIDs) == 0:
         # If no identifiers are in the work record, lookup via title/author
         authors = getAuthors(work.agent_works)
-        print(work.title, authors)
-        OutputManager.putKinesis({
-            'type': 'authorTitle',
-            'uuid': workUUID,
-            'fields': {
-                'title': work.title,
-                'authors': authors
-            }
-        }, os.environ['CLASSIFY_STREAM'])
+        workTitleFields = {
+            'title': work.title,
+            'authors': authors
+        }
+        createClassifyQuery(workTitleFields, 'authorTitle', workUUID)
     else:
         # Otherwise, pass all valid identifiers to the Classify service
         for idType, ids in lookupIDs.items():
             for iden in ids:
-                OutputManager.putKinesis({
-                    'type': 'identifier',
-                    'uuid': workUUID,
-                    'fields': {
-                        'idType': idType,
-                        'identifier': iden.value
-                    }
-                }, os.environ['CLASSIFY_STREAM'])
+                idenFields = {
+                    'idType': idType,
+                    'identifier': iden
+                }
+                createClassifyQuery(idenFields, 'identifier', workUUID)
 
 
-def getIdentifiers(identifiers):
+def getIdentifiers(session, work):
     """Checks for the existence of identifiers that can be used with the OCLC
     Classify API. If none are found, will return an empty dict"""
 
     lookupIDs = {}
-
-    for identifier in identifiers:
-        for source in LOOKUP_IDENTIFIERS:
-            try:
-                if len(getattr(identifier, source)) > 0:
-                    lookupIDs[source] = []
-                    sourceList = getattr(identifier, source)
-                    for iden in sourceList:
-                        lookupIDs[source].append(iden)
-            except AttributeError:
-                pass
+    for source in LOOKUP_IDENTIFIERS:
+        typeIDs = session.query(IDENTIFIER_TYPES[source].value)\
+            .join(Identifier, WORK_IDENTIFIERS, Work)\
+            .filter(Work.id == work.id)\
+            .all()
+        if len(typeIDs) < 1: continue
+        lookupIDs[source] = [i[0] for i in typeIDs]
 
     return lookupIDs
 
@@ -81,3 +93,16 @@ def getAuthors(agentWorks):
             agents.append(rel.agent.name)
 
     return ', '.join(agents)
+
+def createClassifyQuery(classifyQuery, queryType, uuid):
+    queryStr = [value for key, value in classifyQuery.items()]
+    if OutputManager.checkRecentQueries('{}'.format('/'.join(queryStr))) is False:
+        OutputManager.putKinesis({
+            'type': queryType,
+            'uuid': uuid,
+            'fields': classifyQuery
+        }, os.environ['CLASSIFY_STREAM'])
+    else:
+        logger.info('{} was recently queried, can skip Classify'.format(
+            '/'.join(queryStr)
+        ))

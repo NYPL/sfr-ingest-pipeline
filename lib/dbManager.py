@@ -71,7 +71,6 @@ def importRecord(session, record):
 
         if op == 'insert':
             session.add(dbWork)
-            session.flush()
 
         # If this is a newly fetched record, retrieve additional data from the
         # enhancement process. Specifically pass identifying information to
@@ -80,8 +79,9 @@ def importRecord(session, record):
 
         # TODO Only enhance if UUID has not been enhanced in the past N days
         if record['method'] == 'insert':
-            queryWork(dbWork, dbWork.uuid.hex)
+            queryWork(session, dbWork, dbWork.uuid.hex)
 
+        dbWork.date_modified = datetime.utcnow()
         return op, dbWork.uuid.hex
 
     elif record['type'] == 'instance':
@@ -94,7 +94,7 @@ def importRecord(session, record):
             logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
             logger.error('Cannot update ElasticSearch record for orphan instance {}'.format(dbInstance.id))
         else:
-            dbInstance.work.date_modified = datetime.now()
+            dbInstance.work.date_modified = datetime.utcnow()
         
         return op, 'Instance #{}'.format(dbInstance.id)
 
@@ -112,7 +112,7 @@ def importRecord(session, record):
             session.add(dbItem)
             session.flush()
         
-        dbItem.instance.work.date_modified = datetime.now()
+        dbItem.instance.work.date_modified = datetime.utcnow()
 
         return op, 'Item #{}'.format(dbItem.id)
 
@@ -123,4 +123,4 @@ def importRecord(session, record):
         dbItem = Item.addReportData(session, reportData)
         
         if dbItem is not None:
-            dbItem.instance.work.date_modified = datetime.now()
+            dbItem.instance.work.date_modified = datetime.utcnow()
