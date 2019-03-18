@@ -15,6 +15,7 @@ from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError, DataError
 
 from model.core import Base, Core
+from model.equivalent import Equivalent
 
 logger = createLog('identifiers')
 
@@ -324,6 +325,7 @@ class Identifier(Base):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
         matchingRecs = defaultdict(int)
+        sortedMatches = []
         for ident in cls._orderIdentifiers(identifiers):
             if ident['type'] in ['lcc', 'ddc']:
                 continue
@@ -344,12 +346,25 @@ class Identifier(Base):
                 .join('identifiers', idenTable)\
                 .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
                 .all()
-            
             Identifier._assignRecs(records, matchingRecs)
         
         sortedMatches = sorted(matchingRecs.items(), key=lambda x: x[1], reverse=True)
         
-        topMatch, matches = Identifier._getTopMatch(sortedMatches)
+        if len(sortedMatches) == 0:
+            return None
+        
+        topMatch = Identifier._getTopMatch(sortedMatches)
+
+        if len(sortedMatches) > 0 and topMatch is not None:
+            logger.debug('Adding equivalency records for additional matches')
+            Equivalent.addEquivalencies(
+                session,
+                topMatch,
+                sortedMatches,
+                model.__tablename__,
+                identifiers
+            )
+
         return topMatch
 
     @classmethod
@@ -363,7 +378,7 @@ class Identifier(Base):
             pass
         logger.debug('Found Match to record {}'.format(matches[0][0]))
         topMatch = matches.pop(0)
-        return topMatch[0], matches
+        return topMatch[0]
 
     @classmethod
     def _assignRecs(cls, records, matches):
