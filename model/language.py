@@ -67,6 +67,12 @@ class Language(Core, Base):
     def __dir__(self):
         return ['language', 'iso_2', 'iso_3']
 
+
+    BAD_ISO_STRINGS = {
+        'ger': 'deu',
+        'fre': 'fra'
+    }
+    
     @classmethod
     def updateOrInsert(cls, session, language):
         
@@ -118,6 +124,10 @@ class Language(Core, Base):
     
     @classmethod
     def loadFromString(cls, language):
+
+        if language in cls.BAD_ISO_STRINGS:
+            language = cls.BAD_ISO_STRINGS[language]
+
         if len(language) == 2:
             pyLang = pycountry.languages.get(alpha_2=language.lower())
         elif len(language) == 3:
