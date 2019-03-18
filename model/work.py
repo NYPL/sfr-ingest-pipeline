@@ -226,7 +226,6 @@ class Work(Core, Base):
                 status, idenRec = Identifier.returnOrInsert(
                     session,
                     iden,
-                    Work,
                     existing.id
                 )
                 if status == 'new':

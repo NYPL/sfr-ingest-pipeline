@@ -120,11 +120,16 @@ class Instance(Core, Base):
             if parentWork is None and work is not None:
                 existing.work = work
                 parentWork = work
-            parentWork.updateFields(**{
-                'series': series,
-                'series_position': seriesPos
-            })
-            parentWork.importSubjects(session, subjects)
+            try:
+                parentWork.updateFields(**{
+                    'series': series,
+                    'series_position': seriesPos
+                })
+                parentWork.importSubjects(session, subjects)
+            except AttributeError:
+                logger.warning('Matched orphan instance {}, cannot update parent'.format(
+                    str(existing.id)
+                ))
             Instance.update(
                 session,
                 existing,
@@ -192,7 +197,6 @@ class Instance(Core, Base):
                 status, idenRec = Identifier.returnOrInsert(
                     session,
                     iden,
-                    Instance,
                     existing.id
                 )
                 if status == 'new':

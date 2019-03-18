@@ -43,7 +43,7 @@ class DOAB(Core, Base):
     """Table for DOAB Identifiers"""
     __tablename__ = 'doab'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -57,7 +57,7 @@ class Hathi(Core, Base):
     """Table for HathiTrust Identifiers"""
     __tablename__ = 'hathi'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -71,7 +71,7 @@ class Gutenberg(Core, Base):
     """Table for Gutenberg Identifiers"""
     __tablename__ = 'gutenberg'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -85,7 +85,7 @@ class OCLC(Core, Base):
     """Table for OCLC Identifiers"""
     __tablename__ = 'oclc'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -99,7 +99,7 @@ class LCCN(Core, Base):
     """Table for Library of Congress Control Numbers"""
     __tablename__ = 'lccn'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -113,7 +113,7 @@ class ISBN(Core, Base):
     """Table for ISBNs (10 and 13 digits)"""
     __tablename__ = 'isbn'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -127,7 +127,7 @@ class OWI(Core, Base):
     """Table for OCLC Work Identifiers"""
     __tablename__ = 'owi'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -141,7 +141,7 @@ class ISSN(Core, Base):
     """Table for ISSNs"""
     __tablename__ = 'issn'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -155,7 +155,7 @@ class LCC(Core, Base):
     """Table for Library of Congress Cataloging Numbers"""
     __tablename__ = 'lcc'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -169,7 +169,7 @@ class DDC(Core, Base):
     """Table for Dewey Decimal Control Numbers"""
     __tablename__ = 'ddc'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -183,7 +183,7 @@ class GENERIC(Core, Base):
     """Table for generic or otherwise uncontroller identifiers"""
     __tablename__ = 'generic'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -249,19 +249,18 @@ class Identifier(Base):
         return '<Identifier(type={})>'.format(self.type)
 
     @classmethod
-    def returnOrInsert(cls, session, identifier, model, recordID):
+    def returnOrInsert(cls, session, identifier, recordID):
         """Manages either the creation or return of an existing identifier"""
 
         if identifier is None:
             return None, None
-        existingIdenID = Identifier.lookupIdentifier(
+        existingIden = Identifier.lookupIdentifier(
             session,
             identifier,
-            model,
             recordID
         )
-        if existingIdenID is not None:
-            return 'existing', session.query(model).get(existingIdenID)
+        if existingIden is not None:
+            return 'existing', existingIden
 
         return 'new', Identifier.insert(identifier)
 
@@ -288,7 +287,7 @@ class Identifier(Base):
         return coreIden
 
     @classmethod
-    def lookupIdentifier(cls, session, identifier, model, recordID):
+    def lookupIdentifier(cls, session, identifier, recordID):
         """Query database for a specific identifier. Return if found and
         raise an error if duplicate identifiers are found for a single
         type."""
@@ -300,23 +299,10 @@ class Identifier(Base):
         except DataError:
             return None
         
-        try:
-            return session.query(model.id) \
-                .join('identifiers', idenTable) \
-                .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
-                .filter(model.id == recordID) \
-                .one()
-        
-        except MultipleResultsFound:
-            logger.error('Found multiple identifiers for {} ({})'.format(
-                identifier['identifier'],
-                identifier['type']
-            ))
-            raise DBError(identifier['type'], 'Found duplicate identifiers')
-        except NoResultFound:
-            pass
-
-        return None
+        ids = session.query(idenTable) \
+            .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
+            .all()
+        return ids[0]
 
     @classmethod
     def getByIdentifier(cls, model, session, identifiers):

@@ -253,7 +253,6 @@ class Item(Core, Base):
                 status, idenRec = Identifier.returnOrInsert(
                     session,
                     identifier,
-                    cls,
                     existing.id
                 )
                 if status == 'new':
