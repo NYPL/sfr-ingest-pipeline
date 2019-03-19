@@ -377,9 +377,9 @@ class AgentInstances(Core, Base):
     (e.g. author, editor)"""
 
     __tablename__ = 'agent_instances'
-    instance_id = Column(Integer, ForeignKey('instances.id'), index=True)
-    agent_id = Column(Integer, ForeignKey('agents.id'), index=True)
-    role = Column(String(64))
+    instance_id = Column(Integer, ForeignKey('instances.id'), primary_key=True)
+    agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
+    role = Column(String(64), primary_key=True)
 
     agentInstancesPkey = PrimaryKeyConstraint(
         'instance_id',

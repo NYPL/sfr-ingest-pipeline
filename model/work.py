@@ -466,9 +466,9 @@ class AgentWorks(Core, Base):
     (e.g. author, editor)"""
 
     __tablename__ = 'agent_works'
-    work_id = Column(Integer, ForeignKey('works.id'), index=True)
-    agent_id = Column(Integer, ForeignKey('agents.id'), index=True)
-    role = Column(String(64))
+    work_id = Column(Integer, ForeignKey('works.id'), primary_key=True)
+    agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
+    role = Column(String(64), primary_key=True)
 
     agentWorksPkey = PrimaryKeyConstraint(
         'work_id',
