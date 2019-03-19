@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 
 from sqlalchemy import (
     Column,
@@ -14,6 +15,7 @@ from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError, DataError
 
 from model.core import Base, Core
+from model.equivalent import Equivalent
 
 logger = createLog('identifiers')
 
@@ -308,37 +310,71 @@ class Identifier(Base):
     def getByIdentifier(cls, model, session, identifiers):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
-        for ident in identifiers:
-            logger.debug('Querying database for identifier {} ({})'.format(
-                ident['identifier'],
-                ident['type']
-            ))
-            idenType = ident['type']
-            idenTable = idenType if idenType is not None else 'generic'
-            
+        matchingRecs = defaultdict(int)
+        sortedMatches = []
+        for ident in cls._orderIdentifiers(identifiers):
+            if ident['type'] in ['lcc', 'ddc']:
+                continue
+
             try:
                 cleanIdentifier = cls._cleanIdentifier(ident['identifier'])
             except DataError:
                 logger.debug('Received overly-generic identifier {}'.format(ident['identifier']))
                 continue
-                
-            try:
-                return session.query(model.id)\
-                    .join('identifiers', idenTable)\
-                    .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
-                    .one()
-            except MultipleResultsFound:
-                logger.warning('Found multiple references from {}'.format(
-                    cleanIdentifier
-                ))
-                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(cleanIdentifier))
-            except NoResultFound:
-                pass
-        else:
+
+            logger.debug('Querying database for identifier {} ({})'.format(
+                cleanIdentifier,
+                ident['type']
+            ))
+            idenType = ident['type']
+            idenTable = idenType if idenType is not None else 'generic'  
+            records = session.query(model.id)\
+                .join('identifiers', idenTable)\
+                .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
+                .all()
+            Identifier._assignRecs(records, matchingRecs)
+        
+        sortedMatches = sorted(matchingRecs.items(), key=lambda x: x[1], reverse=True)
+        
+        if len(sortedMatches) == 0:
             return None
-    
+        
+        topMatch = Identifier._getTopMatch(sortedMatches)
+
+        if len(sortedMatches) > 0 and topMatch is not None:
+            logger.debug('Adding equivalency records for additional matches')
+            Equivalent.addEquivalencies(
+                session,
+                topMatch,
+                sortedMatches,
+                model.__tablename__,
+                identifiers
+            )
+
+        return topMatch
+
+    @classmethod
+    def _getTopMatch(cls, matches):
+        try:
+            if matches[0][1] <= matches[1][1]:
+                logger.warning('Could not find discinct match for record')
+                logger.debug(matches)
+                return None
+        except IndexError:
+            pass
+        logger.debug('Found Match to record {}'.format(matches[0][0]))
+        topMatch = matches.pop(0)
+        return topMatch[0]
+
+    @classmethod
+    def _assignRecs(cls, records, matches):
+        for r in records:
+            matches[r[0]] += 1
+        
     @staticmethod
     def _cleanIdentifier(identifier):
+        """Normalizes all identifiers received to remove issue ids"""
+
         # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
         cleanIdentifier = re.sub(r'\(.+\)', '', identifier).strip()
 
@@ -347,3 +383,27 @@ class Identifier(Base):
             raise DataError('Non-unique identifier {} recieved'.format(cleanIdentifier))
         
         return cleanIdentifier
+    
+    @staticmethod
+    def _orderIdentifiers(identifiers):
+        """Implement a custom sort order for identifiers for lookup. This is 
+        necessary to ensure that matches are properly made. The order of 
+        precedence is:
+        ISBN, ISSN, LCCN, OWI, OCLC, Hathi, DOAB, Gutenberg, DDC, LLC
+        This order is in the order of most likely match to be found and then
+        in descending order.
+        """
+        idWeight = {
+            'isbn': 1,
+            'issn': 2,
+            'lccn': 3,
+            'owi': 4,
+            'oclc': 5,
+            'hathi': 6,
+            'doab': 7,
+            'gutenberg': 8,
+            None: 9,
+            'lcc': 10,
+            'ddc': 11
+        }
+        return sorted(identifiers, key=lambda x:idWeight[x['type']])
