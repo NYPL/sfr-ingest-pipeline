@@ -267,6 +267,10 @@ class Identifier(Base):
 
     @classmethod
     def insert(cls, identifier):
+        logger.debug('Inserting new identifier {} ({})'.format(
+            identifier['identifier'],
+            identifier['type']
+        ))
         """Inserts a new identifier"""
 
         # Create a new entry in the core Identifier table
@@ -299,8 +303,8 @@ class Identifier(Base):
             cleanIdentifier = cls._cleanIdentifier(identifier['identifier'])
         except DataError:
             return None
-        
-        return session.query(idenTable) \
+        return session.query(Identifier) \
+            .join(idenTable) \
             .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
             .one_or_none()
     

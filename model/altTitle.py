@@ -52,7 +52,7 @@ class AltTitle(Core, Base):
 
         try:
             session.query(cls)\
-                .join(model.__tablename__)\
+                .join(model.__tablename__[:-1])\
                 .filter(cls.title == title)\
                 .filter(model.id == recordID)\
                 .one()

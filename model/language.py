@@ -70,7 +70,17 @@ class Language(Core, Base):
 
     BAD_ISO_STRINGS = {
         'ger': 'deu',
-        'fre': 'fra'
+        'fre': 'fra',
+        'chi': 'zho',
+        'wel': 'cym',
+        'tib': 'bod',
+        'alb': 'sqi',
+        'slo': 'slk',
+        'per': 'fas',
+        'dut': 'nld',
+        'ice': 'isl',
+        'gre': 'ell',
+        'cze': 'ces'
     }
     
     @classmethod

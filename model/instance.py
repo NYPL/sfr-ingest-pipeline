@@ -284,7 +284,7 @@ class Instance(Core, Base):
     @classmethod
     def insert(cls, session, instanceData, **kwargs):
         """Insert a new instance record"""
-        
+        logger.info('Inserting new instance record')
         instance = Instance(**instanceData)
 
         identifiers = kwargs.get('identifiers', [])
@@ -363,7 +363,7 @@ class Instance(Core, Base):
             itemRec, op = Item.createOrStore(session, item, instance.id)
             if op == 'inserted':
                 instance.items.append(itemRec)
-
+        logger.info('Inserted {}'.format(instance))
         return instance
 
     @classmethod

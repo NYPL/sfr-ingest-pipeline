@@ -129,7 +129,7 @@ class Measurement(Core, Base):
     def lookupMeasure(cls, session, measure, model, recordID):
         try:
             return session.query(cls)\
-                .join(model.__tablename__)\
+                .join(model.__tablename__[:-1])\
                 .filter(cls.quantity == measure.quantity)\
                 .filter(cls.source_id, measure.source_id)\
                 .filter(model.id == recordID)\
@@ -144,7 +144,7 @@ class Measurement(Core, Base):
     @classmethod
     def getMeasurements(cls, session, measure, model, recordID):
         return session.query(cls.value)\
-            .join(model.__tablename__)\
+            .join(model.__tablename__[:-1])\
             .filter(cls.quantity == measure)\
             .filter(model.id == recordID)\
             .all()
