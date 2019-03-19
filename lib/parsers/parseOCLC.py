@@ -40,7 +40,7 @@ def readFromClassify(workXML):
             work.get(measure),
             1,
             MEASUREMENT_TIME,
-            oclcNo
+            work.text
         ))
 
     authors = workXML.findall('.//author', namespaces=NAMESPACE)
@@ -87,9 +87,10 @@ def parseHeading(heading):
 
 def parseEdition(edition):
     """Parse an edition into a Instance record"""
+    oclcIdentifier = edition.get('oclc')
     oclcNo = Identifier(
         'oclc',
-        edition.get('oclc'),
+        oclcIdentifier,
         1
     )
 
@@ -113,7 +114,7 @@ def parseEdition(edition):
         edition.get('holdings'),
         1,
         MEASUREMENT_TIME,
-        oclcNo
+        oclcIdentifier
     )
 
     digHoldings = Measurement(
@@ -121,7 +122,7 @@ def parseEdition(edition):
         edition.get('eholdings'),
         1,
         MEASUREMENT_TIME,
-        oclcNo
+        oclcIdentifier
     )
 
     language = edition.get('language')
