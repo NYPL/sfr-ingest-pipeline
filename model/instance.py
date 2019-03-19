@@ -196,11 +196,18 @@ class Instance(Core, Base):
             try:
                 status, idenRec = Identifier.returnOrInsert(
                     session,
-                    iden,
-                    existing.id
+                    iden
                 )
                 if status == 'new':
                     existing.identifiers.append(idenRec)
+                else:
+                    if Identifier.getIdentiferRelationship(
+                        session,
+                        idenRec,
+                        Instance,
+                        existing.id
+                    ) is None:
+                        existing.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
@@ -306,7 +313,11 @@ class Instance(Core, Base):
 
         for iden in identifiers:
             try:
-                instance.identifiers.append(Identifier.insert(iden))
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    iden
+                )
+                instance.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)

@@ -200,7 +200,11 @@ class Item(Core, Base):
 
         for identifier in identifiers:
             try:
-                item.identifiers.append(Identifier.insert(identifier))
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    identifier
+                )
+                item.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
@@ -255,11 +259,18 @@ class Item(Core, Base):
             try:
                 status, idenRec = Identifier.returnOrInsert(
                     session,
-                    identifier,
-                    existing.id
+                    identifier
                 )
                 if status == 'new':
                     existing.identifiers.append(idenRec)
+                else:
+                    if Identifier.getIdentiferRelationship(
+                        session,
+                        idenRec,
+                        Item,
+                        existing.id
+                    ) is None:
+                        existing.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)

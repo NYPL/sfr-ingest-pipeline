@@ -251,15 +251,14 @@ class Identifier(Base):
         return '<Identifier(type={})>'.format(self.type)
 
     @classmethod
-    def returnOrInsert(cls, session, identifier, recordID):
+    def returnOrInsert(cls, session, identifier):
         """Manages either the creation or return of an existing identifier"""
 
         if identifier is None:
             return None, None
         existingIden = Identifier.lookupIdentifier(
             session,
-            identifier,
-            recordID
+            identifier
         )
         if existingIden is not None:
             return 'existing', existingIden
@@ -289,7 +288,7 @@ class Identifier(Base):
         return coreIden
 
     @classmethod
-    def lookupIdentifier(cls, session, identifier, recordID):
+    def lookupIdentifier(cls, session, identifier):
         """Query database for a specific identifier. Return if found and
         raise an error if duplicate identifiers are found for a single
         type."""
@@ -301,10 +300,18 @@ class Identifier(Base):
         except DataError:
             return None
         
-        ids = session.query(idenTable) \
+        return session.query(idenTable) \
             .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
-            .all()
-        return ids[0]
+            .one_or_none()
+    
+    @classmethod
+    def getIdentiferRelationship(cls, session, identifier, model, recordID):
+        idenType = identifier.__tablename__
+        return session.query(model.id) \
+            .join('identifiers', idenType) \
+            .filter(cls.identifierTypes[idenType].value == identifier.value) \
+            .filter(model.id == recordID) \
+            .one_or_none()
 
     @classmethod
     def getByIdentifier(cls, model, session, identifiers):

@@ -240,11 +240,18 @@ class Work(Core, Base):
             try:
                 status, idenRec = Identifier.returnOrInsert(
                     session,
-                    iden,
-                    existing.id
+                    iden
                 )
                 if status == 'new':
                     existing.identifiers.append(idenRec)
+                else:
+                    if Identifier.getIdentiferRelationship(
+                        session,
+                        idenRec,
+                        Work,
+                        existing.id
+                    ) is None:
+                        existing.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
@@ -349,14 +356,18 @@ class Work(Core, Base):
 
         jsonRec = RawData(data=storeJson)
         work.import_json.append(jsonRec)
-
+        
         for instance in instances:
             instanceRec, op = Instance.updateOrInsert(session, instance)
             work.instances.append(instanceRec)
 
         for iden in identifiers:
             try:
-                work.identifiers.append(Identifier.insert(iden))
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    iden
+                )
+                work.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
