@@ -218,7 +218,14 @@ class Work(Core, Base):
                 except TypeError:
                     pass
             else:
-                existing.alt_titles.append(AltTitle(title=newTitle))
+                newAlt = AltTitle.insertOrSkip(
+                    session,
+                    newTitle,
+                    Work,
+                    existing.id
+                )
+                if newAlt is not None:
+                    existing.alt_titles.append(newAlt)
 
         for instance in instances:
             instanceRec, op = Instance.updateOrInsert(
@@ -258,7 +265,7 @@ class Work(Core, Base):
                 logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Work, existing.id), altTitles)):
-            existing.alt_titles.append(AltTitle(title=altTitle))
+            existing.alt_titles.append(altTitle)
 
         for subject in subjects:
             op, subjectRec = Subject.updateOrInsert(session, subject)
@@ -366,7 +373,8 @@ class Work(Core, Base):
             except DataError:
                 logger.warning('Unable to read agent {}'.format(agent['name']))
 
-        for altTitle in altTitles:
+        # Quick conversion to set to eliminate duplicate alternate titles
+        for altTitle in list(set(altTitles)):
             work.alt_titles.append(AltTitle(title=altTitle))
 
         for subject in subjects:
