@@ -17,25 +17,21 @@ class TestAgent(unittest.TestCase):
         res = Agent.lookupAgent(mock_session, testAgent)
         self.assertTrue(res)       
 
-    @patch('model.agent.DateField')
-    def test_clean_name(self, mock_date):
+    def test_clean_name(self):
         
-        nameTest = Agent(
-            name='Test, Tester 1950-2000',
-        )
-        roles = nameTest._cleanName()
-        self.assertEqual(roles, [])
-        self.assertEqual(nameTest.name, 'Test, Tester')
-        mock_date.insert.assert_any_call({
-            'date_display': '1950',
-            'date_range': '1950',
-            'date_type': 'birth_date'
-        })
-        mock_date.insert.assert_any_call({
-            'date_display': '2000',
-            'date_range': '2000',
-            'date_type': 'death_date'
-        })
+        nameTest = {
+            'name': 'Test, Tester 1950-2000',
+            'sort_name': '',
+            'viaf': None,
+            'lcnaf': None
+        }
+        roleTest = []
+        dateTest = []
+        Agent._cleanName(nameTest, roleTest, dateTest)
+        self.assertEqual(roleTest, [])
+        self.assertEqual(nameTest['name'], 'Test, Tester')
+        self.assertEqual(dateTest[0]['date_display'], '1950')
+        self.assertEqual(dateTest[1]['date_display'], '2000')
     
     @patch('model.agent.DateField')
     def test_clean_name_birth_only(self, mock_date):
@@ -43,47 +39,58 @@ class TestAgent(unittest.TestCase):
         singleTest = Agent(
             name='Test, Tester 1950-',
         )
-        roles = singleTest._cleanName()
-        self.assertEqual(roles, [])
-        self.assertEqual(singleTest.name, 'Test, Tester')
-        mock_date.insert.assert_any_call({
-            'date_display': '1950',
-            'date_range': '1950',
-            'date_type': 'birth_date'
-        })
+        nameTest = {
+            'name': 'Test, Tester 1950-',
+            'sort_name': '',
+            'viaf': None,
+            'lcnaf': None
+        }
+        roleTest = []
+        dateTest = []
+        Agent._cleanName(nameTest, roleTest, dateTest)
+        self.assertEqual(roleTest, [])
+        self.assertEqual(nameTest['name'], 'Test, Tester')
+        self.assertEqual(dateTest[0]['date_display'], '1950')
     
     def test_clean_roles(self):
-        roleTest = Agent(
-            name='Test, Tester [tester; testing]',
-        )
-        roles = roleTest._cleanName()
-        self.assertEqual(roles, ['tester', 'testing'])
-        self.assertEqual(roleTest.name, 'Test, Tester')
+        nameTest = {
+            'name': 'Test, Tester [tester; testing]',
+            'sort_name': '',
+            'viaf': None,
+            'lcnaf': None
+        }
+        roleTest = []
+        dateTest = []
+        Agent._cleanName(nameTest, roleTest, dateTest)
+        self.assertEqual(nameTest['name'], 'Test, Tester')
+        self.assertEqual(roleTest, ['tester', 'testing'])
     
     def test_clean_role(self):
-        roleTest = Agent(
-            name='Test, Tester [tester]',
-        )
-        roles = roleTest._cleanName()
-        self.assertEqual(roles, ['tester'])
-        self.assertEqual(roleTest.name, 'Test, Tester')
+        nameTest = {
+            'name': 'Test, Tester [tester]',
+            'sort_name': '',
+            'viaf': None,
+            'lcnaf': None
+        }
+        roleTest = []
+        dateTest = []
+        Agent._cleanName(nameTest, roleTest, dateTest)
+        self.assertEqual(nameTest['name'], 'Test, Tester')
+        self.assertEqual(roleTest, ['tester'])
     
     @patch('model.agent.DateField')
     def test_combined(self, mock_date):
-        roleTest = Agent(
-            name='Test, Tester 1950-2000 [tester]',
-        )
-        roles = roleTest._cleanName()
-        self.assertEqual(roles, ['tester'])
-        self.assertEqual(roleTest.name, 'Test, Tester')
-        mock_date.insert.assert_any_call({
-            'date_display': '1950',
-            'date_range': '1950',
-            'date_type': 'birth_date'
-        })
-        mock_date.insert.assert_any_call({
-            'date_display': '2000',
-            'date_range': '2000',
-            'date_type': 'death_date'
-        })
+        nameTest = {
+            'name': 'Test, Tester 1950-2000 [tester]',
+            'sort_name': '',
+            'viaf': None,
+            'lcnaf': None
+        }
+        roleTest = []
+        dateTest = []
+        Agent._cleanName(nameTest, roleTest, dateTest)
+        self.assertEqual(nameTest['name'], 'Test, Tester')
+        self.assertEqual(roleTest, ['tester'])
+        self.assertEqual(dateTest[0]['date_display'], '1950')
+        self.assertEqual(dateTest[1]['date_display'], '2000')
     

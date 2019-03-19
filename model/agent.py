@@ -204,7 +204,6 @@ class Agent(Core, Base):
         logger.debug('Matching agent based off jaro_winkler score')
         
         escapedName = agent['name'].replace('\'', '\'\'')
-        print(escapedName)
         try:
             jaroWinklerQ = text(
                 "jarowinkler({}, '{}') > {}".format('name', escapedName, 0.95)
@@ -260,8 +259,8 @@ class Agent(Core, Base):
         roleGroup = re.search(r'\[([a-zA-Z; ]+)\]', tmpName)
         if roleGroup is not None:
             tmpName = tmpName.replace(roleGroup.group(0), '')
-            roles = roleGroup.group(1).split(';')
-            cleanRoles = [r.lower().strip() for r in roles]
+            tmpRoles = roleGroup.group(1).split(';')
+            cleanRoles = [r.lower().strip() for r in tmpRoles]
             roles.extend(cleanRoles)
         
         # Strip punctuation from end of name string
