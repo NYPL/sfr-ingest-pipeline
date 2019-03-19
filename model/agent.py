@@ -72,13 +72,21 @@ class Agent(Core, Base):
         agent.pop('birth_date', None)
         agent.pop('death_date', None)
 
+        if roles is None:
+            roles = []
+        
+        if dates is None:
+            dates = []
+
+        Agent._cleanName(agent, roles, dates)
+
         if len(agent['name'].strip()) < 1:
             raise DataError('Received empty string for agent name')
         
         existingAgentID = Agent.lookupAgent(session, agent)
         if existingAgentID is not None:
             existingAgent = session.query(cls).get(existingAgentID)
-            updated, nameRoles = Agent.update(
+            updated = Agent.update(
                 session,
                 existingAgent,
                 agent,
@@ -88,14 +96,12 @@ class Agent(Core, Base):
             )
             return updated, roles
 
-        newAgent, nameRoles = Agent.insert(
+        newAgent = Agent.insert(
             agent,
             aliases=aliases,
             link=link,
             dates=dates
         )
-
-        roles.extend(nameRoles)
 
         return newAgent, roles
 
@@ -109,8 +115,6 @@ class Agent(Core, Base):
         for field, value in agent.items():
             if(value is not None and value.strip() != ''):
                 setattr(existing, field, value)        
-
-        nameRoles = existing._cleanName()
 
         if aliases is not None:
             aliasRecs = [
@@ -135,7 +139,7 @@ class Agent(Core, Base):
             if updateDate is not None:
                 existing.dates.append(updateDate)
 
-        return existing, nameRoles
+        return existing
 
     @classmethod
     def insert(cls, agentData, **kwargs):
@@ -150,9 +154,6 @@ class Agent(Core, Base):
         aliases = kwargs.get('aliases', [])
         link = kwargs.get('link', [])
         dates = kwargs.get('dates', [])
-
-        # Clean up agent name and extract data from name string
-        nameRoles = agent._cleanName()
 
         if aliases is not None:
             for alias in list(map(lambda x: Alias(alias=x), aliases)):
@@ -170,7 +171,7 @@ class Agent(Core, Base):
             newDate = DateField.insert(date)
             agent.dates.append(newDate)
 
-        return agent, nameRoles
+        return agent
 
     @classmethod
     def lookupAgent(cls, session, agent):
@@ -202,9 +203,11 @@ class Agent(Core, Base):
 
         logger.debug('Matching agent based off jaro_winkler score')
         
+        escapedName = agent['name'].replace('\'', '\'\'')
+        print(escapedName)
         try:
             jaroWinklerQ = text(
-                "jarowinkler({}, '{}') > {}".format('name', agent['name'], 0.95)
+                "jarowinkler({}, '{}') > {}".format('name', escapedName, 0.95)
             )
             return session.query(cls.id)\
                 .filter(jaroWinklerQ)\
@@ -218,51 +221,52 @@ class Agent(Core, Base):
         
         return None
 
-    def _cleanName(self):
+    @classmethod
+    def _cleanName(cls, agent, roles, dates):
         """Parse agent name to normalize and remove/assign roles/dates"""
         # Escape single quotes for postgres
-        self.name = self.name.replace('\'', '\'\'')
-        if re.match(r'^\[.+\]$', self.name):
-            self.name = self.name.strip('[]')
+        tmpName = agent['name']
+        tmpName = tmpName.replace('\'', '\'\'')
+        if re.match(r'^\[.+\]$', tmpName):
+            tmpName = tmpName.strip('[]')
 
         # Parse and remove lifespan dates from the author name string
-        lifeGroup = re.search(r'([0-9]{4})\-(?:([0-9]{4})|)', self.name)
+        lifeGroup = re.search(r'([0-9]{4})\-(?:([0-9]{4})|)', tmpName)
         if lifeGroup is not None:
-            self.name = self.name.replace(lifeGroup.group(0), '')
+            tmpName = tmpName.replace(lifeGroup.group(0), '')
             try:
                 birthDate = lifeGroup.group(1)
-                self.dates.append(DateField.insert({
-                    'date_display': birthDate,
-                    'date_range': birthDate,
-                    'date_type': 'birth_date'
-                }))
+                if birthDate is not None:
+                    dates.append({
+                        'date_display': birthDate,
+                        'date_range': birthDate,
+                        'date_type': 'birth_date'
+                    })
             except IndexError:
                 pass
             
             try:
                 deathDate = lifeGroup.group(2)
-                self.dates.append(DateField.insert({
-                    'date_display': deathDate,
-                    'date_range': deathDate,
-                    'date_type': 'death_date'
-                }))
+                if deathDate is not None:
+                    dates.append({
+                        'date_display': deathDate,
+                        'date_range': deathDate,
+                        'date_type': 'death_date'
+                    })
             except IndexError:
                 pass
 
         # Parse and remove roles from the author name string
-        roleGroup = re.search(r'\[([a-zA-Z; ]+)\]', self.name)
+        roleGroup = re.search(r'\[([a-zA-Z; ]+)\]', tmpName)
         if roleGroup is not None:
-            self.name = self.name.replace(roleGroup.group(0), '')
+            tmpName = tmpName.replace(roleGroup.group(0), '')
             roles = roleGroup.group(1).split(';')
             cleanRoles = [r.lower().strip() for r in roles]
-        else:
-            cleanRoles = []
+            roles.extend(cleanRoles)
         
         # Strip punctuation from end of name string
-        self.name = self.name.strip('.,;:|[] ')
-
-        return cleanRoles
-
+        agent['name'] = tmpName.strip('.,;:|[]" ')
+        agent['sort_name'] = agent['name']
 
 
 class Alias(Core, Base):

@@ -94,8 +94,11 @@ def importRecord(session, record):
             logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
             logger.error('Cannot update ElasticSearch record for orphan instance {}'.format(dbInstance.id))
         else:
-            dbInstance.work.date_modified = datetime.utcnow()
-        
+            try:
+                dbInstance.work.date_modified = datetime.utcnow()
+            except AttributeError:
+                logger.error('Updating an orphan instance {}'.format(dbInstance.id))
+
         return op, 'Instance #{}'.format(dbInstance.id)
 
     elif record['type'] == 'item':

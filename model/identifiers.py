@@ -311,9 +311,10 @@ class Identifier(Base):
     @classmethod
     def getIdentiferRelationship(cls, session, identifier, model, recordID):
         idenType = identifier.type
+        idenValue = getattr(identifier, idenType, 'generic')[0].value
         return session.query(model.id) \
             .join('identifiers', idenType) \
-            .filter(cls.identifierTypes[idenType].value == identifier.value) \
+            .filter(cls.identifierTypes[idenType].value == idenValue) \
             .filter(model.id == recordID) \
             .one_or_none()
 
@@ -352,7 +353,9 @@ class Identifier(Base):
         
         topMatch = Identifier._getTopMatch(sortedMatches)
 
-        if len(sortedMatches) > 0 and topMatch is not None:
+        if len(sortedMatches) > 0:
+            if topMatch is None:
+                topMatch = sortedMatches.pop(0)[0]
             logger.debug('Adding equivalency records for additional matches')
             Equivalent.addEquivalencies(
                 session,

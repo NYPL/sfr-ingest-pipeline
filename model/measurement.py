@@ -130,8 +130,8 @@ class Measurement(Core, Base):
         try:
             return session.query(cls)\
                 .join(model.__tablename__[:-1])\
-                .filter(cls.quantity == measure.quantity)\
-                .filter(cls.source_id, measure.source_id)\
+                .filter(cls.quantity == measure['quantity'])\
+                .filter(cls.source_id, measure['source_id'])\
                 .filter(model.id == recordID)\
                 .one_or_none()
         except MultipleResultsFound:

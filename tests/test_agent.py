@@ -1,10 +1,21 @@
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch, call, MagicMock
 
 from model.agent import Agent
 
 
 class TestAgent(unittest.TestCase):
+
+    def test_agent_lookup_jw(self):
+        mock_session = MagicMock()
+        mock_session.query().filter().one.side_effect = [True]
+        testAgent = {
+            'viaf': None,
+            'lcnaf': None,
+            'name': 'Tester, Test'
+        }
+        res = Agent.lookupAgent(mock_session, testAgent)
+        self.assertTrue(res)       
 
     @patch('model.agent.DateField')
     def test_clean_name(self, mock_date):
