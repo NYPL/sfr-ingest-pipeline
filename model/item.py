@@ -386,8 +386,8 @@ class AgentItems(Core, Base):
     relationships between an agent and an item. Identical to AgentInstances
     and AgentWorks"""
     __tablename__ = 'agent_items'
-    item_id = Column(Integer, ForeignKey('items.id'), primary_key=True)
-    agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
+    item_id = Column(Integer, ForeignKey('items.id'), index=True)
+    agent_id = Column(Integer, ForeignKey('agents.id'), index=True)
     role = Column(String(64))
 
     agentItemPkey = PrimaryKeyConstraint('item_id', 'agent_id', 'role', name='agent_items_pkey')

@@ -302,7 +302,6 @@ class Instance(Core, Base):
                 for agent in agents:
                     agentRec, roles = Agent.updateOrInsert(session, agent)
                     for role in roles:
-                        print(agentRec, instance, role)
                         AgentInstances(
                             agent=agentRec,
                             instance=instance,
@@ -378,8 +377,8 @@ class AgentInstances(Core, Base):
     (e.g. author, editor)"""
 
     __tablename__ = 'agent_instances'
-    instance_id = Column(Integer, ForeignKey('instances.id'), primary_key=True)
-    agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
+    instance_id = Column(Integer, ForeignKey('instances.id'), index=True)
+    agent_id = Column(Integer, ForeignKey('agents.id'), index=True)
     role = Column(String(64))
 
     agentInstancesPkey = PrimaryKeyConstraint(

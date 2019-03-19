@@ -310,7 +310,7 @@ class Identifier(Base):
     
     @classmethod
     def getIdentiferRelationship(cls, session, identifier, model, recordID):
-        idenType = identifier.__tablename__
+        idenType = identifier.type
         return session.query(model.id) \
             .join('identifiers', idenType) \
             .filter(cls.identifierTypes[idenType].value == identifier.value) \

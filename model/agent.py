@@ -110,7 +110,7 @@ class Agent(Core, Base):
             if(value is not None and value.strip() != ''):
                 setattr(existing, field, value)        
 
-        nameRoles = agent._cleanName()
+        nameRoles = existing._cleanName()
 
         if aliases is not None:
             aliasRecs = [
@@ -222,6 +222,8 @@ class Agent(Core, Base):
         """Parse agent name to normalize and remove/assign roles/dates"""
         # Escape single quotes for postgres
         self.name = self.name.replace('\'', '\'\'')
+        if re.match(r'^\[.+\]$', self.name):
+            self.name = self.name.strip('[]')
 
         # Parse and remove lifespan dates from the author name string
         lifeGroup = re.search(r'([0-9]{4})\-(?:([0-9]{4})|)', self.name)
