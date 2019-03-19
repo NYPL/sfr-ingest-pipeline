@@ -30,6 +30,8 @@ def readFromClassify(workXML):
     work = workXML.find('.//work', namespaces=NAMESPACE)
 
     oclcTitle = work.get('title')
+    oclcNo = Identifier('oclc', work.text, 1)
+    owiNo = Identifier('owi', work.get('owi'), 1)
 
     measurements = []
     for measure in ['editions', 'holdings', 'eholdings']:
@@ -37,11 +39,9 @@ def readFromClassify(workXML):
             measure,
             work.get(measure),
             1,
-            MEASUREMENT_TIME
+            MEASUREMENT_TIME,
+            oclcNo
         ))
-
-    oclcNo = Identifier('oclc', work.text, 1)
-    owiNo = Identifier('owi', work.get('owi'), 1)
 
     authors = workXML.findall('.//author', namespaces=NAMESPACE)
     authorList = list(map(parseAuthor, authors))
@@ -112,14 +112,16 @@ def parseEdition(edition):
         'holdings',
         edition.get('holdings'),
         1,
-        MEASUREMENT_TIME
+        MEASUREMENT_TIME,
+        oclcNo
     )
 
     digHoldings = Measurement(
         'digitalHoldings',
         edition.get('eholdings'),
         1,
-        MEASUREMENT_TIME
+        MEASUREMENT_TIME,
+        oclcNo
     )
 
     language = edition.get('language')
