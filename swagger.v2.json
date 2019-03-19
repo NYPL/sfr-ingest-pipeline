@@ -21,8 +21,7 @@
     "/v0.1/sfr/work": {
       "get": {
         "tags": [
-          "research-now",
-          "sfr"
+          "research-now"
         ],
         "summary": "Single Work return of item in the SFR collection",
         "description": "Accepts a single record identifier and returns a single work record",
@@ -190,8 +189,7 @@
     "/v2/sfr/work": {
       "get": {
         "tags": [
-          "research-now",
-          "sfr"
+          "research-now"
         ],
         "summary": "(v2) GET Single work",
         "description": "Accepts a single work identifier, passed through a GET request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
@@ -245,8 +243,7 @@
       },
       "post": {
         "tags": [
-          "research-now",
-          "sfr"
+          "research-now"
         ],
         "summary": "(v2) POST Single Work",
         "description": "Accepts a single work identifier in a POST request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
@@ -304,8 +301,7 @@
     "/v2/sfr/search": {
       "get": {
         "tags": [
-          "research-now",
-          "sfr"
+          "research-now"
         ],
         "summary": "(v2) GET Simple Search Endpoint",
         "description": "Makes basic search queries against ElasticSearch index of Project Gutenberg, HathiTrust and Directory of Open Access Books data",
@@ -372,8 +368,7 @@
       },
       "post": {
         "tags": [
-          "research-now",
-          "sfr"
+          "research-now"
         ],
         "summary": "(v2) POST Simple Search Endpoint",
         "description": "Will construct basic ElasticSearch DSL queries against the SFR index. Supports basic search endpoints",
