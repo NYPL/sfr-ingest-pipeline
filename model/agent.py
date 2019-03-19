@@ -237,7 +237,7 @@ class Agent(Core, Base):
                 birthDate = lifeGroup.group(1)
                 if birthDate is not None:
                     dates.append({
-                        'date_display': birthDate,
+                        'display_date': birthDate,
                         'date_range': birthDate,
                         'date_type': 'birth_date'
                     })
@@ -248,7 +248,7 @@ class Agent(Core, Base):
                 deathDate = lifeGroup.group(2)
                 if deathDate is not None:
                     dates.append({
-                        'date_display': deathDate,
+                        'display_date': deathDate,
                         'date_range': deathDate,
                         'date_type': 'death_date'
                     })

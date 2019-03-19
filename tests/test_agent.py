@@ -30,8 +30,8 @@ class TestAgent(unittest.TestCase):
         Agent._cleanName(nameTest, roleTest, dateTest)
         self.assertEqual(roleTest, [])
         self.assertEqual(nameTest['name'], 'Test, Tester')
-        self.assertEqual(dateTest[0]['date_display'], '1950')
-        self.assertEqual(dateTest[1]['date_display'], '2000')
+        self.assertEqual(dateTest[0]['display_date'], '1950')
+        self.assertEqual(dateTest[1]['display_date'], '2000')
     
     @patch('model.agent.DateField')
     def test_clean_name_birth_only(self, mock_date):
@@ -50,7 +50,7 @@ class TestAgent(unittest.TestCase):
         Agent._cleanName(nameTest, roleTest, dateTest)
         self.assertEqual(roleTest, [])
         self.assertEqual(nameTest['name'], 'Test, Tester')
-        self.assertEqual(dateTest[0]['date_display'], '1950')
+        self.assertEqual(dateTest[0]['display_date'], '1950')
     
     def test_clean_roles(self):
         nameTest = {
@@ -91,6 +91,6 @@ class TestAgent(unittest.TestCase):
         Agent._cleanName(nameTest, roleTest, dateTest)
         self.assertEqual(nameTest['name'], 'Test, Tester')
         self.assertEqual(roleTest, ['tester'])
-        self.assertEqual(dateTest[0]['date_display'], '1950')
-        self.assertEqual(dateTest[1]['date_display'], '2000')
+        self.assertEqual(dateTest[0]['display_date'], '1950')
+        self.assertEqual(dateTest[1]['display_date'], '2000')
     
