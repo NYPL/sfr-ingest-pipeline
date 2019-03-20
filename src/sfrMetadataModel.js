@@ -76,8 +76,8 @@ export class Format {
     this.dates = []
     this.rights = []
 
-    if (link instanceof Link || link == null) this.link = link
-    else this.link = this.setLink(link)
+    if (link instanceof Link || link == null) this.links = [link]
+    else this.links = this.setLink(link)
 
   }
 
@@ -91,11 +91,11 @@ export class Format {
 
     if(linkObj.thumbnail) formatLink.thumbnail = linkObj.thumbnail
 
-    return formatLink
+    return [formatLink]
   }
 
-  addMeasurement(quantity, value, weight, takenAt){
-    this.measurements.push(new Measurement(quantity, value, weight, takenAt))
+  addMeasurement(quantity, value, weight, takenAt, sourceID){
+    this.measurements.push(new Measurement(quantity, value, weight, takenAt, sourceID))
   }
 
   addIdentifier(type, identifier, weight){
@@ -130,11 +130,12 @@ export class Subject {
 
 
 export class Measurement {
-  constructor(quantity, value, weight, takenAt){
+  constructor(quantity, value, weight, takenAt, sourceID){
     this.quantity = quantity
     this.value = value
     this.weight = weight
-    this.taken_at = null
+    this.taken_at = takenAt
+    this.source_id = sourceID
   }
 }
 
@@ -197,8 +198,8 @@ export class WorkRecord {
     this.agents.push(new Agent(name, roles, aliases, birth, death, link))
   }
 
-  addMeasurement(quantity, value, weight, takenAt){
-    this.measurements.push(new Measurement(quantity, value, weight, takenAt))
+  addMeasurement(quantity, value, weight, takenAt, sourceID){
+    this.measurements.push(new Measurement(quantity, value, weight, takenAt, sourceID))
   }
 
   addDate(display, range, type){

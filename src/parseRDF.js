@@ -106,7 +106,7 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   let gutenbergInstance = bibRecord.instances[0]
 
   // Add formats to the instance
-  gutenbergInstance.formats = exports.getFormats(ebook['dcterms:hasFormat'], bibRecord.license)
+  gutenbergInstance.formats = exports.getFormats(ebook['dcterms:hasFormat'], bibRecord.license, gutenbergID)
   gutenbergInstance.formats.map(format => {
     format.addIdentifier('gutenberg', gutenbergID, 1)
   })
@@ -219,7 +219,7 @@ exports.getSubjects = (subjects) => {
   return terms
 }
 
-exports.getFormats = (formats, license) => {
+exports.getFormats = (formats, license, gutenbergID) => {
   let epubs = []
 
   if (!formats) return epubs
@@ -240,7 +240,7 @@ exports.getFormats = (formats, license) => {
       })
 
       let sfrFormat = new Format('application/epub+zip', epubLink, epub['modified'])
-      sfrFormat.addMeasurement('bytes', epub['size'], 1, moment().format())
+      sfrFormat.addMeasurement('bytes', epub['size'], 1, moment().format(), gutenbergID)
 
       sfrFormat.source = 'gutenberg'
       
