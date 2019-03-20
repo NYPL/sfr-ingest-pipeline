@@ -213,10 +213,10 @@ class TestHathi(unittest.TestCase):
 
     def test_parse_gov_doc(self):
         govRec = HathiRecord({})
-        govRec.parseGovDoc('t')
+        govRec.parseGovDoc('t', 1)
         self.assertEqual(govRec.work.measurements[0].value, 1)
 
     def test_parse_non_gov_doc(self):
         govRec = HathiRecord({})
-        govRec.parseGovDoc(0)
+        govRec.parseGovDoc(0, 1)
         self.assertEqual(govRec.work.measurements[0].value, 0)

@@ -345,7 +345,7 @@ class HathiRecord():
             self.parseIdentifiers(self.work, idType, key)
 
         # All government documents should be in the public_domain.
-        self.parseGovDoc(self.ingest['gov_doc'])
+        self.parseGovDoc(self.ingest['gov_doc'], self.ingest['htid'])
 
         # The copyright date assigned to the work by HathiTrust
         self.work.addClassItem('dates', Date, **{
@@ -622,7 +622,7 @@ class HathiRecord():
             'roles': ['publisher']
         })
 
-    def parseGovDoc(self, govDocStatus):
+    def parseGovDoc(self, govDocStatus, sourceID):
         if str(govDocStatus).lower() in ['1', 't']:
             govDocStatus = True
         else:
@@ -631,6 +631,7 @@ class HathiRecord():
             'quantity': 'government_document',
             'value': int(govDocStatus),
             'weight': 1,
-            'taken_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'taken_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'source_id': sourceID
         })
         logger.debug('Storing gov_doc status to {}'.format(str(govDocStatus)))

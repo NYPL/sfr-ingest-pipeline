@@ -67,7 +67,8 @@ class TestHandler(unittest.TestCase):
             loadLocalCSV('localFile')
 
     @patch.dict('os.environ', {'HATHI_DATAFILES': 'datafile_url'})
-    def test_fetch_hathi(self):
+    @patch('service.gzip.open')
+    def test_fetch_hathi(self, mock_gzip):
         mock_tsv = mock_open()
         with patch('service.requests') as mock_request:
             with patch('service.open', mock_tsv, create=True):
@@ -88,6 +89,7 @@ class TestHandler(unittest.TestCase):
                     call().json(),
                     call('hathitrust.org/test/file.txt.gz')
                 ])
+                mock_gzip.assert_called_once()
                 
 
 

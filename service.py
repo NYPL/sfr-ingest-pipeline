@@ -112,7 +112,7 @@ def loadLocalCSV(localFile):
         raise ProcessingError('loadLocalCSV', 'Could not open local CSV file')
 
     with hathiFile:
-        hathiReader = csv.reader(hathiFile)
+        hathiReader = csv.reader(hathiFile, delimiter='\t')
         for row in hathiReader:
             if row[0] == 'htid':
                 continue
@@ -138,8 +138,8 @@ def fetchHathiCSV():
                 hathiFile['url'],
                 hathiFile['created']
             ))
-            with open('tmp_hathi.txt.gz', 'wb') as hathiTSV:
-                logger.debug('Storing Downloaded HathiFile in tmp_hathi.txt.gz')
+            with open('/tmp/tmp_hathi.txt.gz', 'wb') as hathiTSV:
+                logger.debug('Storing Downloaded HathiFile in /tmp/tmp_hathi.txt.gz')
                 hathiReq = requests.get(hathiFile['url'])
                 hathiTSV.write(hathiReq.content)
             break
@@ -148,7 +148,7 @@ def fetchHathiCSV():
     # that has these rights codes
     rightsSkips = ['ic', 'icus', 'ic-world', 'und']
 
-    with gzip.open('tmp_hathi.txt.gz', 'rt') as unzipTSV:
+    with gzip.open('/tmp/tmp_hathi.txt.gz', 'rt') as unzipTSV:
         logger.debug('Parsing txt.gz file downloaded into TSV file')
         hathiTSV = csv.reader(unzipTSV, delimiter='\t')
         

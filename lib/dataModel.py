@@ -201,12 +201,13 @@ class Subject(DataObject):
 
 
 class Measurement(DataObject):
-    def __init__(self, quantity=None, value=None, weight=None, takenAt=None):
+    def __init__(self, quantity=None, value=None, weight=None, takenAt=None, sourceID=None):
         super()
         self.quantity = quantity
         self.value = value
         self.weight = weight
         self.taken_at = takenAt
+        self.source_id = sourceID
 
     def __repr__(self):
         return '<Measurement(quantity={}, value={})>'.format(
