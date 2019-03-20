@@ -311,9 +311,10 @@ class Identifier(Base):
     @classmethod
     def getIdentiferRelationship(cls, session, identifier, model, recordID):
         idenType = identifier.type
-        idenValue = getattr(identifier, idenType, 'generic')[0].value
+        idenLookup = idenType if idenType is not None else 'generic'
+        idenValue = getattr(identifier, idenLookup, 'generic')[0].value
         return session.query(model.id) \
-            .join('identifiers', idenType) \
+            .join('identifiers', idenLookup) \
             .filter(cls.identifierTypes[idenType].value == idenValue) \
             .filter(model.id == recordID) \
             .one_or_none()

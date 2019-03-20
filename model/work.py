@@ -446,8 +446,10 @@ class Work(Core, Base):
                 .filter(Work.uuid == qUUID)\
                 .one()
         except NoResultFound:
-            logger.error('Multiple entries for UUID {} found!'.format(recUUID))
-            raise DBError('work', 'Multiple entries found for single UUID')
+            logger.error('No matching UUID {} found!'.format(recUUID))
+            raise DBError('work', 'Original UUID {} not found, check error logs'.format(
+                recUUID
+            ))
         return existing
 
     @classmethod
