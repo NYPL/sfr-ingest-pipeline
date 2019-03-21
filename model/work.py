@@ -262,7 +262,7 @@ class Work(Core, Base):
                 if roles is None:
                     roles = ['author']
                 for role in roles:
-                    if AgentWorks.roleExists(session, agentRec, role, Work, existing.id) is None:
+                    if AgentWorks.roleExists(session, agentRec, role, existing.id) is None:
                         AgentWorks(
                             agent=agentRec,
                             work=existing,
@@ -372,10 +372,13 @@ class Work(Core, Base):
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
 
+        relsCreated = []
         for agent in agents:
             try:
                 agentRec, roles = Agent.updateOrInsert(session, agent)
                 for role in roles:
+                    if (agentRec.name, role) in relsCreated: continue
+                    relsCreated.append((agentRec.name, role))
                     AgentWorks(
                         agent=agentRec,
                         work=work,
@@ -493,13 +496,11 @@ class AgentWorks(Core, Base):
         )
 
     @classmethod
-    def roleExists(cls, session, agent, role, model, recordID):
+    def roleExists(cls, session, agent, role, recordID):
         """Query database to check if a role exists between a specific work and
         agent"""
         return session.query(cls)\
-            .join(Agent)\
-            .join(model)\
-            .filter(Agent.id == agent.id)\
-            .filter(model.id == recordID)\
+            .filter(cls.agent_id == agent.id)\
+            .filter(cls.work_id == recordID)\
             .filter(cls.role == role)\
             .one_or_none()

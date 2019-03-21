@@ -313,7 +313,7 @@ class Item(Core, Base):
                 if roles is None:
                     roles = ['repository']
                 for role in roles:
-                    if AgentItems.roleExists(session, agentRec, role, Item, existing.id) is None:
+                    if AgentItems.roleExists(session, agentRec, role, existing.id) is None:
                         AgentItems(
                             agent=agentRec,
                             item=existing,
@@ -399,13 +399,11 @@ class AgentItems(Core, Base):
     agent = relationship('Agent')
 
     @classmethod
-    def roleExists(cls, session, agent, role, model, recordID):
+    def roleExists(cls, session, agent, role, recordID):
         """Query database to check if a role exists between a specific work and
         agent"""
         return session.query(cls)\
-            .join(Agent)\
-            .join(model)\
-            .filter(Agent.id == agent.id)\
-            .filter(model.id == recordID)\
+            .filter(cls.agent_id == agent.id)\
+            .filter(cls.item_id == recordID)\
             .filter(cls.role == role)\
             .one_or_none()

@@ -240,7 +240,7 @@ class Instance(Core, Base):
                 if roles is None:
                     roles = ['author']
                 for role in roles:
-                    if AgentInstances.roleExists(session, agentRec, role, Instance, existing.id) is None:
+                    if AgentInstances.roleExists(session, agentRec, role, existing.id) is None:
                         AgentInstances(
                             agent=agentRec,
                             instance=existing,
@@ -395,14 +395,12 @@ class AgentInstances(Core, Base):
     agent = relationship('Agent')
 
     @classmethod
-    def roleExists(cls, session, agent, role, model, recordID):
+    def roleExists(cls, session, agent, role, recordID):
         """Query database to see if relationship with role exists between
         agent and instance. Returns model instance if it does or None if it
         does not"""
         return session.query(cls)\
-            .join(Agent)\
-            .join(model)\
-            .filter(Agent.id == agent.id)\
-            .filter(model.id == recordID)\
+            .filter(cls.agent_id == agent.id)\
+            .filter(cls.instance_id == recordID)\
             .filter(cls.role == role)\
             .one_or_none()

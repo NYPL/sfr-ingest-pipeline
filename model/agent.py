@@ -79,7 +79,7 @@ class Agent(Core, Base):
             dates = []
 
         Agent._cleanName(agent, roles, dates)
-
+        roles = list(set([ r.lower() for r in roles ]))
         if len(agent['name'].strip()) < 1:
             raise DataError('Received empty string for agent name')
         
