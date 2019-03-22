@@ -57,6 +57,19 @@ const simpleSearch = (params, app) => {
         )
       )
       break
+    case 'lcnaf':
+    case 'viaf':
+      body.query('bool', b => b
+        .query('bool', c => c
+          .orQuery('nested', { path: 'agents'}, (q) => {
+            return q.query('term', `agents.${field}`, queryTerm)  
+          })
+          .orQuery('nested', { path: 'instances.agents'}, (q) => {
+            return q.query('term', `instances.agents.${field}`, queryTerm)  
+          })
+        )
+      )
+      break
     case 'subject':
       body.query('nested', { path: 'subjects', query: { query_string: { query: queryTerm, default_operator: 'and' } } })
       break

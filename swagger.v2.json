@@ -6,7 +6,7 @@
     "description": "REST API for Elasticsearch index for the ResearchNow Project"
   },
   "host": "platform.nypl.org",
-  "basePath": "/api",
+  "basePath": "/api/v0.1/research-now",
   "schemes": [
     "http",
     "https"
@@ -18,7 +18,7 @@
     }
   ],
   "paths": {
-    "/v0.1/sfr/work": {
+    "/sfr/work": {
       "get": {
         "tags": [
           "research-now"
@@ -74,7 +74,7 @@
         }
       }
     },
-    "/v0.1/sfr/works": {
+    "/sfr/works": {
       "get": {
         "tags": [
           "research-now"
@@ -312,7 +312,7 @@
             "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
             "required": true,
             "type": "string",
-            "enum": ["keyword", "title", "author", "subject"]
+            "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
           },{
             "name": "query",
             "in": "query",
