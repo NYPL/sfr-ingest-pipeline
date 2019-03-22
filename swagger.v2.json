@@ -312,7 +312,7 @@
             "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
             "required": true,
             "type": "string",
-            "enum": ["keyword", "title", "author", "subject"]
+            "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
           },{
             "name": "query",
             "in": "query",
