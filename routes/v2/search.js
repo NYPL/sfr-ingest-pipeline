@@ -61,11 +61,11 @@ const simpleSearch = (params, app) => {
     case 'viaf':
       body.query('bool', b => b
         .query('bool', c => c
-          .orQuery('nested', { path: 'agents'}, (q) => {
-            return q.query('term', `agents.${field}`, queryTerm)  
+          .orQuery('nested', { path: 'agents' }, (q) => {
+            return q.query('term', `agents.${field}`, queryTerm)
           })
-          .orQuery('nested', { path: 'instances.agents'}, (q) => {
-            return q.query('term', `instances.agents.${field}`, queryTerm)  
+          .orQuery('nested', { path: 'instances.agents' }, (q) => {
+            return q.query('term', `instances.agents.${field}`, queryTerm)
           })
         )
       )

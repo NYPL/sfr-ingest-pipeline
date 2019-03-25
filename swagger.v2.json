@@ -1,12 +1,12 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "v2",
+    "version": "v2.1",
     "title": "ResearchNow Search API",
     "description": "REST API for Elasticsearch index for the ResearchNow Project"
   },
   "host": "platform.nypl.org",
-  "basePath": "/api/v0.1/research-now",
+  "basePath": "/api",
   "schemes": [
     "http",
     "https"
@@ -18,7 +18,7 @@
     }
   ],
   "paths": {
-    "/sfr/work": {
+    "/v0.1/research-now/work": {
       "get": {
         "tags": [
           "research-now"
@@ -74,7 +74,7 @@
         }
       }
     },
-    "/sfr/works": {
+    "/v0.1/research-now/works": {
       "get": {
         "tags": [
           "research-now"
@@ -186,7 +186,7 @@
         }
       }
     },
-    "/v2/sfr/work": {
+    "/v0.1/research-now/v2/work": {
       "get": {
         "tags": [
           "research-now"
@@ -298,7 +298,7 @@
         }
       }
     },
-    "/v2/sfr/search": {
+    "/v0.1/research-now/v2/search-api": {
       "get": {
         "tags": [
           "research-now"
