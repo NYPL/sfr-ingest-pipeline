@@ -1,8 +1,10 @@
 import csv
 import gzip
 import os
+from math import ceil
 import requests
 from datetime import datetime
+from multiprocessing import Process, Pipe
 
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 from helpers.logHelpers import createLog
@@ -112,7 +114,7 @@ def loadLocalCSV(localFile):
         raise ProcessingError('loadLocalCSV', 'Could not open local CSV file')
 
     with hathiFile:
-        hathiReader = csv.reader(hathiFile, delimiter='\t')
+        hathiReader = csv.reader(hathiFile)
         for row in hathiReader:
             if row[0] == 'htid':
                 continue
@@ -177,14 +179,70 @@ def fileParser(fileRows, columns):
     logger.debug('Loading country codes from XML file')
     countryCodes = loadCountryCodes()
 
+    # Vars for managing multiprocessing component
     outcomes = []
-    for row in fileRows:
+    processes = []
+    chunkSize = int(ceil(len(fileRows) / 4))
+
+    for chunk in generateChunks(fileRows, chunkSize):
+        logger.info('Starting child Process')
+
+        # Create pipe connections for sending results
+        pConn, cConn = Pipe()
+
+        # Open a new process for each chunk and start processing
+        proc = Process(
+            target=processChunk,
+            args=(chunk, columns, countryCodes, cConn)
+        )
+        proc.start()
+
+        # Store process and connection objects to close and handle later
+        processes.append((proc, pConn))
+
+    for proc, pConn in processes:
+        # Append results to outcomes array and ensure process exits cleanly
+        outcomes.extend(pConn.recv())
+        proc.join()
+        logger.info('Closing child Process')
+
+    return outcomes
+
+def generateChunks(rows, size):
+    """Simple function to break array of rows into chunks of equal sizes,
+    each to be handled by a concurrent process
+
+    Arguments:
+    @rows -- full array of rows from input file
+    @size -- total number of chunks that should be created
+
+    Output:
+    Yields a generator object that will return each chunk when invoked
+    """
+
+    for i in range(0, len(rows), size):
+        logger.debug('Yielding chunk of size {} for processing'.format(size))
+        yield rows[i:i + size]
+
+
+def processChunk(chunk, columns, countryCodes, cConn):
+    """Invoked by the Process method, this method iterates over the provided
+    chunk of rows and returns the received outcomes from the rowParser.
+
+    Arguments:
+    @chunk -- array of rows to be processed
+    @columns -- array of column names to be assigned to each row
+    @countryCodes -- dict of country codes for translation to full text
+    @cConn -- a multiprocessing.Pipe object that returns the output of method
+    """
+
+    outcomes = []
+    for row in chunk:
         try:
             outcomes.append(rowParser(row, columns, countryCodes))
         except ProcessingError as err:
             outcomes.append(('failure', err.source, err.message))
-
-    return outcomes
+    cConn.send(outcomes)
 
 
 def rowParser(row, columns, countryCodes):

@@ -172,6 +172,7 @@ class HathiRecord():
         'iu': 'Indiana University',
         'loc': 'Library of Congress',
         'mcgill': 'McGill University',
+        'miami': 'University of Miami',
         'missouri': 'University of Missouri-Columbia',
         'msu': 'Michigan State University',
         'ncsu': 'North Carolina State University',

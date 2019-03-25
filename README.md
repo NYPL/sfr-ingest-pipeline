@@ -16,7 +16,6 @@ Python 3.6+ (written with Python 3.7)
 - coverage
 - flake8
 - python-lambda
-- python-levenshtein
 - pyyaml
 
 ## Note

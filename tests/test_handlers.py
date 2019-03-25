@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch, mock_open, MagicMock, call
 
-from service import handler, loadLocalCSV, fetchHathiCSV, fileParser, rowParser
+from service import handler, loadLocalCSV, fetchHathiCSV, fileParser, rowParser, processChunk, generateChunks
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 
 
@@ -94,20 +94,42 @@ class TestHandler(unittest.TestCase):
 
 
     @patch('service.loadCountryCodes', return_value={})
-    def test_file_parser(self, mock_codes):
+    @patch('service.Process')
+    @patch('service.Pipe')
+    def test_file_parser(self, mock_pipe, mock_process, mock_codes):
+        testRows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+        mock_parent = MagicMock()
+        mock_parent.recv.return_value = ['success', 'success']
+        mock_child = MagicMock()
+        mock_pipe.return_value = (mock_parent, mock_child)
+        res = fileParser(testRows, ['test'])
+        self.assertEqual(len(res), 8)
+        self.assertEqual(res[7], 'success')
+
+    def test_chunk_parser(self):
         returnValues = [
             ('success', 'htid1'),
             ProcessingError('TestError', 'sampe'),
             ('success', 'htid2')
         ]
+
+        mock_conn = MagicMock()
+
         with patch('service.rowParser', side_effect=returnValues) as mock_row:
-            outcomes = fileParser([['row1'], ['row2'], ['row3']], ['htid'])
+            processChunk(
+                [['row1'], ['row2'], ['row3']],
+                ['htid'],
+                {},
+                mock_conn
+            )
             mock_row.assert_any_call(['row3'], ['htid'], {})
             mock_row.assert_any_call(['row2'], ['htid'], {})
             mock_row.assert_any_call(['row1'], ['htid'], {})
-
-        self.assertEqual(outcomes[0][0], 'success')
-        self.assertEqual(outcomes[1][0], 'failure')
+    
+    def test_yield_chunks(self):
+        testRows = ['row1', 'row2', 'row3', 'row4', 'row5', 'row6']
+        for chunk in generateChunks(testRows, 2):
+            self.assertEqual(len(chunk), 2)
 
     @patch.dict('os.environ', {'OUTPUT_STREAM': 'test-stream'})
     @patch('service.HathiRecord')
