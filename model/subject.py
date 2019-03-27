@@ -8,6 +8,7 @@ from sqlalchemy import (
     String
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.exc import MultipleResultsFound
 
 from model.core import Base, Core
 from model.measurement import SUBJECT_MEASUREMENTS, Measurement
@@ -62,6 +63,7 @@ class Subject(Core, Base):
 
         if existingSubject is not None:
             return 'update', Subject.update(
+                session,
                 existingSubject,
                 subject,
                 measurements=measurements
@@ -73,7 +75,7 @@ class Subject(Core, Base):
         )
 
     @classmethod
-    def update(cls, existing, subject, **kwargs):
+    def update(cls, session, existing, subject, **kwargs):
         """Update existing subject record"""
         measurements = kwargs.get('measurements', [])
 
@@ -88,8 +90,14 @@ class Subject(Core, Base):
         # It does not make sense for this data to be stored here. (Unless we
         # update what data a measurement encodes.)
         for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Subject,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         return existing
 
@@ -111,18 +119,13 @@ class Subject(Core, Base):
     def lookupSubject(cls, session, subject):
         """Query database for an existing subject. If multiple are found,
         raise an error, otherwise return the subject record."""
-        sbjs = session.query(Subject)\
-            .filter(Subject.authority == subject['authority'])\
-            .filter(Subject.subject == subject['subject'])\
-            .all()
-        if len(sbjs) == 1:
-            return sbjs[0]
-        elif len(sbjs) > 1:
+        try:
+            return session.query(Subject)\
+                .filter(Subject.authority == subject['authority'])\
+                .filter(Subject.subject == subject['subject'])\
+                .one_or_none()
+        except MultipleResultsFound:
             logger.error('Too many subjects found for {}'.format(
                 subject['subject']
             ))
             raise DBError('subjects', 'Found multiple subject entries')
-
-        # TODO Implement matching based on jaro_winkler scores
-        # Will probably need to make this a raw SQL query
-        return None

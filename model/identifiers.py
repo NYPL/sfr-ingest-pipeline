@@ -1,4 +1,5 @@
 import re
+from collections import defaultdict
 
 from sqlalchemy import (
     Column,
@@ -14,6 +15,7 @@ from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError, DataError
 
 from model.core import Base, Core
+from model.equivalent import Equivalent
 
 logger = createLog('identifiers')
 
@@ -43,7 +45,7 @@ class DOAB(Core, Base):
     """Table for DOAB Identifiers"""
     __tablename__ = 'doab'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -57,7 +59,7 @@ class Hathi(Core, Base):
     """Table for HathiTrust Identifiers"""
     __tablename__ = 'hathi'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -71,7 +73,7 @@ class Gutenberg(Core, Base):
     """Table for Gutenberg Identifiers"""
     __tablename__ = 'gutenberg'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -85,7 +87,7 @@ class OCLC(Core, Base):
     """Table for OCLC Identifiers"""
     __tablename__ = 'oclc'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -99,7 +101,7 @@ class LCCN(Core, Base):
     """Table for Library of Congress Control Numbers"""
     __tablename__ = 'lccn'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -113,7 +115,7 @@ class ISBN(Core, Base):
     """Table for ISBNs (10 and 13 digits)"""
     __tablename__ = 'isbn'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -127,7 +129,7 @@ class OWI(Core, Base):
     """Table for OCLC Work Identifiers"""
     __tablename__ = 'owi'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -141,7 +143,7 @@ class ISSN(Core, Base):
     """Table for ISSNs"""
     __tablename__ = 'issn'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -155,7 +157,7 @@ class LCC(Core, Base):
     """Table for Library of Congress Cataloging Numbers"""
     __tablename__ = 'lcc'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -169,7 +171,7 @@ class DDC(Core, Base):
     """Table for Dewey Decimal Control Numbers"""
     __tablename__ = 'ddc'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -183,7 +185,7 @@ class GENERIC(Core, Base):
     """Table for generic or otherwise uncontroller identifiers"""
     __tablename__ = 'generic'
     id = Column(Integer, primary_key=True)
-    value = Column(Unicode, index=True)
+    value = Column(Unicode, index=True, unique=True)
 
     identifier_id = Column(Integer, ForeignKey('identifiers.id'))
 
@@ -249,24 +251,26 @@ class Identifier(Base):
         return '<Identifier(type={})>'.format(self.type)
 
     @classmethod
-    def returnOrInsert(cls, session, identifier, model, recordID):
+    def returnOrInsert(cls, session, identifier):
         """Manages either the creation or return of an existing identifier"""
 
         if identifier is None:
             return None, None
-        existingIdenID = Identifier.lookupIdentifier(
+        existingIden = Identifier.lookupIdentifier(
             session,
-            identifier,
-            model,
-            recordID
+            identifier
         )
-        if existingIdenID is not None:
-            return 'existing', session.query(model).get(existingIdenID)
+        if existingIden is not None:
+            return 'existing', existingIden
 
         return 'new', Identifier.insert(identifier)
 
     @classmethod
     def insert(cls, identifier):
+        logger.debug('Inserting new identifier {} ({})'.format(
+            identifier['identifier'],
+            identifier['type']
+        ))
         """Inserts a new identifier"""
 
         # Create a new entry in the core Identifier table
@@ -288,7 +292,7 @@ class Identifier(Base):
         return coreIden
 
     @classmethod
-    def lookupIdentifier(cls, session, identifier, model, recordID):
+    def lookupIdentifier(cls, session, identifier):
         """Query database for a specific identifier. Return if found and
         raise an error if duplicate identifiers are found for a single
         type."""
@@ -299,60 +303,93 @@ class Identifier(Base):
             cleanIdentifier = cls._cleanIdentifier(identifier['identifier'])
         except DataError:
             return None
-        
-        try:
-            return session.query(model.id) \
-                .join('identifiers', idenTable) \
-                .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
-                .filter(model.id == recordID) \
-                .one()
-        
-        except MultipleResultsFound:
-            logger.error('Found multiple identifiers for {} ({})'.format(
-                identifier['identifier'],
-                identifier['type']
-            ))
-            raise DBError(identifier['type'], 'Found duplicate identifiers')
-        except NoResultFound:
-            pass
-
-        return None
+        return session.query(Identifier) \
+            .join(idenTable) \
+            .filter(cls.identifierTypes[idenType].value == cleanIdentifier) \
+            .one_or_none()
+    
+    @classmethod
+    def getIdentiferRelationship(cls, session, identifier, model, recordID):
+        idenType = identifier.type
+        idenLookup = idenType if idenType is not None else 'generic'
+        idenValue = getattr(identifier, idenLookup, 'generic')[0].value
+        return session.query(model.id) \
+            .join('identifiers', idenLookup) \
+            .filter(cls.identifierTypes[idenType].value == idenValue) \
+            .filter(model.id == recordID) \
+            .one_or_none()
 
     @classmethod
     def getByIdentifier(cls, model, session, identifiers):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
-        for ident in identifiers:
-            logger.debug('Querying database for identifier {} ({})'.format(
-                ident['identifier'],
-                ident['type']
-            ))
-            idenType = ident['type']
-            idenTable = idenType if idenType is not None else 'generic'
-            
+        matchingRecs = defaultdict(int)
+        sortedMatches = []
+        for ident in cls._orderIdentifiers(identifiers):
+            if ident['type'] in ['lcc', 'ddc']:
+                continue
+
             try:
                 cleanIdentifier = cls._cleanIdentifier(ident['identifier'])
             except DataError:
                 logger.debug('Received overly-generic identifier {}'.format(ident['identifier']))
                 continue
-                
-            try:
-                return session.query(model.id)\
-                    .join('identifiers', idenTable)\
-                    .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
-                    .one()
-            except MultipleResultsFound:
-                logger.warning('Found multiple references from {}'.format(
-                    cleanIdentifier
-                ))
-                logger.debug('Cannot use {} for lookup as it is ambiguous'.format(cleanIdentifier))
-            except NoResultFound:
-                pass
-        else:
+
+            logger.debug('Querying database for identifier {} ({})'.format(
+                cleanIdentifier,
+                ident['type']
+            ))
+            idenType = ident['type']
+            idenTable = idenType if idenType is not None else 'generic'  
+            records = session.query(model.id)\
+                .join('identifiers', idenTable)\
+                .filter(cls.identifierTypes[idenType].value == cleanIdentifier)\
+                .all()
+            Identifier._assignRecs(records, matchingRecs)
+        
+        sortedMatches = sorted(matchingRecs.items(), key=lambda x: x[1], reverse=True)
+        
+        if len(sortedMatches) == 0:
             return None
-    
+        
+        topMatch = Identifier._getTopMatch(sortedMatches)
+
+        if len(sortedMatches) > 0:
+            if topMatch is None:
+                topMatch = sortedMatches.pop(0)[0]
+            logger.debug('Adding equivalency records for additional matches')
+            Equivalent.addEquivalencies(
+                session,
+                topMatch,
+                sortedMatches,
+                model.__tablename__,
+                identifiers
+            )
+
+        return topMatch
+
+    @classmethod
+    def _getTopMatch(cls, matches):
+        try:
+            if matches[0][1] <= matches[1][1]:
+                logger.warning('Could not find discinct match for record')
+                logger.debug(matches)
+                return None
+        except IndexError:
+            pass
+        logger.debug('Found Match to record {}'.format(matches[0][0]))
+        topMatch = matches.pop(0)
+        return topMatch[0]
+
+    @classmethod
+    def _assignRecs(cls, records, matches):
+        for r in records:
+            matches[r[0]] += 1
+        
     @staticmethod
     def _cleanIdentifier(identifier):
+        """Normalizes all identifiers received to remove issue ids"""
+
         # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
         cleanIdentifier = re.sub(r'\(.+\)', '', identifier).strip()
 
@@ -361,3 +398,27 @@ class Identifier(Base):
             raise DataError('Non-unique identifier {} recieved'.format(cleanIdentifier))
         
         return cleanIdentifier
+    
+    @staticmethod
+    def _orderIdentifiers(identifiers):
+        """Implement a custom sort order for identifiers for lookup. This is 
+        necessary to ensure that matches are properly made. The order of 
+        precedence is:
+        ISBN, ISSN, LCCN, OWI, OCLC, Hathi, DOAB, Gutenberg, DDC, LLC
+        This order is in the order of most likely match to be found and then
+        in descending order.
+        """
+        idWeight = {
+            'isbn': 1,
+            'issn': 2,
+            'lccn': 3,
+            'owi': 4,
+            'oclc': 5,
+            'hathi': 6,
+            'doab': 7,
+            'gutenberg': 8,
+            None: 9,
+            'lcc': 10,
+            'ddc': 11
+        }
+        return sorted(identifiers, key=lambda x:idWeight[x['type']])

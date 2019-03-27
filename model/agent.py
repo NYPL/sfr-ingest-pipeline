@@ -1,3 +1,4 @@
+import re
 from dateutil.parser import parse
 from sqlalchemy import (
     Column,
@@ -17,6 +18,7 @@ from model.link import AGENT_LINKS, Link
 from model.date import AGENT_DATES, DateField
 
 from helpers.logHelpers import createLog
+from helpers.errorHelpers import DataError
 
 logger = createLog('agentModel')
 
@@ -70,9 +72,17 @@ class Agent(Core, Base):
         agent.pop('birth_date', None)
         agent.pop('death_date', None)
 
-        # Escape single quotes for postgres
-        agent['name'] = agent['name'].replace('\'', '\'\'')
+        if roles is None:
+            roles = []
+        
+        if dates is None:
+            dates = []
 
+        Agent._cleanName(agent, roles, dates)
+        roles = list(set([ r.lower() for r in roles ]))
+        if len(agent['name'].strip()) < 1:
+            raise DataError('Received empty string for agent name')
+        
         existingAgentID = Agent.lookupAgent(session, agent)
         if existingAgentID is not None:
             existingAgent = session.query(cls).get(existingAgentID)
@@ -92,6 +102,7 @@ class Agent(Core, Base):
             link=link,
             dates=dates
         )
+
         return newAgent, roles
 
     @classmethod
@@ -103,8 +114,8 @@ class Agent(Core, Base):
 
         for field, value in agent.items():
             if(value is not None and value.strip() != ''):
-                setattr(existing, field, value)
-        
+                setattr(existing, field, value)        
+
         if aliases is not None:
             aliasRecs = [
                 Alias.insertOrSkip(session, a, Agent, existing.id)
@@ -192,9 +203,10 @@ class Agent(Core, Base):
 
         logger.debug('Matching agent based off jaro_winkler score')
         
+        escapedName = agent['name'].replace('\'', '\'\'')
         try:
             jaroWinklerQ = text(
-                "jarowinkler({}, '{}') > {}".format('name', agent['name'], 0.95)
+                "jarowinkler({}, '{}') > {}".format('name', escapedName, 0.95)
             )
             return session.query(cls.id)\
                 .filter(jaroWinklerQ)\
@@ -207,6 +219,53 @@ class Agent(Core, Base):
             pass
         
         return None
+
+    @classmethod
+    def _cleanName(cls, agent, roles, dates):
+        """Parse agent name to normalize and remove/assign roles/dates"""
+        # Escape single quotes for postgres
+        tmpName = agent['name']
+        tmpName = tmpName.replace('\'', '\'\'')
+        if re.match(r'^\[.+\]$', tmpName):
+            tmpName = tmpName.strip('[]')
+
+        # Parse and remove lifespan dates from the author name string
+        lifeGroup = re.search(r'([0-9]{4})\-(?:([0-9]{4})|)', tmpName)
+        if lifeGroup is not None:
+            tmpName = tmpName.replace(lifeGroup.group(0), '')
+            try:
+                birthDate = lifeGroup.group(1)
+                if birthDate is not None:
+                    dates.append({
+                        'display_date': birthDate,
+                        'date_range': birthDate,
+                        'date_type': 'birth_date'
+                    })
+            except IndexError:
+                pass
+            
+            try:
+                deathDate = lifeGroup.group(2)
+                if deathDate is not None:
+                    dates.append({
+                        'display_date': deathDate,
+                        'date_range': deathDate,
+                        'date_type': 'death_date'
+                    })
+            except IndexError:
+                pass
+
+        # Parse and remove roles from the author name string
+        roleGroup = re.search(r'\[([a-zA-Z; ]+)\]', tmpName)
+        if roleGroup is not None:
+            tmpName = tmpName.replace(roleGroup.group(0), '')
+            tmpRoles = roleGroup.group(1).split(';')
+            cleanRoles = [r.lower().strip() for r in tmpRoles]
+            roles.extend(cleanRoles)
+        
+        # Strip punctuation from end of name string
+        agent['name'] = tmpName.strip('.,;:|[]" ')
+        agent['sort_name'] = agent['name']
 
 
 class Alias(Core, Base):

@@ -120,11 +120,16 @@ class Instance(Core, Base):
             if parentWork is None and work is not None:
                 existing.work = work
                 parentWork = work
-            parentWork.updateFields(**{
-                'series': series,
-                'series_position': seriesPos
-            })
-            parentWork.importSubjects(session, subjects)
+            try:
+                parentWork.updateFields(**{
+                    'series': series,
+                    'series_position': seriesPos
+                })
+                parentWork.importSubjects(session, subjects)
+            except AttributeError:
+                logger.warning('Matched orphan instance {}, cannot update parent'.format(
+                    str(existing.id)
+                ))
             Instance.update(
                 session,
                 existing,
@@ -191,19 +196,31 @@ class Instance(Core, Base):
             try:
                 status, idenRec = Identifier.returnOrInsert(
                     session,
-                    iden,
-                    Instance,
-                    existing.id
+                    iden
                 )
                 if status == 'new':
                     existing.identifiers.append(idenRec)
+                else:
+                    if Identifier.getIdentiferRelationship(
+                        session,
+                        idenRec,
+                        Instance,
+                        existing.id
+                    ) is None:
+                        existing.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
 
         for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Instance,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         for date in dates:
             updateDate = DateField.updateOrInsert(session, date, Instance, existing.id)
@@ -218,16 +235,19 @@ class Instance(Core, Base):
                 existing.items.append(itemRec)
 
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            if roles is None:
-                roles = ['author']
-            for role in roles:
-                if AgentInstances.roleExists(session, agentRec, role, Instance, existing.id) is None:
-                    AgentInstances(
-                        agent=agentRec,
-                        instance=existing,
-                        role=role
-                    )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                if roles is None:
+                    roles = ['author']
+                for role in roles:
+                    if AgentInstances.roleExists(session, agentRec, role, existing.id) is None:
+                        AgentInstances(
+                            agent=agentRec,
+                            instance=existing,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Instance, existing.id), altTitles)):
             existing.alt_titles.append(AltTitle(title=altTitle))
@@ -264,7 +284,7 @@ class Instance(Core, Base):
     @classmethod
     def insert(cls, session, instanceData, **kwargs):
         """Insert a new instance record"""
-        
+        logger.info('Inserting new instance record')
         instance = Instance(**instanceData)
 
         identifiers = kwargs.get('identifiers', [])
@@ -278,19 +298,25 @@ class Instance(Core, Base):
         language = kwargs.get('language', [])
 
         if agents is not None:
-            for agent in agents:
-                agentRec, roles = Agent.updateOrInsert(session, agent)
-                for role in roles:
-                    print(agentRec, instance, role)
-                    AgentInstances(
-                        agent=agentRec,
-                        instance=instance,
-                        role=role
-                    )
+            try:
+                for agent in agents:
+                    agentRec, roles = Agent.updateOrInsert(session, agent)
+                    for role in roles:
+                        AgentInstances(
+                            agent=agentRec,
+                            instance=instance,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for iden in identifiers:
             try:
-                instance.identifiers.append(Identifier.insert(iden))
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    iden
+                )
+                instance.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
@@ -336,7 +362,7 @@ class Instance(Core, Base):
             itemRec, op = Item.createOrStore(session, item, instance.id)
             if op == 'inserted':
                 instance.items.append(itemRec)
-
+        logger.info('Inserted {}'.format(instance))
         return instance
 
     @classmethod
@@ -353,7 +379,7 @@ class AgentInstances(Core, Base):
     __tablename__ = 'agent_instances'
     instance_id = Column(Integer, ForeignKey('instances.id'), primary_key=True)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
-    role = Column(String(64))
+    role = Column(String(64), primary_key=True)
 
     agentInstancesPkey = PrimaryKeyConstraint(
         'instance_id',
@@ -369,14 +395,12 @@ class AgentInstances(Core, Base):
     agent = relationship('Agent')
 
     @classmethod
-    def roleExists(cls, session, agent, role, model, recordID):
+    def roleExists(cls, session, agent, role, recordID):
         """Query database to see if relationship with role exists between
         agent and instance. Returns model instance if it does or None if it
         does not"""
         return session.query(cls)\
-            .join(Agent)\
-            .join(model)\
-            .filter(Agent.id == agent.id)\
-            .filter(model.id == recordID)\
+            .filter(cls.agent_id == agent.id)\
+            .filter(cls.instance_id == recordID)\
             .filter(cls.role == role)\
             .one_or_none()

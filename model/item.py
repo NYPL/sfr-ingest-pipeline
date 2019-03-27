@@ -200,7 +200,11 @@ class Item(Core, Base):
 
         for identifier in identifiers:
             try:
-                item.identifiers.append(Identifier.insert(identifier))
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    identifier
+                )
+                item.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
@@ -223,13 +227,16 @@ class Item(Core, Base):
             item.rights.append(newRights)
 
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            for role in roles:
-                AgentItems(
-                    agent=agentRec,
-                    item=item,
-                    role=role
-                )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                for role in roles:
+                    AgentItems(
+                        agent=agentRec,
+                        item=item,
+                        role=role
+                    )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         return item
 
@@ -252,19 +259,31 @@ class Item(Core, Base):
             try:
                 status, idenRec = Identifier.returnOrInsert(
                     session,
-                    identifier,
-                    cls,
-                    existing.id
+                    identifier
                 )
                 if status == 'new':
                     existing.identifiers.append(idenRec)
+                else:
+                    if Identifier.getIdentiferRelationship(
+                        session,
+                        idenRec,
+                        Item,
+                        existing.id
+                    ) is None:
+                        existing.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
 
         for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Item,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         for link in links:
             existingLink = Link.lookupLink(session, link, cls, existing.id)
@@ -289,16 +308,19 @@ class Item(Core, Base):
                 existing.rights.append(updateRights)
         
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            if roles is None:
-                roles = ['repository']
-            for role in roles:
-                if AgentItems.roleExists(session, agentRec, role, Item, existing.id) is None:
-                    AgentItems(
-                        agent=agentRec,
-                        item=existing,
-                        role=role
-                    )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                if roles is None:
+                    roles = ['repository']
+                for role in roles:
+                    if AgentItems.roleExists(session, agentRec, role, existing.id) is None:
+                        AgentItems(
+                            agent=agentRec,
+                            item=existing,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
     @classmethod
     def addReportData(cls, session, aceReport):
@@ -366,7 +388,7 @@ class AgentItems(Core, Base):
     __tablename__ = 'agent_items'
     item_id = Column(Integer, ForeignKey('items.id'), primary_key=True)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
-    role = Column(String(64))
+    role = Column(String(64), primary_key=True)
 
     agentItemPkey = PrimaryKeyConstraint('item_id', 'agent_id', 'role', name='agent_items_pkey')
 
@@ -377,13 +399,11 @@ class AgentItems(Core, Base):
     agent = relationship('Agent')
 
     @classmethod
-    def roleExists(cls, session, agent, role, model, recordID):
+    def roleExists(cls, session, agent, role, recordID):
         """Query database to check if a role exists between a specific work and
         agent"""
         return session.query(cls)\
-            .join(Agent)\
-            .join(model)\
-            .filter(Agent.id == agent.id)\
-            .filter(model.id == recordID)\
+            .filter(cls.agent_id == agent.id)\
+            .filter(cls.item_id == recordID)\
             .filter(cls.role == role)\
             .one_or_none()

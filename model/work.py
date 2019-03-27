@@ -203,14 +203,29 @@ class Work(Core, Base):
             else:
                 newHoldings = newHoldings[0]
 
-            oldHoldings = list(filter(lambda x: x.quantity == 'holdings', existing.measurements))
+            oldHoldings = Measurement.getMeasurements(
+                session,
+                'holdings',
+                Work,
+                existing.id
+            )
 
             for holding in oldHoldings:
-                if float(newHoldings['value']) > holding.value:
-                    existing.title = newTitle
-                    break
+                try:
+                    if float(newHoldings['value']) > float(holding.value):
+                        existing.title = newTitle
+                        break
+                except TypeError:
+                    pass
             else:
-                existing.alt_titles.append(AltTitle(title=newTitle))
+                newAlt = AltTitle.insertOrSkip(
+                    session,
+                    newTitle,
+                    Work,
+                    existing.id
+                )
+                if newAlt is not None:
+                    existing.alt_titles.append(newAlt)
 
         for instance in instances:
             instanceRec, op = Instance.updateOrInsert(
@@ -225,30 +240,39 @@ class Work(Core, Base):
             try:
                 status, idenRec = Identifier.returnOrInsert(
                     session,
-                    iden,
-                    Work,
-                    existing.id
+                    iden
                 )
                 if status == 'new':
                     existing.identifiers.append(idenRec)
+                else:
+                    if Identifier.getIdentiferRelationship(
+                        session,
+                        idenRec,
+                        Work,
+                        existing.id
+                    ) is None:
+                        existing.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
 
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            if roles is None:
-                roles = ['author']
-            for role in roles:
-                if AgentWorks.roleExists(session, agentRec, role, Work, existing.id) is None:
-                    AgentWorks(
-                        agent=agentRec,
-                        work=existing,
-                        role=role
-                    )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                if roles is None:
+                    roles = ['author']
+                for role in roles:
+                    if AgentWorks.roleExists(session, agentRec, role, existing.id) is None:
+                        AgentWorks(
+                            agent=agentRec,
+                            work=existing,
+                            role=role
+                        )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Work, existing.id), altTitles)):
-            existing.alt_titles.append(AltTitle(title=altTitle))
+            existing.alt_titles.append(altTitle)
 
         for subject in subjects:
             op, subjectRec = Subject.updateOrInsert(session, subject)
@@ -257,10 +281,14 @@ class Work(Core, Base):
                 existing.subjects.append(subjectRec)
 
         for measurement in measurements:
-            # TODO Do we want to merge measurements in some instances?
-            # Leaving as is for now
-            measurementRec = Measurement.insert(measurement)
-            existing.measurements.append(measurementRec)
+            op, measurementRec = Measurement.updateOrInsert(
+                session,
+                measurement,
+                Work,
+                existing.id
+            )
+            if op == 'insert':
+                existing.measurements.append(measurementRec)
 
         for link in links:
             updateLink = Link.updateOrInsert(session, link, Work, existing.id)
@@ -328,28 +356,39 @@ class Work(Core, Base):
 
         jsonRec = RawData(data=storeJson)
         work.import_json.append(jsonRec)
-
+        
         for instance in instances:
             instanceRec, op = Instance.updateOrInsert(session, instance)
             work.instances.append(instanceRec)
 
         for iden in identifiers:
             try:
-                work.identifiers.append(Identifier.insert(iden))
+                status, idenRec = Identifier.returnOrInsert(
+                    session,
+                    iden
+                )
+                work.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
 
+        relsCreated = []
         for agent in agents:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
-            for role in roles:
-                AgentWorks(
-                    agent=agentRec,
-                    work=work,
-                    role=role
-                )
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                for role in roles:
+                    if (agentRec.name, role) in relsCreated: continue
+                    relsCreated.append((agentRec.name, role))
+                    AgentWorks(
+                        agent=agentRec,
+                        work=work,
+                        role=role
+                    )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
-        for altTitle in altTitles:
+        # Quick conversion to set to eliminate duplicate alternate titles
+        for altTitle in list(set(altTitles)):
             work.alt_titles.append(AltTitle(title=altTitle))
 
         for subject in subjects:
@@ -410,8 +449,10 @@ class Work(Core, Base):
                 .filter(Work.uuid == qUUID)\
                 .one()
         except NoResultFound:
-            logger.error('Multiple entries for UUID {} found!'.format(recUUID))
-            raise DBError('work', 'Multiple entries found for single UUID')
+            logger.error('No matching UUID {} found!'.format(recUUID))
+            raise DBError('work', 'Original UUID {} not found, check error logs'.format(
+                recUUID
+            ))
         return existing
 
     @classmethod
@@ -432,7 +473,7 @@ class AgentWorks(Core, Base):
     __tablename__ = 'agent_works'
     work_id = Column(Integer, ForeignKey('works.id'), primary_key=True)
     agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True)
-    role = Column(String(64))
+    role = Column(String(64), primary_key=True)
 
     agentWorksPkey = PrimaryKeyConstraint(
         'work_id',
@@ -455,13 +496,11 @@ class AgentWorks(Core, Base):
         )
 
     @classmethod
-    def roleExists(cls, session, agent, role, model, recordID):
+    def roleExists(cls, session, agent, role, recordID):
         """Query database to check if a role exists between a specific work and
         agent"""
         return session.query(cls)\
-            .join(Agent)\
-            .join(model)\
-            .filter(Agent.id == agent.id)\
-            .filter(model.id == recordID)\
+            .filter(cls.agent_id == agent.id)\
+            .filter(cls.work_id == recordID)\
             .filter(cls.role == role)\
             .one_or_none()

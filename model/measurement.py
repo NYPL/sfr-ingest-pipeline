@@ -8,8 +8,14 @@ from sqlalchemy import (
     Float
 )
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm.exc import MultipleResultsFound
 
 from model.core import Base, Core
+
+from helpers.logHelpers import createLog
+from helpers.errorHelpers import DBError, DataError
+
+logger = createLog('measurements')
 
 WORK_MEASUREMENTS = Table(
     'work_measurements',
@@ -57,6 +63,7 @@ class Measurement(Core, Base):
     value = Column(Float, index=True)
     weight = Column(Float)
     taken_at = Column(DateTime)
+    source_id = Column(Unicode, index=True)
 
     work = relationship(
         'Work',
@@ -90,15 +97,18 @@ class Measurement(Core, Base):
             self.value
         )
 
-    # TODO Update methods below to handle updating on ALL tables/models, not
-    # just for works
     @classmethod
-    def updateOrInsert(cls, session, measure, workID):
+    def updateOrInsert(cls, session, measure, model, recordID):
 
-        existingMeasure = Measurement.lookupMeasure(session, measure, workID)
+        existingMeasure = Measurement.lookupMeasure(
+            session,
+            measure,
+            model,
+            recordID
+        )
 
         if existingMeasure is not None:
-            updated = Measurement.update(session, measure, existingMeasure)
+            updated = Measurement.update(measure, existingMeasure)
             return 'update', updated
 
         return 'insert', Measurement.insert(measure)
@@ -116,16 +126,26 @@ class Measurement(Core, Base):
         return existing
 
     @classmethod
-    def lookupMeasure(cls, session, measure, workID):
-        meas = session.query(Measurement)\
-            .join(Measurement.work)\
-            .filter(Measurement.quantity == measure.quantity)\
-            .filter(Measurement.work.id == workID)\
+    def lookupMeasure(cls, session, measure, model, recordID):
+        try:
+            return session.query(cls)\
+                .join(model.__tablename__[:-1])\
+                .filter(cls.quantity == measure['quantity'])\
+                .filter(cls.source_id == measure['source_id'])\
+                .filter(model.id == recordID)\
+                .one_or_none()
+        except MultipleResultsFound:
+            logger.error('Found duplicate measurement entries for {} {}'.format(
+                model.__tablename__,
+                recordID
+            ))
+            raise DataError('Duplicate measurement entries')
+    
+    @classmethod
+    def getMeasurements(cls, session, measure, model, recordID):
+        return session.query(cls.value)\
+            .join(model.__tablename__[:-1])\
+            .filter(cls.quantity == measure)\
+            .filter(model.id == recordID)\
             .all()
-        if len(meas) == 1:
-            return meas[0]
-        elif len(meas) > 1:
-            print('Too many mesurements found, should only be one!')
-            raise
 
-        return None
