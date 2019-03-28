@@ -25,7 +25,6 @@ from model.date import DateField
 from model.instance import Instance
 from model.agent import Agent
 from model.subject import Subject
-from model.rights import Rights, WORK_RIGHTS
 from model.language import Language
 
 from helpers.errorHelpers import DBError, DataError
@@ -98,241 +97,37 @@ class Work(Core, Base):
         back_populates='work'
     )
 
+    CHILD_FIELDS = [
+        'instances',
+        'identifiers',
+        'agents',
+        'alt_titles',
+        'subjects',
+        'measurements',
+        'links',
+        'storeJson',
+        'dates',
+        'rights',
+        'language'
+    ]
+
     def __repr__(self):
         return '<Work(title={})>'.format(self.title)
 
-    def importSubjects(self, session, subjects):
-        for subject in subjects:
-            op, subjectRec = Subject.updateOrInsert(session, subject)
-            relExists = Work.lookupSubjectRel(session, subjectRec, self.id)
-            if relExists is None:
-                self.subjects.append(subjectRec)
+    @classmethod
+    def _buildChildDict(cls, workData):
+        return { field: workData.pop(field, []) for field in cls.CHILD_FIELDS }
 
     @classmethod
-    def updateOrInsert(cls, session, workData):
-        """Search for an existing work, if found update it, if not create
-        a new work record"""
-        logger.info('Ingesting record, checking if update or insert')
-        storeJson = json.dumps(workData)
-
-        primaryIdentifier = workData.pop('primary_identifier', None)
-        instances = workData.pop('instances', None)
-        agents = workData.pop('agents', None)
-        altTitles = workData.pop('alt_titles', None)
-        subjects = workData.pop('subjects', None)
-        identifiers = workData.pop('identifiers', None)
-        measurements = workData.pop('measurements', None)
-        links = workData.pop('links', None)
-        dates = workData.pop('dates', None)
-        rights = workData.pop('rights', [])
-        language = workData.pop('language', [])
-
-        existing = cls.lookupWork(session, identifiers, primaryIdentifier)
-        if existing is not None:
-            updated = Work.update(
-                session,
-                existing,
-                workData,
-                instances=instances,
-                identifiers=identifiers,
-                agents=agents,
-                altTitles=altTitles,
-                subjects=subjects,
-                measurements=measurements,
-                links=links,
-                dates=dates,
-                rights=rights,
-                language=language,
-                json=storeJson
-            )
-            return 'update', updated
-
-        # Insert a new work
-        newWork = cls.insert(
-            session,
-            workData,
-            instances=instances,
-            identifiers=identifiers,
-            agents=agents,
-            altTitles=altTitles,
-            subjects=subjects,
-            measurements=measurements,
-            links=links,
-            dates=dates,
-            rights=rights,
-            language=language,
-            json=storeJson
-        )
-
-        return 'insert', newWork
-
-    @classmethod
-    def update(cls, session, existing, work, **kwargs):
-        """Update an existing work record"""
-        logger.debug('Updating existing work record {}'.format(existing.id))
-
-        instances = kwargs.get('instances', [])
-        identifiers = kwargs.get('identifiers', [])
-        agents = kwargs.get('agents', [])
-        altTitles = kwargs.get('alt_titles', [])
-        subjects = kwargs.get('subjects', [])
-        measurements = kwargs.get('measurements', [])
-        links = kwargs.get('links', [])
-        storeJson = kwargs.get('json')
-        dates = kwargs.get('dates', [])
-        rights = kwargs.get('rights', [])
-        language = kwargs.get('language', [])
-
-        jsonRec = RawData(data=storeJson)
-        existing.import_json.append(jsonRec)
-
-        for field, value in work.items():
-            if (
-                value is not None
-                and value.strip() != ''
-                and field != 'title'
-            ):
-                setattr(existing, field, value)
-
-        newTitle = work.get('title')
-        # The "canonical title" should be set to the record with the most holdings
-        if newTitle.lower() != existing.title.lower():
-            newHoldings = list(filter(lambda x: x['quantity'] == 'holdings', measurements))
-            if len(newHoldings) < 1:
-                newHoldings = {'value': 0}
-            else:
-                newHoldings = newHoldings[0]
-
-            oldHoldings = Measurement.getMeasurements(
-                session,
-                'holdings',
-                Work,
-                existing.id
-            )
-
-            for holding in oldHoldings:
-                try:
-                    if float(newHoldings['value']) > float(holding.value):
-                        existing.title = newTitle
-                        break
-                except TypeError:
-                    pass
-            else:
-                newAlt = AltTitle.insertOrSkip(
-                    session,
-                    newTitle,
-                    Work,
-                    existing.id
-                )
-                if newAlt is not None:
-                    existing.alt_titles.append(newAlt)
-
-        for instance in instances:
-            instanceRec, op = Instance.updateOrInsert(
-                session,
-                instance, 
-                work=existing
-            )
-            if op == 'inserted':
-                existing.instances.append(instanceRec)
-
-        for iden in identifiers:
-            try:
-                status, idenRec = Identifier.returnOrInsert(
-                    session,
-                    iden
-                )
-                if status == 'new':
-                    existing.identifiers.append(idenRec)
-                else:
-                    if Identifier.getIdentiferRelationship(
-                        session,
-                        idenRec,
-                        Work,
-                        existing.id
-                    ) is None:
-                        existing.identifiers.append(idenRec)
-            except DataError as err:
-                logger.warning('Received invalid identifier')
-                logger.debug(err)
-
-        for agent in agents:
-            try:
-                agentRec, roles = Agent.updateOrInsert(session, agent)
-                if roles is None:
-                    roles = ['author']
-                for role in roles:
-                    if AgentWorks.roleExists(session, agentRec, role, existing.id) is None:
-                        AgentWorks(
-                            agent=agentRec,
-                            work=existing,
-                            role=role
-                        )
-            except DataError:
-                logger.warning('Unable to read agent {}'.format(agent['name']))
-
-        for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Work, existing.id), altTitles)):
-            existing.alt_titles.append(altTitle)
-
-        for subject in subjects:
-            op, subjectRec = Subject.updateOrInsert(session, subject)
-            relExists = Work.lookupSubjectRel(session, subjectRec, existing.id)
-            if relExists is None:
-                existing.subjects.append(subjectRec)
-
-        for measurement in measurements:
-            op, measurementRec = Measurement.updateOrInsert(
-                session,
-                measurement,
-                Work,
-                existing.id
-            )
-            if op == 'insert':
-                existing.measurements.append(measurementRec)
-
-        for link in links:
-            updateLink = Link.updateOrInsert(session, link, Work, existing.id)
-            if updateLink is not None:
-                existing.links.append(updateLink)
-
-        for date in dates:
-            updateDate = DateField.updateOrInsert(session, date, Work, existing.id)
-            if updateDate is not None:
-                existing.dates.append(updateDate)
-        
-        #for rightsStmt in rights:
-        #    updateRights = Rights.updateOrInsert(
-        #        session,
-        #        rightsStmt,
-        #        Work,
-        #        existing.id
-        #    )
-        #    if updateRights is not None:
-        #        existing.rights.append(updateRights)
-        
-        if isinstance(language, str) or language is None:
-            language = [language]
-
-        for lang in language:
-            try:
-                newLang = Language.updateOrInsert(session, lang)
-                langRel = Language.lookupRelLang(session, newLang, Work, existing)
-                if langRel is None:
-                    existing.language.append(newLang)
-            except DataError:
-                logger.warning('Unable to parse language {}'.format(lang))
-
-
-        return existing
-
-    @classmethod
-    def insert(cls, session, workData, **kwargs):
+    def insert(cls, session, workData):
         """Insert a new work record"""
-        logger.info('Inserting new work record')
+        logger.info('Inserting new work record {}'.format(workData['title']))
 
         # TODO Remove prepositions, etc from the start of the sort title
         workData['sort_title'] = workData.get('sort_title', workData['title'])
         
+        childFields = Work._buildChildDict(workData)
+
         work = cls(**workData)
         #
         # === IMPORTANT ===
@@ -342,25 +137,37 @@ class Work(Core, Base):
         #
         work.uuid = uuid.uuid4()
 
-        instances = kwargs.get('instances', [])
-        identifiers = kwargs.get('identifiers', [])
-        agents = kwargs.get('agents', [])
-        altTitles = kwargs.get('alt_titles', [])
-        subjects = kwargs.get('subjects', [])
-        measurements = kwargs.get('measurements', [])
-        links = kwargs.get('links', [])
-        storeJson = kwargs.get('json')
-        dates = kwargs.get('dates', [])
-        rights = kwargs.get('rights', [])
-        language = kwargs.get('language', [])
-
-        jsonRec = RawData(data=storeJson)
+        jsonRec = RawData(data=childFields['storeJson'])
         work.import_json.append(jsonRec)
         
-        for instance in instances:
-            instanceRec, op = Instance.updateOrInsert(session, instance)
-            work.instances.append(instanceRec)
+        Work._addInstances(session, work, childFields['instances'])
 
+        Work._addIdentifiers(session, work, childFields['identifiers'])
+
+        Work._addAgents(session, work, childFields['agents'])
+
+        Work._addAltTitles(work, childFields['alt_titles'])
+
+        Work._addSubjects(session, work, childFields['subjects'])
+
+        Work._addMeasurements(session, work, childFields['measurements'])
+
+        Work._addLinks(work, childFields['links'])
+
+        Work._addDates(work, childFields['dates'])
+
+        Work._addLanguages(work, session, childFields['language'])
+                
+        return work
+    
+    @classmethod
+    def _addInstances(cls, session, work, instances):
+        for instance in instances:
+            instanceRec = Instance.insert(session, instance)
+            work.instances.append(instanceRec)
+    
+    @classmethod
+    def _addIdentifiers(cls, session, work, identifiers):
         for iden in identifiers:
             try:
                 status, idenRec = Identifier.returnOrInsert(
@@ -371,7 +178,9 @@ class Work(Core, Base):
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
-
+    
+    @classmethod
+    def _addAgents(cls, session, work, agents):
         relsCreated = []
         for agent in agents:
             try:
@@ -386,45 +195,52 @@ class Work(Core, Base):
                     )
             except DataError:
                 logger.warning('Unable to read agent {}'.format(agent['name']))
-
-        # Quick conversion to set to eliminate duplicate alternate titles
-        for altTitle in list(set(altTitles)):
-            work.alt_titles.append(AltTitle(title=altTitle))
-
+    
+    @classmethod
+    def _addAltTitles(cls, work, altTitles):
+        if altTitles is not None:
+            # Quick conversion to set to eliminate duplicate alternate titles
+            for altTitle in list(set(altTitles)):
+                work.alt_titles.append(AltTitle(title=altTitle))
+    
+    @classmethod
+    def _addSubjects(cls, session, work, subjects):
         for subject in subjects:
             op, subjectRec = Subject.updateOrInsert(session, subject)
             work.subjects.append(subjectRec)
 
+    @classmethod
+    def _addMeasurements(cls, session, work, measurements):
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
             work.measurements.append(measurementRec)
-
+    
+    @classmethod
+    def _addLinks(cls, work, links):
         for link in links:
             newLink = Link(**link)
             work.links.append(newLink)
-
+    
+    @classmethod
+    def _addDates(cls, work, dates):
         for date in dates:
             newDate = DateField.insert(date)
             work.dates.append(newDate)
-        
-        #for rightsStmt in rights:
-        #    rightsDates = rightsStmt.pop('dates', [])
-        #    newRights = Rights.insert(rightsStmt, dates=rightsDates)
-        #    work.rights.append(newRights)
-        
-        if isinstance(language, str) or language is None:
-            language = [language]
-        
-        for lang in language:
-            try:
-                newLang = Language.updateOrInsert(session, lang)
-                work.language.append(newLang)
-            except DataError:
-                logger.debug('Unable to parse language {}'.format(lang))
-                continue
+    
+    @classmethod
+    def _addLanguages(cls, session, work, languages):
+        if languages is not None:
+            if isinstance(languages, str):
+                languages = [languages]
             
-        return work
-
+            for lang in languages:
+                try:
+                    newLang = Language.updateOrInsert(session, lang)
+                    work.language.append(newLang)
+                except DataError:
+                    logger.debug('Unable to parse language {}'.format(lang))
+                    continue
+    
     @classmethod
     def lookupWork(cls, session, identifiers, primaryIdentifier=None):
         """Lookup a work either by UUID or by another identifier"""
@@ -433,11 +249,13 @@ class Work(Core, Base):
 
         existingWorkID = Identifier.getByIdentifier(Work, session, identifiers)
         if existingWorkID:
-            return session.query(Work).get(existingWorkID)
+            return session.query(Work).get(existingWorkID).uuid
         else:
             existingInstanceID = Identifier.getByIdentifier(Instance, session, identifiers)
             if existingInstanceID:
-                return session.query(Instance).get(existingInstanceID).work
+                return session.query(Instance.work).get(existingInstanceID).work.uuid
+        
+        return None
 
     @classmethod
     def getByUUID(cls, session, recUUID):
@@ -445,7 +263,7 @@ class Work(Core, Base):
         errors. (If duplicate UUIDs exist, a serious error has occured)"""
         qUUID = uuid.UUID(recUUID)
         try:
-            existing = session.query(Work)\
+            existing = session.query(Work.uuid)\
                 .filter(Work.uuid == qUUID)\
                 .one()
         except NoResultFound:
@@ -454,15 +272,6 @@ class Work(Core, Base):
                 recUUID
             ))
         return existing
-
-    @classmethod
-    def lookupSubjectRel(cls, session, subject, workID):
-        """Query database for a subject record related to the current work"""
-        return session.query(cls)\
-            .join('subjects')\
-            .filter(Subject.subject == subject.subject)\
-            .filter(cls.id == workID)\
-            .one_or_none()
 
 
 class AgentWorks(Core, Base):
