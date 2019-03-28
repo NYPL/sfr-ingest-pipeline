@@ -103,33 +103,6 @@ class DateField(Core, Base):
         return '<Date(date={})>'.format(self.display_date)
 
     @classmethod
-    def updateOrInsert(cls, session, dateInst, model, recordID):
-        logger.debug('Inserting or updating date {}'.format(dateInst['display_date']))
-        """Query the database for a date on the current record. If found,
-        update the existing date, if not, insert new row"""
-        existing = DateField.lookupDate(session, dateInst, model, recordID)
-        if existing is not None:
-            logger.info('Updating existing date record {}'.format(existing.id))
-            DateField.update(existing, dateInst)
-            return None
-
-        logger.info('Inserting new date object')
-        return DateField.insert(dateInst)
-
-    @classmethod
-    def update(cls, existing, dateInst):
-        """Update fields on existing date"""
-        for field, value in dateInst.items():
-            if(
-                value is not None
-                and value.strip() != ''
-                and field != 'date_range'
-            ):
-                setattr(existing, field, value)
-
-        existing.date_range = DateField.parseDate(dateInst['date_range'])
-
-    @classmethod
     def insert(cls, dateData):
         """Insert a new date row"""
         dateInst = cls()
@@ -140,16 +113,6 @@ class DateField(Core, Base):
                 setattr(dateInst, field, DateField.parseDate(value))
 
         return dateInst
-
-    @classmethod
-    def lookupDate(cls, session, dateInst, model, recordID):
-        """Query database for link related to current record. Return link
-        if found, otherwise return None"""
-        return session.query(cls)\
-            .join(model.__tablename__)\
-            .filter(model.id == recordID)\
-            .filter(cls.date_type == dateInst['date_type'])\
-            .one_or_none()
 
     @staticmethod
     def parseDate(dateObj):

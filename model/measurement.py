@@ -98,54 +98,5 @@ class Measurement(Core, Base):
         )
 
     @classmethod
-    def updateOrInsert(cls, session, measure, model, recordID):
-
-        existingMeasure = Measurement.lookupMeasure(
-            session,
-            measure,
-            model,
-            recordID
-        )
-
-        if existingMeasure is not None:
-            updated = Measurement.update(measure, existingMeasure)
-            return 'update', updated
-
-        return 'insert', Measurement.insert(measure)
-
-    @classmethod
     def insert(cls, measure):
         return Measurement(**measure)
-
-    @classmethod
-    def update(cls, measure, existing):
-        for field in ['value', 'weight', 'taken_at']:
-            if measure[field] is not None:
-                setattr(existing, field, measure[field])
-
-        return existing
-
-    @classmethod
-    def lookupMeasure(cls, session, measure, model, recordID):
-        try:
-            return session.query(cls)\
-                .join(model.__tablename__[:-1])\
-                .filter(cls.quantity == measure['quantity'])\
-                .filter(cls.source_id == measure['source_id'])\
-                .filter(model.id == recordID)\
-                .one_or_none()
-        except MultipleResultsFound:
-            logger.error('Found duplicate measurement entries for {} {}'.format(
-                model.__tablename__,
-                recordID
-            ))
-            raise DataError('Duplicate measurement entries')
-    
-    @classmethod
-    def getMeasurements(cls, session, measure, model, recordID):
-        return session.query(cls.value)\
-            .join(model.__tablename__[:-1])\
-            .filter(cls.quantity == measure)\
-            .filter(model.id == recordID)\
-            .all()
-
