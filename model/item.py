@@ -105,7 +105,7 @@ class Item(Core, Base):
         return { field: itemData.pop(field, []) for field in cls.CHILD_FIELDS }
 
     @classmethod
-    def createOrStore(cls, session, item, instanceID):
+    def createOrStore(cls, session, item, instance):
         links = deque(item.pop('links', []))
         item['links'] = []
         while len(links) > 0:
@@ -117,7 +117,15 @@ class Item(Core, Base):
                 try:
                     if re.search(regex, url):
                         if source in EPUB_SOURCES:
-                            cls.createLocalEpub(item, link, instanceID)
+
+                            # We need to get the ID of the instance to allow 
+                            # for asynchronously storing the ePub file, so
+                            # instance is added and flushed here
+                            if instance.id is None:
+                                session.add(instance)
+                                session.flush()
+
+                            cls.createLocalEpub(item, link, instance.id)
                             break
                 except TypeError as err:
                     logger.warning('Found link {} with no url {}'.format(

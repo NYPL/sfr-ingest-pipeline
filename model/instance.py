@@ -138,12 +138,6 @@ class Instance(Core, Base):
 
         Instance._addRights(instance, childFields['rights'])
 
-        # We need to get the ID of the instance to allow for asynchronously
-        # storing the ePub file, so instance is added and flushed here
-        # TODO evaluate if this is a good idea, or can be handled better elsewhere
-        session.add(instance)
-        session.flush()
-
         Instance._addItems(session, instance, childFields['items'])
 
         logger.info('Inserted {}'.format(instance))
@@ -210,13 +204,13 @@ class Instance(Core, Base):
             if isinstance(languages, str):
                 languages = [languages]
             
-            for lang in languages:
-                try:
-                    newLang = Language.updateOrInsert(session, lang)
-                    instance.language.append(newLang)
-                except DataError:
-                    logger.debug('Unable to parse language {}'.format(lang))
-                    continue
+        for lang in languages:
+            try:
+                newLang = Language.updateOrInsert(session, lang)
+                instance.language.append(newLang)
+            except DataError:
+                logger.debug('Unable to parse language {}'.format(lang))
+                continue
     
     @classmethod
     def _addRights(cls, instance, rights):
@@ -228,9 +222,14 @@ class Instance(Core, Base):
     @classmethod
     def _addItems(cls, session, instance, items):
         for item in items:
-            itemRec, op = Item.createOrStore(session, item, instance.id)
+            itemRec, op = Item.createOrStore(session, item, instance)
             if op == 'inserted':
                 instance.items.append(itemRec)
+    
+    @classmethod
+    def addItemRecord(cls, session, instanceID, itemRec):
+        instance = session.query(cls).get(instanceID)
+        instance.items.append(itemRec)
 
 class AgentInstances(Core, Base):
     """Table relating agents and instances. Is instantiated as a class to

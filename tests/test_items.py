@@ -43,9 +43,14 @@ class ItemTest(unittest.TestCase):
                 }
             ]
         }
-        record, op = Item.createOrStore('session', testItem, 1)
+        mock_inst = MagicMock()
+        mock_inst.id = None
+        mock_session = MagicMock()
+        record, op = Item.createOrStore(mock_session, testItem, mock_inst)
         self.assertEqual(record, None)
         self.assertEqual(op, 'creating')
+        mock_session.add.assert_called_once()
+        mock_session.flush.assert_called_once()
 
     @patch('model.item.Item.insert', return_value=('test_item', 'test'))
     def test_create_store_store(self, mock_create):

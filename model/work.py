@@ -233,13 +233,13 @@ class Work(Core, Base):
             if isinstance(languages, str):
                 languages = [languages]
             
-            for lang in languages:
-                try:
-                    newLang = Language.updateOrInsert(session, lang)
-                    work.language.append(newLang)
-                except DataError:
-                    logger.debug('Unable to parse language {}'.format(lang))
-                    continue
+        for lang in languages:
+            try:
+                newLang = Language.updateOrInsert(session, lang)
+                work.language.append(newLang)
+            except DataError:
+                logger.debug('Unable to parse language {}'.format(lang))
+                continue
     
     @classmethod
     def lookupWork(cls, session, identifiers, primaryIdentifier=None):
