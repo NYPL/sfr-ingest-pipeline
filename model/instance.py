@@ -121,6 +121,7 @@ class Instance(Core, Base):
         instanceData.pop('subjects', [])
 
         instance = Instance(**instanceData)
+        session.add(instance)
 
         Instance._addIdentifiers(session, instance, childFields['identifiers'])
 
@@ -204,13 +205,13 @@ class Instance(Core, Base):
             if isinstance(languages, str):
                 languages = [languages]
             
-        for lang in languages:
-            try:
-                newLang = Language.updateOrInsert(session, lang)
-                instance.language.append(newLang)
-            except DataError:
-                logger.debug('Unable to parse language {}'.format(lang))
-                continue
+            for lang in languages:
+                try:
+                    newLang = Language.updateOrInsert(session, lang)
+                    instance.language.append(newLang)
+                except DataError:
+                    logger.debug('Unable to parse language {}'.format(lang))
+                    continue
     
     @classmethod
     def _addRights(cls, instance, rights):

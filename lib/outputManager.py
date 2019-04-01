@@ -105,4 +105,13 @@ class OutputManager():
         """Converts an object or dict to a JSON string.
         the DEFAULT parameter implements a lambda function to get the values
         from an object using the vars() builtin."""
-        return json.dumps(obj, ensure_ascii=False, default=lambda x: vars(x))
+        try:
+            jsonStr = json.dumps(
+                obj, 
+                ensure_ascii=False, 
+                default=lambda x: vars(x)
+            )
+        except TypeError:
+            jsonStr = json.dumps(obj, ensure_ascii=False)
+
+        return jsonStr

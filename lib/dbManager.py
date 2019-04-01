@@ -45,8 +45,8 @@ def dbGenerateConnection():
 
 def createSession(engine):
     """Create a single database session"""
-    Session = sessionmaker(bind=engine)
-    return Session(autoflush=True)
+    Session = sessionmaker(bind=engine, autoflush=True)
+    return Session()
 
 
 def importRecord(session, record):
@@ -76,7 +76,7 @@ def importRecord(session, record):
             ))
             workData['primary_identifier'] = {
                 'type': 'uuid',
-                'identifier': workUUID,
+                'identifier': workUUID.hex,
                 'weight': 1
             }
             # TODO Create stream and make configurable in env file
@@ -85,9 +85,7 @@ def importRecord(session, record):
 
         dbWork = Work.insert(session, workData)
 
-        session.add(dbWork)
-
-        # queryWork(session, dbWork, dbWork.uuid.hex)
+        queryWork(session, dbWork, dbWork.uuid.hex)
 
         return dbWork.uuid.hex
 
@@ -105,11 +103,10 @@ def importRecord(session, record):
                 'identifier': instanceID,
                 'weight': 1
             }
+            OutputManager.putKinesis(instanceData, 'sfr-db-update-development')
             return 'Existing instance Row ID {}'.format(instanceID)
 
         dbInstance = Instance.insert(session, instanceData)
-
-        session.add(dbInstance)
 
         dbInstance.work.date_modfied = datetime.utcnow()
 
@@ -129,6 +126,7 @@ def importRecord(session, record):
                 'identifier': itemID,
                 'weight': 1
             }
+            OutputManager.putKinesis(itemData, 'sfr-db-update-development')
             return 'Existing item Row ID {}'.format(itemID)
 
         instanceID = itemData.pop('instance_id', None)
@@ -137,7 +135,6 @@ def importRecord(session, record):
 
         logger.debug('Got new item record, adding to instance')
         Instance.addItemRecord(session, instanceID, dbItem)
-        session.add(dbItem)
         
         dbItem.instance.work.date_modified = datetime.utcnow()
 

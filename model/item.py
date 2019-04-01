@@ -174,6 +174,7 @@ class Item(Core, Base):
         childFields = Item._buildChildDict(itemData)
 
         item = cls(**itemData)
+        session.add(item)
 
         Item._addIdentifiers(session, item, childFields['identifiers'])
 

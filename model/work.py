@@ -129,6 +129,7 @@ class Work(Core, Base):
         childFields = Work._buildChildDict(workData)
 
         work = cls(**workData)
+        session.add(work)
         #
         # === IMPORTANT ===
         # This inserts a uuid value for the db row
@@ -140,9 +141,9 @@ class Work(Core, Base):
         jsonRec = RawData(data=childFields['storeJson'])
         work.import_json.append(jsonRec)
         
-        Work._addInstances(session, work, childFields['instances'])
-
         Work._addIdentifiers(session, work, childFields['identifiers'])
+        
+        Work._addInstances(session, work, childFields['instances'])
 
         Work._addAgents(session, work, childFields['agents'])
 
@@ -233,13 +234,13 @@ class Work(Core, Base):
             if isinstance(languages, str):
                 languages = [languages]
             
-        for lang in languages:
-            try:
-                newLang = Language.updateOrInsert(session, lang)
-                work.language.append(newLang)
-            except DataError:
-                logger.debug('Unable to parse language {}'.format(lang))
-                continue
+            for lang in languages:
+                try:
+                    newLang = Language.updateOrInsert(session, lang)
+                    work.language.append(newLang)
+                except DataError:
+                    logger.debug('Unable to parse language {}'.format(lang))
+                    continue
     
     @classmethod
     def lookupWork(cls, session, identifiers, primaryIdentifier=None):
