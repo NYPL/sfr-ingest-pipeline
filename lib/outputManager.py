@@ -43,6 +43,8 @@ class OutputManager():
             'data': data
         }
 
+        partKey = data['data'].identifiers[0].identifier
+
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
         
@@ -50,7 +52,7 @@ class OutputManager():
             cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
                 Data=kinesisStream,
-                PartitionKey='0'
+                PartitionKey=partKey
             )
 
         except:
