@@ -97,11 +97,11 @@ def getAuthors(agentWorks):
 def createClassifyQuery(classifyQuery, queryType, uuid):
     queryStr = [value for key, value in classifyQuery.items()]
     if OutputManager.checkRecentQueries('{}'.format('/'.join(queryStr))) is False:
-        OutputManager.putKinesis({
+        OutputManager.putQueue({
             'type': queryType,
             'uuid': uuid,
             'fields': classifyQuery
-        }, os.environ['CLASSIFY_STREAM'])
+        }, os.environ['CLASSIFY_QUEUE'])
     else:
         logger.info('{} was recently queried, can skip Classify'.format(
             '/'.join(queryStr)

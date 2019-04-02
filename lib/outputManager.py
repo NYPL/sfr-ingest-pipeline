@@ -58,22 +58,19 @@ class OutputManager():
             raise OutputError('Failed to write result to output stream!')
 
     @classmethod
-    def putQueue(cls, data):
+    def putQueue(cls, data, outQueue):
         """This puts record identifiers into an SQS queue that is read for
         records to (re)index in ElasticSearch. Takes an object which is
         converted into a JSON string."""
 
         logger.info('Writing results to SQS')
-        outputObject = {
-            'type': data['type'],
-            'identifier': data['identifier']
-        }
+
         # The default lambda function here converts all objects into dicts
-        messageData = OutputManager._convertToJSON(outputObject)
+        messageData = OutputManager._convertToJSON(data)
 
         try:
             cls.SQS_CLIENT.send_message(
-                QueueUrl=os.environ['OUTPUT_SQS'],
+                QueueUrl=outQueue,
                 MessageBody=messageData
             )
         except:
