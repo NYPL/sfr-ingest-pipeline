@@ -7,6 +7,7 @@ from model.core import Base
 from model.work import Work
 from model.instance import Instance
 from model.item import Item
+from model.identifiers import Identifier
 
 from lib.queryManager import queryWork
 from lib.outputManager import OutputManager

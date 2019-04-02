@@ -254,7 +254,7 @@ class Work(Core, Base):
         else:
             existingInstanceID = Identifier.getByIdentifier(Instance, session, identifiers)
             if existingInstanceID:
-                return session.query(Instance.work).get(existingInstanceID).work.uuid
+                return session.query(Instance).get(existingInstanceID).work.uuid
         
         return None
 
