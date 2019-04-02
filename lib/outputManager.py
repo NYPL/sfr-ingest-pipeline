@@ -43,7 +43,10 @@ class OutputManager():
             'data': data
         }
 
-        partKey = data['data'].identifiers[0].identifier
+        try:
+            partKey = data['data'].identifiers[0].identifier
+        except KeyError:
+            partKey = data['fields']['identifier']
 
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)

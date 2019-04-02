@@ -14,16 +14,9 @@ def enhanceRecord(record):
     service. Manages the overall workflow of the function."""
 
     try:
-        sourceData = record['data']
-    except KeyError:
-        logger.error('Missing data from input event')
-        logger.debug(record)
-        raise DataError('No data received in Kinesis record')
-
-    try:
-        workUUID = sourceData['uuid']
-        searchType = sourceData['type']
-        searchFields = sourceData['fields']
+        workUUID = record['uuid']
+        searchType = record['type']
+        searchFields = record['fields']
     except KeyError as e:
         logger.error('Missing attribute in data block!')
         logger.debug(e)
