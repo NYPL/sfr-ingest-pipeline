@@ -126,11 +126,18 @@ class Agent(Core, Base):
 
         if type(link) is dict:
             link = [link]
+<<<<<<< HEAD
         if link is not None:
             for linkItem in link:
                 updateLink = Link.updateOrInsert(session, linkItem, Agent, existing.id)
                 if updateLink is not None:
                     existing.links.append(updateLink)
+=======
+        for linkItem in link:
+            updateLink = Link.updateOrInsert(session, linkItem, Agent, existing.id)
+            if updateLink is not None:
+                existing.links.append(updateLink)
+>>>>>>> 2bcc95827260c7a81d660f4b642d14e67143d306
 
         for date in dates:
             updateDate = DateField.updateOrInsert(session, date, Agent, existing.id)
@@ -153,6 +160,7 @@ class Agent(Core, Base):
         link = kwargs.get('link', [])
         dates = kwargs.get('dates', [])
 
+<<<<<<< HEAD
         if aliases is not None:
             agent.aliases = [ Alias(alias=a) for a in aliases ]
         
@@ -161,6 +169,13 @@ class Agent(Core, Base):
         
         if link is not None:
             agent.links = [ Link(**l) for l in link ]
+=======
+        agent.aliases = [ Alias(alias=a) for a in aliases ]
+        
+        if type(link) is dict:
+            link = [link]    
+        agent.links = [ Link(**l) for l in link ]
+>>>>>>> 2bcc95827260c7a81d660f4b642d14e67143d306
         
         agent.dates = [ DateField.insert(d) for d in dates ]
 
