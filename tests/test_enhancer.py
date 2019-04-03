@@ -13,14 +13,10 @@ class TestEnhancer(unittest.TestCase):
     @patch('lib.enhancer.OutputManager.putKinesis')
     def test_basic_enhancer(self, mock_classify, mock_read, mock_put):
         testRec = {
-            'source': 'test',
-            'recordID': 1,
-            'data': {
-                'uuid': '11111111-1111-1111-1111-111111111111',
-                'type': 'test',
-                'fields': {
-                    'test': 'test'
-                }
+            'uuid': '11111111-1111-1111-1111-111111111111',
+            'type': 'test',
+            'fields': {
+                'test': 'test'
             }
         }
 
@@ -43,7 +39,7 @@ class TestEnhancer(unittest.TestCase):
         testRec = {
             'source': 'test',
             'recordID': 1,
-            'data': 'some data'
+            'body': 'some data'
         }
         try:
             res = enhanceRecord(testRec)

@@ -76,7 +76,7 @@ class TestHandler(unittest.TestCase):
         'data': 'test data'
     })
     def test_parseRecords(self, mock_enhance, mock_json):
-        res = parseRecord({'kinesis': {'data': ''}})
+        res = parseRecord({'body': {'data': ''}})
         mock_enhance.assert_called_once()
         mock_json.assert_called_once()
         self.assertTrue(res)
@@ -87,7 +87,7 @@ class TestHandler(unittest.TestCase):
         'data': 'test data'
     })
     def test_parseRecords_err(self, mock_json):
-        res = parseRecord({'kinesis': {'data': ''}})
+        res = parseRecord({'body': {'data': ''}})
         mock_json.assert_called_once()
         self.assertFalse(res)
 
@@ -97,7 +97,7 @@ class TestHandler(unittest.TestCase):
         'data': 'test data'
     })
     def test_parseRecords_bad_stage(self, mock_json):
-        res = parseRecord({'kinesis': {'data': ''}})
+        res = parseRecord({'body': {'data': ''}})
         mock_json.assert_called_once()
         self.assertFalse(res)
 
