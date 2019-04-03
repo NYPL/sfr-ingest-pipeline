@@ -103,7 +103,7 @@ def parseEdition(edition):
         OutputManager.putQueue({
             'type': oclcNo.type,
             'identifier': oclcNo.identifier
-        })
+        }, os.environ['OUTPUT_SQS'])
 
     classifications = edition.findall('.//class', namespaces=NAMESPACE)
     classificationList = list(map(parseClassification, classifications))

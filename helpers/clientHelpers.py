@@ -63,12 +63,13 @@ def createEventMapping(runType):
             'EventSourceArn': mapping['EventSourceArn'],
             'FunctionName': configDict['function_name'],
             'Enabled': mapping['Enabled'],
-            'BatchSize': mapping['BatchSize'],
-            'StartingPosition': mapping['StartingPosition']
+            'BatchSize': mapping['BatchSize']
         }
 
-        if mapping['StartingPosition'] == 'AT_TIMESTAMP':
-            createKwargs['StartingPositionTimestamp'] = mapping['StartingPositionTimestamp']  # noqa: E501
+        if 'StartingPosition' in mapping:
+            createKwargs['StartingPosition'] = mapping['StartingPosition']
+            if mapping['StartingPosition'] == 'AT_TIMESTAMP':
+                createKwargs['StartingPositionTimestamp'] = mapping['StartingPositionTimestamp']  # noqa: E501
 
         try:
             lambdaClient.create_event_source_mapping(**createKwargs)

@@ -96,7 +96,7 @@ def parseClassify(rawXML, workUUID, checkTitle):
                         'idType': 'oclc',
                         'identifier': oclcID
                     }
-                }, os.environ['CLASSIFY_STREAM'])
+                }, os.environ['CLASSIFY_QUEUE'])
 
         raise OCLCError('Received Multi-Work response from Classify, returned records to input stream')
     else:
