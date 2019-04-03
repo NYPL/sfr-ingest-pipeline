@@ -254,14 +254,8 @@ class Identifier(Base):
     def returnOrInsert(cls, session, identifier):
         """Manages either the creation or return of an existing identifier"""
         
-        try:
-            cls._cleanIdentifier(identifier)
-        except DataError:
-            identifier = None
-
-        if identifier is None:
-            return None, None
-        
+        cls._cleanIdentifier(identifier)
+       
         existingIden = Identifier.lookupIdentifier(
             session,
             identifier
