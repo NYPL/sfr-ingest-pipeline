@@ -124,16 +124,10 @@ class Item(Core, Base):
 
         item = cls(**itemData)
 
-        for identifier in childFields['identifiers']:
-            try:
-                status, idenRec = Identifier.returnOrInsert(
-                    session,
-                    identifier
-                )
-                item.identifiers.append(idenRec)
-            except DataError as err:
-                logger.warning('Received invalid identifier')
-                logger.debug(err)
+        item.identifiers = [
+            Identifier.returnOrInsert(session, i) 
+            for i in childFields['identifiers']
+        ]
         
         item.links = [ Link(**l) for l in childFields['links'] ]
 

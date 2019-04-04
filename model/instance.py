@@ -117,17 +117,17 @@ class Instance(Core, Base):
             instance.get('volume', None)    
         )
         if existingID is not None:
-            existing = session.query(Instance).get(existingID)
+            outInstance = session.query(Instance).get(existingID)
             
-            parentWork = existing.work
+            parentWork = outInstance.work
             if parentWork is None and work is not None:
                 existing.work = work
             
-            Instance.update(session, existing, instance)
-            return existing, 'updated'
-
-        newInstance = Instance.insert(session, instance)
-        return newInstance, 'inserted'
+            Instance.update(session, outInstance, instance)
+        else:
+            outInstance = Instance.insert(session, instance)
+        
+        return outInstance
 
     @classmethod
     def lookupInstance(cls, session, identifiers, volume):
@@ -137,8 +137,10 @@ class Instance(Core, Base):
         """
         existingID = Identifier.getByIdentifier(Instance, session, identifiers)
         if existingID is not None and volume is not None:
+            logger.debug('Checking to see if volume records match')
             existingVol = session.query(Instance.volume).filter(Instance.id == existingID).one_or_none()
             if existingVol[0] != volume:
+                logger.debug('Found')
                 existingID = None
 
         return existingID
@@ -222,11 +224,26 @@ class Instance(Core, Base):
 
         instance = Instance(**instanceData)
 
-        Instance._addAgents(session, instance, childFields['agents'])
+        for agent in childFields['agents']:
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                for role in roles:
+                    AgentInstances(
+                        agent=agentRec,
+                        item=instance,
+                        role=role
+                    )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
 
-        Instance._addIdentifiers(session, instance, childFields['identifiers'])
+        instance.identifiers = [
+            Identifier.returnOrInsert(session, i) 
+            for i in childFields['identifiers']
+        ]
 
-        Instance._addAltTitles(session, instance, childFields['alt_titles'])
+        instance.alt_titles = [
+            AltTitle(title=a) for a in childFields['alt_titles']
+        ]
 
         instance.measurements = [
             Measurement.insert(m) 
@@ -274,7 +291,6 @@ class Instance(Core, Base):
                     session,
                     iden
                 )
-                print(status, idenRec)
                 if status == 'new':
                     instance.identifiers.append(idenRec)
                 else:
@@ -284,10 +300,7 @@ class Instance(Core, Base):
                         Instance,
                         instance.id
                     ) is None:
-                        print('appending', idenRec)
                         instance.identifiers.append(idenRec)
-                    else:
-                        print('skipping', idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)

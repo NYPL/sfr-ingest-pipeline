@@ -76,7 +76,8 @@ def importRecord(session, record):
         dbWork = Work.update(session, existingWork, workData)
 
         dbWork.date_modified = datetime.utcnow()
-        return 'Work {}'.format(dbWork.uuid.hex)
+        return dbWork
+        #return 'Work {}'.format(dbWork.uuid.hex)
 
     elif record['type'] == 'instance':
         logger.info('Ingesting instance record')
@@ -87,12 +88,14 @@ def importRecord(session, record):
             instanceData.get('identifiers', []),
             instanceData.get('volume', None)    
         )
-        print(existingID)
+        if existingID is None: 
+            return 'Instance missing, message received out of order'
+
         existing = session.query(Instance).get(existingID)
 
         dbInstance = Instance.update(session, existing, instanceData)
-
-        return 'Instance #{}'.format(dbInstance.id)
+        return dbInstance
+        #return 'Instance #{}'.format(dbInstance.id)
 
     elif record['type'] == 'item':
         logger.info('Ingesting item record')
@@ -110,4 +113,5 @@ def importRecord(session, record):
 
         dbItem.instance.work.date_modified = datetime.utcnow()
 
-        return 'Item #{}'.format(dbItem.id)
+        return dbItem
+        #return 'Item #{}'.format(dbItem.id)

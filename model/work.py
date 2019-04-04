@@ -85,7 +85,8 @@ class Work(Core, Base):
     identifiers = relationship(
         'Identifier',
         secondary=WORK_IDENTIFIERS,
-        back_populates='work'
+        back_populates='work',
+        collection_class=set
     )
     links = relationship(
         'Link',
@@ -202,32 +203,19 @@ class Work(Core, Base):
     @classmethod
     def _addInstances(cls, session, existing, instances):
         for instance in instances:
-            instanceRec, op = Instance.updateOrInsert(
+            existing.instances.add(Instance.updateOrInsert(
                 session,
                 instance, 
                 work=existing
-            )
-            if op == 'inserted':
-                existing.instances.append(instanceRec)
-    
+            ))
+
     @classmethod
     def _addIdentifiers(cls, session, existing, identifiers):
         for iden in identifiers:
             try:
-                status, idenRec = Identifier.returnOrInsert(
-                    session,
-                    iden
-                )
-                if status == 'new':
-                    existing.identifiers.append(idenRec)
-                else:
-                    if Identifier.getIdentiferRelationship(
-                        session,
-                        idenRec,
-                        Work,
-                        existing.id
-                    ) is None:
-                        existing.identifiers.append(idenRec)
+                existing.identifiers.add(
+                    Identifier.returnOrInsert(session, iden)
+                )        
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)

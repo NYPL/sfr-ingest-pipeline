@@ -256,14 +256,14 @@ class Identifier(Base):
         
         cls._cleanIdentifier(identifier)
        
-        existingIden = Identifier.lookupIdentifier(
+        iden = Identifier.lookupIdentifier(
             session,
             identifier
         )
-        if existingIden is not None:
-            return 'existing', existingIden
+        if iden is None:
+            iden = Identifier.insert(identifier)
 
-        return 'new', Identifier.insert(identifier)
+        return iden
 
     @classmethod
     def insert(cls, identifier):
