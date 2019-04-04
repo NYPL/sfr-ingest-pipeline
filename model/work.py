@@ -71,7 +71,8 @@ class Work(Core, Base):
     )
     instances = relationship(
         'Instance',
-        back_populates='work'
+        back_populates='work',
+        collection_class=set
     )
     agents = association_proxy(
         'agent_works',

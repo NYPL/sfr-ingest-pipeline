@@ -76,8 +76,8 @@ def importRecord(session, record):
         dbWork = Work.update(session, existingWork, workData)
 
         dbWork.date_modified = datetime.utcnow()
-        return dbWork
-        #return 'Work {}'.format(dbWork.uuid.hex)
+        
+        return 'Work {}'.format(dbWork.uuid.hex)
 
     elif record['type'] == 'instance':
         logger.info('Ingesting instance record')
@@ -94,8 +94,8 @@ def importRecord(session, record):
         existing = session.query(Instance).get(existingID)
 
         dbInstance = Instance.update(session, existing, instanceData)
-        return dbInstance
-        #return 'Instance #{}'.format(dbInstance.id)
+        
+        return 'Instance #{}'.format(dbInstance.id)
 
     elif record['type'] == 'item':
         logger.info('Ingesting item record')
@@ -113,5 +113,4 @@ def importRecord(session, record):
 
         dbItem.instance.work.date_modified = datetime.utcnow()
 
-        return dbItem
-        #return 'Item #{}'.format(dbItem.id)
+        return 'Item #{}'.format(dbItem.id)

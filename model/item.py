@@ -59,7 +59,8 @@ class Item(Core, Base):
     identifiers = relationship(
         'Identifier',
         secondary=ITEM_IDENTIFIERS,
-        back_populates='item'
+        back_populates='item',
+        collection_class=set
     )
     agents = association_proxy(
         'agent_items',
@@ -124,10 +125,10 @@ class Item(Core, Base):
 
         item = cls(**itemData)
 
-        item.identifiers = [
+        item.identifiers = {
             Identifier.returnOrInsert(session, i) 
             for i in childFields['identifiers']
-        ]
+        }
         
         item.links = [ Link(**l) for l in childFields['links'] ]
 
@@ -169,20 +170,9 @@ class Item(Core, Base):
 
         for identifier in childFields['identifiers']:
             try:
-                status, idenRec = Identifier.returnOrInsert(
-                    session,
-                    identifier
+                existing.identifiers.add(
+                    Identifier.returnOrInsert(session, identifier)
                 )
-                if status == 'new':
-                    existing.identifiers.append(idenRec)
-                else:
-                    if Identifier.getIdentiferRelationship(
-                        session,
-                        idenRec,
-                        Item,
-                        existing.id
-                    ) is None:
-                        existing.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)

@@ -68,7 +68,8 @@ class Instance(Core, Base):
     identifiers = relationship(
         'Identifier',
         secondary=INSTANCE_IDENTIFIERS,
-        back_populates='instance'
+        back_populates='instance',
+        collection_class=set
     )
     links = relationship(
         'Link',
@@ -230,16 +231,16 @@ class Instance(Core, Base):
                 for role in roles:
                     AgentInstances(
                         agent=agentRec,
-                        item=instance,
+                        instance=instance,
                         role=role
                     )
             except DataError:
                 logger.warning('Unable to read agent {}'.format(agent['name']))
 
-        instance.identifiers = [
+        instance.identifiers = {
             Identifier.returnOrInsert(session, i) 
             for i in childFields['identifiers']
-        ]
+        }
 
         instance.alt_titles = [
             AltTitle(title=a) for a in childFields['alt_titles']
@@ -287,20 +288,9 @@ class Instance(Core, Base):
     def _addIdentifiers(cls, session, instance, identifiers):
         for iden in identifiers:
             try:
-                status, idenRec = Identifier.returnOrInsert(
-                    session,
-                    iden
+                instance.identifiers.add(
+                    Identifier.returnOrInsert(session, iden)
                 )
-                if status == 'new':
-                    instance.identifiers.append(idenRec)
-                else:
-                    if Identifier.getIdentiferRelationship(
-                        session,
-                        idenRec,
-                        Instance,
-                        instance.id
-                    ) is None:
-                        instance.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)

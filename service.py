@@ -53,7 +53,6 @@ def parseRecords(records):
 
     try:
         parseResults = [parseRecord(r, session) for r in records]
-        session.bulk_save_objects(parseResults)
         logger.debug('Parsed {} records. Committing results'.format(
             str(len(parseResults))
         ))
