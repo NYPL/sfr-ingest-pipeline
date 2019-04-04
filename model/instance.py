@@ -54,7 +54,8 @@ class Instance(Core, Base):
     )
     items = relationship(
         'Item',
-        back_populates='instance'
+        back_populates='instance',
+        collection_class=set
     )
     agents = association_proxy(
         'agent_instances',
@@ -63,7 +64,8 @@ class Instance(Core, Base):
     measurements = relationship(
         'Measurement',
         secondary=INSTANCE_MEASUREMENTS,
-        back_populates='instance'
+        back_populates='instance',
+        collection_class=set
     )
     identifiers = relationship(
         'Identifier',
@@ -74,13 +76,15 @@ class Instance(Core, Base):
     links = relationship(
         'Link',
         secondary=INSTANCE_LINKS,
-        back_populates='instances'
+        back_populates='instances',
+        collection_class=set
     )
     
     alt_titles = relationship(
         'AltTitle',
         secondary=INSTANCE_ALTS,
-        back_populates='instance'
+        back_populates='instance',
+        collection_class=set
     )
 
     CHILD_FIELDS = [
@@ -178,37 +182,25 @@ class Instance(Core, Base):
 
         Instance._addAltTitles(session, existing, childFields['alt_titles'])
 
-        for measurement in childFields['measurements']:
-            op, measurementRec = Measurement.updateOrInsert(
-                session,
-                measurement,
-                Instance,
-                existing.id
+        for m in childFields['measurements']:
+            existing.measurements.add(
+                Measurement.updateOrInsert(session, m, Instance, existing.id)
             )
-            if op == 'insert':
-                existing.measurements.append(measurementRec)
-
-        for date in childFields['dates']:
-            updateDate = DateField.updateOrInsert(session, date, Instance, existing.id)
-            if updateDate is not None:
-                existing.dates.append(updateDate)
-
-        for link in childFields['links']:
-            updateLink = Link.updateOrInsert(session, link, Instance, existing.id)
-            if updateLink is not None:
-                existing.links.append(updateLink)
         
-        for rightsStmt in childFields['rights']:
-            updateRights = Rights.updateOrInsert(
-                session,
-                rightsStmt,
-                Instance,
-                existing.id
+        for d in childFields['dates']:
+            existing.dates.add(
+                DateField.updateOrInsert(session, d, Instance, existing.id)
             )
-            if updateRights is not None:
-                existing.rights.append(updateRights)
 
-        return existing
+        for l in childFields['links']:
+            existing.links.add(
+                Link.updateOrInsert(session, l, Instance, existing.id)
+            )
+        
+        for r in childFields['rights']:
+            existing.rights.add(
+                Rights.updateOrInsert(session, r, Instance, existing.id)
+            )
 
     @classmethod
     def insert(cls, session, instanceData):
@@ -242,23 +234,23 @@ class Instance(Core, Base):
             for i in childFields['identifiers']
         }
 
-        instance.alt_titles = [
+        instance.alt_titles = {
             AltTitle(title=a) for a in childFields['alt_titles']
-        ]
+        }
 
-        instance.measurements = [
+        instance.measurements = {
             Measurement.insert(m) 
             for m in childFields['measurements']
-        ]
+        }
 
-        instance.links = [ Link(**l) for l in childFields['links'] ]
+        instance.links = { Link(**l) for l in childFields['links'] }
 
-        instance.dates = [ DateField.insert(d) for d in childFields['dates'] ]
+        instance.dates = { DateField.insert(d) for d in childFields['dates'] }
 
-        instance.rights = [
+        instance.rights = {
             Rights.insert(r, dates=r.pop('dates', []))
             for r in childFields['rights']
-        ]
+        }
         
         Instance._addLanguages(session, instance, childFields['language'])
 
@@ -303,14 +295,9 @@ class Instance(Core, Base):
 
             for lang in languages:
                 try:
-                    newLang = Language.updateOrInsert(session, lang)
-                    langRel = Language.lookupRelLang(
-                        session,
-                        newLang,
-                        Instance,
-                        instance)
-                    if langRel is None:
-                        instance.language.append(newLang)
+                    instance.language.add(
+                        Language.updateOrInsert(session, lang)
+                    )
                 except DataError:
                     logger.warning('Unable to parse language {}'.format(lang))
     
@@ -319,9 +306,7 @@ class Instance(Core, Base):
         for item in items:
             # Check if the provided record contains an epub that can be stored
             # locally. If it does, defer insert to epub creation process
-            itemRec, op = Item.updateOrInsert(session, item)
-            if op == 'inserted':
-                instance.items.append(itemRec)
+            instance.items.add(Item.updateOrInsert(session, item))
     
     @classmethod
     def _addAltTitles(cls, session, instance, altTitles):

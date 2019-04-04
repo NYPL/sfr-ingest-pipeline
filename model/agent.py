@@ -44,12 +44,14 @@ class Agent(Core, Base):
 
     aliases = relationship(
         'Alias',
-        back_populates='agent'
+        back_populates='agent',
+        collection_class=set
     )
     links = relationship(
         'Link',
         secondary=AGENT_LINKS,
-        back_populates='agents'
+        back_populates='agents',
+        collection_class=set
     )
 
     def __repr__(self):
@@ -86,7 +88,7 @@ class Agent(Core, Base):
         existingAgentID = Agent.lookupAgent(session, agent)
         if existingAgentID is not None:
             existingAgent = session.query(cls).get(existingAgentID)
-            updated = Agent.update(
+            Agent.update(
                 session,
                 existingAgent,
                 agent,
@@ -94,7 +96,7 @@ class Agent(Core, Base):
                 link=link,
                 dates=dates
             )
-            return updated, roles
+            return existingAgent, roles
 
         newAgent = Agent.insert(
             agent,
@@ -117,29 +119,26 @@ class Agent(Core, Base):
                 setattr(existing, field, value)        
 
         if aliases is not None:
-            aliasRecs = [
+            aliasRecs = {
                 Alias.insertOrSkip(session, a, Agent, existing.id)
                 for a in aliases
-            ]
+            }
             for alias in list(filter(None, aliasRecs)):
-                existing.aliases.append(alias)
+                existing.aliases.add(alias)
 
         if type(link) is dict:
-            updateLink = Link.updateOrInsert(session, link, Agent, existing.id)
-            if updateLink is not None:
-                existing.links.append(updateLink)
-        elif type(link) is list:
+            link = [link]
+
+        if type(link) is list:
             for linkItem in link:
-                updateLink = Link.updateOrInsert(session, linkItem, Agent, existing.id)
-                if updateLink is not None:
-                    existing.links.append(updateLink)
+                existing.links.add(
+                    Link.updateOrInsert(session, linkItem, Agent, existing.id)
+                )
 
         for date in dates:
-            updateDate = DateField.updateOrInsert(session, date, Agent, existing.id)
-            if updateDate is not None:
-                existing.dates.append(updateDate)
-
-        return existing
+            existing.dates.add(
+                DateField.updateOrInsert(session, date, Agent, existing.id)
+            )
 
     @classmethod
     def insert(cls, agentData, **kwargs):
@@ -157,19 +156,15 @@ class Agent(Core, Base):
 
         if aliases is not None:
             for alias in list(map(lambda x: Alias(alias=x), aliases)):
-                agent.aliases.append(alias)
+                agent.aliases.add(alias)
+
+        if type(link) is dict:
+            link = [link]
 
         if type(link) is list:
-            for linkItem in link:
-                newLink = Link(**linkItem)
-                agent.links.append(newLink)
-        elif type(link) is dict:
-            newLink = Link(**link)
-            agent.links.append(newLink)
+            agent.links = { Link(**l) for l in link }
 
-        for date in dates:
-            newDate = DateField.insert(date)
-            agent.dates.append(newDate)
+        agent.dates = { DateField.insert(d) for d in dates }
 
         return agent
 

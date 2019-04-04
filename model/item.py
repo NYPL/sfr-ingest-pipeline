@@ -54,7 +54,8 @@ class Item(Core, Base):
     measurements = relationship(
         'Measurement',
         secondary=ITEM_MEASUREMENTS,
-        back_populates='item'
+        back_populates='item',
+        collection_class=set
     )
     identifiers = relationship(
         'Identifier',
@@ -68,12 +69,14 @@ class Item(Core, Base):
     )
     access_reports = relationship(
         'AccessReport',
-        back_populates='item'
+        back_populates='item',
+        collection_class=set
     )
     links = relationship(
         'Link',
         secondary=ITEM_LINKS,
-        back_populates='items'
+        back_populates='items',
+        collection_class=set
     )
 
     CHILD_FIELDS = [
@@ -110,12 +113,12 @@ class Item(Core, Base):
             logger.debug('Found existing item by identifier')
             existing = session.query(Item).get(existingID)
             cls.update(session, existing, item)
-            return existing, 'updated'
+            return existing
 
         logger.debug('Inserting new item record')
         itemRec = cls.insert(session, item)
 
-        return itemRec, 'inserted'
+        return itemRec
 
     @classmethod
     def insert(cls, session, itemData):
@@ -130,19 +133,19 @@ class Item(Core, Base):
             for i in childFields['identifiers']
         }
         
-        item.links = [ Link(**l) for l in childFields['links'] ]
+        item.links = { Link(**l) for l in childFields['links'] }
 
-        item.measurements = [ 
+        item.measurements = {
             Measurement.insert(m) 
             for m in childFields['measurements']
-        ]
+        }
 
-        item.dates = [ DateField.insert(d) for d in childFields['dates'] ]
+        item.dates = { DateField.insert(d) for d in childFields['dates'] }
         
-        item.rights = [ 
+        item.rights = { 
             Rights.insert(r, dates=r.pop('dates', [])) 
             for r in childFields['rights']
-        ]
+        }
 
         for agent in childFields['agents']:
             try:
@@ -178,36 +181,34 @@ class Item(Core, Base):
                 logger.debug(err)
 
         for measurement in childFields['measurements']:
-            op, measurementRec = Measurement.updateOrInsert(
-                session,
-                measurement,
-                Item,
-                existing.id
+            existing.measurements.add(
+                Measurement.updateOrInsert(
+                    session,
+                    measurement,
+                    Item,
+                    existing.id
+                )
             )
-            if op == 'insert':
-                existing.measurements.append(measurementRec)
 
         for link in childFields['links']:
-            existingLink = Link.lookupLink(session, link, cls, existing.id)
-            if existingLink is None:
-                existing.links.append(Link(**link))
-            else:
-                Link.update(existingLink, link)
+            existing.links.add(
+                Link.updateOrInsert(session, link, Item, existing.id)
+            )
 
         for date in childFields['dates']:
-            updateDate = DateField.updateOrInsert(session, date, Item, existing.id)
-            if updateDate is not None:
-                existing.dates.append(updateDate)
+            existing.dates.add(
+                DateField.updateOrInsert(session, date, Item, existing.id)
+            )
         
         for rightsStmt in childFields['rights']:
-            updateRights = Rights.updateOrInsert(
-                session,
-                rightsStmt,
-                Item,
-                existing.id
+            existing.rights.add(
+                Rights.updateOrInsert(
+                    session,
+                    rightsStmt,
+                    Item,
+                    existing.id
+                )
             )
-            if updateRights is not None:
-                existing.rights.append(updateRights)
         
         for agent in childFields['agents']:
             try:

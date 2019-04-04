@@ -62,12 +62,14 @@ class Work(Core, Base):
     alt_titles = relationship(
         'AltTitle',
         secondary=WORK_ALTS,
-        back_populates='work'
+        back_populates='work',
+        collection_class=set
     )
     subjects = relationship(
         'Subject',
         secondary=SUBJECT_WORKS,
-        back_populates='work'
+        back_populates='work',
+        collection_class=set
     )
     instances = relationship(
         'Instance',
@@ -81,7 +83,8 @@ class Work(Core, Base):
     measurements = relationship(
         'Measurement',
         secondary=WORK_MEASUREMENTS,
-        back_populates='work'
+        back_populates='work',
+        collection_class=set
     )
     identifiers = relationship(
         'Identifier',
@@ -92,7 +95,8 @@ class Work(Core, Base):
     links = relationship(
         'Link',
         secondary=WORK_LINKS,
-        back_populates='works'
+        back_populates='works',
+        collection_class=set
     )
     
     import_json = relationship(
@@ -195,11 +199,11 @@ class Work(Core, Base):
                     altTitles.append(newTitle)
 
         # Handle adding alt_titles
-        altTitles = [
+        altTitles = {
             AltTitle.insertOrSkip(session, a, Work, existing.id)
             for a in altTitles
-        ]
-        existing.alt_titles.extend(list(filter(None, altTitles)))
+        }
+        existing.alt_titles.update(list(filter(None, altTitles)))
     
     @classmethod
     def _addInstances(cls, session, existing, instances):
@@ -241,36 +245,35 @@ class Work(Core, Base):
     @classmethod
     def _addSubjects(cls, session, existing, subjects):
         for subject in subjects:
-            op, subjectRec = Subject.updateOrInsert(session, subject)
-            relExists = Work.lookupSubjectRel(session, subjectRec, existing.id)
-            if relExists is None:
-                existing.subjects.append(subjectRec)
+            existing.subjects.add(
+                Subject.updateOrInsert(session, subject)
+            )
     
     @classmethod
     def _addMeasurements(cls, session, existing, measurements):
         for measurement in measurements:
-            op, measurementRec = Measurement.updateOrInsert(
-                session,
-                measurement,
-                Work,
-                existing.id
+            existing.measurements.add(
+                Measurement.updateOrInsert(
+                    session,
+                    measurement,
+                    Work,
+                    existing.id
+                )
             )
-            if op == 'insert':
-                existing.measurements.append(measurementRec)
 
     @classmethod
     def _addLinks(cls, session, existing, links):
         for link in links:
-            updateLink = Link.updateOrInsert(session, link, Work, existing.id)
-            if updateLink is not None:
-                existing.links.append(updateLink)
+            existing.links.add(
+                Link.updateOrInsert(session, link, Work, existing.id)
+            )
     
     @classmethod
     def _addDates(cls, session, existing, dates):
         for date in dates:
-            updateDate = DateField.updateOrInsert(session, date, Work, existing.id)
-            if updateDate is not None:
-                existing.dates.append(updateDate)
+            existing.dates.add(
+                DateField.updateOrInsert(session, date, Work, existing.id)
+            )
     
     @classmethod
     def _addLanguages(cls, session, existing, languages):
@@ -280,15 +283,9 @@ class Work(Core, Base):
 
             for lang in languages:
                 try:
-                    newLang = Language.updateOrInsert(session, lang)
-                    langRel = Language.lookupRelLang(
-                        session,
-                        newLang,
-                        Work,
-                        existing
+                    existing.language.add(
+                        Language.updateOrInsert(session, lang)
                     )
-                    if langRel is None:
-                        existing.language.append(newLang)
                 except DataError:
                     logger.warning('Unable to parse language {}'.format(lang))
 
@@ -333,10 +330,9 @@ class Work(Core, Base):
     
     def importSubjects(self, session, subjects):
         for subject in subjects:
-            op, subjectRec = Subject.updateOrInsert(session, subject)
-            relExists = Work.lookupSubjectRel(session, subjectRec, self.id)
-            if relExists is None:
-                self.subjects.append(subjectRec)
+            self.subjects.add(
+                Subject.updateOrInsert(session, subject)
+            )
 
 
 class AgentWorks(Core, Base):

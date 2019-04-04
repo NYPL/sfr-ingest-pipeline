@@ -5,7 +5,7 @@ from sqlalchemy import (
     Integer,
     ForeignKey
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -62,17 +62,17 @@ class Rights(Core, Base):
     works = relationship(
         'Work',
         secondary=WORK_RIGHTS,
-        backref='rights'
+        backref=backref('rights', collection_class=set)
     )
     instances = relationship(
         'Instance',
         secondary=INSTANCE_RIGHTS,
-        backref='rights'
+        backref=backref('rights', collection_class=set)
     )
     items = relationship(
         'Item',
         secondary=ITEM_RIGHTS,
-        backref='rights'
+        backref=backref('rights', collection_class=set)
     )
 
     def __repr__(self):
@@ -94,16 +94,17 @@ class Rights(Core, Base):
         
         dates = rights.pop('dates', None)
 
-        existing = Rights.lookupRights(session, rights, model, recordID)
-        if existing is not None:
+        outRights = Rights.lookupRights(session, rights, model, recordID)
+        if outRights is None:
+            logger.info('Inserting new rights object on {}'.format(model))
+            outRights = Rights.insert(rights, dates=dates)
+        else:
             logger.info('Updating existing rights record {}'.format(
-                existing.id
+                outRights.id
             ))
-            Rights.update(session, existing, rights, dates=dates)
-            return None
+            Rights.update(session, outRights, rights, dates=dates)
 
-        logger.info('Inserting new rights object on {}'.format(model))
-        return Rights.insert(rights, dates=dates)
+        return outRights
 
     @classmethod
     def update(cls, session, existing, rights, **kwargs):

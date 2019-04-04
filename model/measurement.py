@@ -100,18 +100,19 @@ class Measurement(Core, Base):
     @classmethod
     def updateOrInsert(cls, session, measure, model, recordID):
 
-        existingMeasure = Measurement.lookupMeasure(
+        outMeasure = Measurement.lookupMeasure(
             session,
             measure,
             model,
             recordID
         )
 
-        if existingMeasure is not None:
-            updated = Measurement.update(measure, existingMeasure)
-            return 'update', updated
+        if outMeasure is None:
+            outMeasure = Measurement.insert(measure)
+        else:
+            Measurement.update(measure, outMeasure)
 
-        return 'insert', Measurement.insert(measure)
+        return outMeasure
 
     @classmethod
     def insert(cls, measure):
@@ -122,8 +123,6 @@ class Measurement(Core, Base):
         for field in ['value', 'weight', 'taken_at']:
             if measure[field] is not None:
                 setattr(existing, field, measure[field])
-
-        return existing
 
     @classmethod
     def lookupMeasure(cls, session, measure, model, recordID):

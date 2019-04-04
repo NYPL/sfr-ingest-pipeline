@@ -43,7 +43,8 @@ class Subject(Core, Base):
     measurements = relationship(
         'Measurement',
         secondary=SUBJECT_MEASUREMENTS,
-        back_populates='subject'
+        back_populates='subject',
+        collection_class=set
     )
 
     def __repr__(self):
@@ -59,20 +60,24 @@ class Subject(Core, Base):
         otherwise insert a new subject"""
         measurements = subject.pop('measurements', [])
 
-        existingSubject = Subject.lookupSubject(session, subject)
+        outSubj = Subject.lookupSubject(session, subject)
 
-        if existingSubject is not None:
-            return 'update', Subject.update(
-                session,
-                existingSubject,
+        if outSubj is None:
+            outSubj = Subject.insert(
                 subject,
                 measurements=measurements
             )
+        
+        else: 
+            Subject.update(
+                session,
+                outSubj,
+                subject,
+                measurements=measurements
+            )
+        
+        return outSubj
 
-        return 'insert', Subject.insert(
-            subject,
-            measurements=measurements
-        )
 
     @classmethod
     def update(cls, session, existing, subject, **kwargs):
@@ -90,16 +95,14 @@ class Subject(Core, Base):
         # It does not make sense for this data to be stored here. (Unless we
         # update what data a measurement encodes.)
         for measurement in measurements:
-            op, measurementRec = Measurement.updateOrInsert(
-                session,
-                measurement,
-                Subject,
-                existing.id
+            existing.measurements.add(
+                Measurement.updateOrInsert(
+                    session,
+                    measurement,
+                    Subject,
+                    existing.id
+                )
             )
-            if op == 'insert':
-                existing.measurements.append(measurementRec)
-
-        return existing
 
     @classmethod
     def insert(cls, subject, **kwargs):
@@ -109,10 +112,10 @@ class Subject(Core, Base):
         newSubject = Subject(**subject)
 
         # TODO Remove measurement as per above
-        for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            newSubject.measurements.append(measurementRec)
-
+        newSubject.measurements = {
+            Measurement.insert(m) for m in measurements
+        }
+        
         return newSubject
 
     @classmethod

@@ -6,7 +6,7 @@ from sqlalchemy import (
     String,
     ForeignKey
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
 import pycountry
@@ -53,12 +53,12 @@ class Language(Core, Base):
     works = relationship(
         'Work',
         secondary=WORK_LANGUAGE,
-        backref='language'
+        backref=backref('language', collection_class=set)
     )
     instances = relationship(
         'Instance',
         secondary=INSTANCE_LANGUAGE,
-        backref='language'
+        backref=backref('language', collection_class=set)
     )
 
     def __repr__(self):
