@@ -46,11 +46,13 @@ class OutputManager():
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
         
+        partKey = data['primary_identifier']['identifier']
+
         try:
             cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
                 Data=kinesisStream,
-                PartitionKey='0'
+                PartitionKey=partKey
             )
 
         except:
