@@ -120,14 +120,14 @@ class Rights(Core, Base):
                 setattr(existing, field, value)
         
         for date in dates:
-            updateDate = DateField.updateOrInsert(
-                session,
-                date,
-                Rights,
-                existing.id
+            existing.dates.add(
+                DateField.updateOrInsert(
+                    session,
+                    date,
+                    Rights,
+                    existing.id
+                )
             )
-            if updateDate is not None:
-                existing.dates.append(updateDate)
 
     @classmethod
     def insert(cls, rightsData, **kwargs):
@@ -140,9 +140,7 @@ class Rights(Core, Base):
         for field, value in rightsData.items():
             setattr(rights, field, value)
         
-        for date in dates:
-            newDate = DateField.insert(date)
-            rights.dates.append(newDate)
+        rights.dates = { DateField.insert(d) for d in dates }
 
         return rights
 
