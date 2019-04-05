@@ -190,13 +190,13 @@ class Work(Core, Base):
                 for holding in oldHoldings:
                     try:
                         if float(newHoldings['value']) > float(holding):
-                            altTitles.append(existing.title)
+                            altTitles.add(existing.title)
                             existing.title = newTitle
                             break
                     except TypeError:
                         pass
                 else:
-                    altTitles.append(newTitle)
+                    altTitles.add(newTitle)
 
         # Handle adding alt_titles
         altTitles = {

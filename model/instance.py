@@ -311,7 +311,7 @@ class Instance(Core, Base):
     @classmethod
     def _addAltTitles(cls, session, instance, altTitles):
         for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Instance, instance.id), altTitles)):
-            instance.alt_titles.append(AltTitle(title=altTitle))
+            instance.alt_titles.add(AltTitle(title=altTitle))
 
 
 class AgentInstances(Core, Base):
