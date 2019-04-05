@@ -9,6 +9,7 @@ from model.instance import Instance
 from model.item import Item
 
 from helpers.logHelpers import createLog
+from helpers.errorHelpers import DBError
 
 logger = createLog('db_manager')
 
@@ -88,8 +89,9 @@ def importRecord(session, record):
             instanceData.get('identifiers', []),
             instanceData.get('volume', None)    
         )
-        if existingID is None: 
-            return 'Instance missing, message received out of order'
+        if existingID is None:
+            logger.warning('Could not locate instance, skipping record')
+            raise DBError('Could not locate instance in database, skipping')
 
         existing = session.query(Instance).get(existingID)
 

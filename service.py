@@ -97,7 +97,9 @@ def parseRecord(encodedRec, session):
 
     try:
         session.begin_nested() # Start transaction
-        return importRecord(session, record)
+        record = importRecord(session, record)
+        session.commit()
+        return record
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything

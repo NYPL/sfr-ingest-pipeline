@@ -196,7 +196,7 @@ class Work(Core, Base):
                     except TypeError:
                         pass
                 else:
-                    altTitles.add(newTitle)
+                    altTitles.append(newTitle)
 
         # Handle adding alt_titles
         altTitles = {
