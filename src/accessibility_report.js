@@ -1,92 +1,114 @@
 import ace from '@daisy/ace-core'
 import fs from 'fs'
-import { resolve } from 'path'
+import AWS from 'aws-sdk'
+import logger from './helpers/logger'
 
 const STARTING_SCORE = 10
 const SCORE_DIVISOR = 4
 
-exports.runAccessibilityReport = async (buf) => {
+exports.runAccessibilityReport = async (fileKey) => {
   return new Promise(async (res, reject) => {
     let tmpFile, report
     try{
-      tmpFile = await exports.saveTmpFile(buf)
+      tmpFile = await exports.downloadEpubFile(fileKey)
     } catch(e) {
+      logger.error(e)
       reject(e)
       return
     }
 
-    let aceOpts = {
+    const aceOpts = {
       cwd: __dirname,
       outdir: null,
       tmpdir: '/tmp',
       verbose: false,
       silent: true
     }
-
+    logger.info('Generating ACE Report')
     try{
-      report = await ace(tmpFile, aceOpts)
+      report = await ace(tmpFile.path, aceOpts)
     } catch(e) {
+      logger.error(e)
       reject(e)
       return
     }
-
-    let reportSummary = exports.parseReport(report)
+    logger.info('Parsing ACE Report')
+    const reportSummary = exports.parseReport(report)
+    logger.info('Returing ACE Report')
     res(reportSummary)
 
   })
 }
 
-exports.saveTmpFile = (buf) => {
-  return new Promise((res, reject) => {
-    let tmpFile = '/tmp/' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
-    fs.writeFile(tmpFile, buf, (err) => {
-      if (err) reject(err)
-      let absPath = resolve(tmpFile)
-      res(absPath)
+exports.downloadEpubFile = async (s3Key) => {
+  return new Promise ((res, reject) => {
+    const s3 = new AWS.S3()
+    const s3Params = {
+      Bucket: 'simplye-research-epubs',
+      Key: s3Key
+    }
+    logger.debug(`Downloading file ${s3Key} from S3`)
+    const file = exports.createTmpFile()
+    s3.getObject(s3Params).createReadStream().pipe(file).on('close', () => {
+      logger.debug(`Storing downloaded file in ${file.path}`)
+      res(file)
+    }).on('error', (err) => {
+      logger.error(err)
+      reject(err)
     })
   })
+  
+}
+
+exports.createTmpFile = () => {
+  console.log('Saving file in tmp directory')
+  const tmpFile = '/tmp/' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  return fs.createWriteStream(tmpFile)
 }
 
 exports.parseReport = (report) => {
-  let mainReport = report[1]
-  let assertions = mainReport['assertions']
-  let timeRun = mainReport['dct:date']
-  let aceVersion = mainReport['earl:assertedBy']['doap:release']['doap:revision']
-  let assertionOut = exports.parseAssertions(assertions)
-  let vioObj = {}
-  assertionOut['violations'].forEach((value, key) => {
+  const mainReport = report[1]
+  const assertions = mainReport.assertions
+  const timeRun = mainReport['dct:date']
+  const aceVersion = mainReport['earl:assertedBy']['doap:release']['doap:revision']
+  const assertionOut = exports.parseAssertions(assertions)
+  const vioObj = {}
+  Object.keys(assertionOut.violations).forEach(key => {
+    const value = assertionOut.violations[key]
+    logger.debug(`Found ${value} ${key} violations`)
     vioObj[key] = value
   })
   return {
-    'json': mainReport,
-    'aceVersion': aceVersion,
-    'timestamp': timeRun,
-    'score': assertionOut['score'],
-    'violations': vioObj
+    json: mainReport,
+    aceVersion: aceVersion,
+    timestamp: timeRun,
+    score: assertionOut.score,
+    violations: vioObj
   }
 }
 
 exports.parseAssertions = (assertions) => {
-  let output = {
-    'score': 0,
-    'violations': new Map([
-      ['critial', 0],
-      ['serious', 0],
-      ['moderate', 0],
-      ['minor', 0]
-    ])
+  logger.debug(`Parsing ${assertions.length} assertions`)
+  const output = {
+    score: 0,
+    violations: {
+      critial: 0,
+      serious: 0,
+      moderate: 0,
+      minor: 0
+    }
   }
   assertions.map((assertion) => {
-    let tests = assertion['assertions']
+    const tests = assertion.assertions
     tests.map((test)=> {
-      let errType = test['earl:test']['earl:impact']
-      let newCount = output['violations'].get(errType)
-      newCount++
-      output['violations'].set(errType, newCount)
+      const errType = test['earl:test']['earl:impact']
+      logger.debug(`Found new ${errType} violation`)
+      output.violations[errType]++
     })
   })
 
-  let score = exports.calculateScore(output['violations'])
+  logger.debug('Calculating accessibility score')
+  const score = exports.calculateScore(output.violations)
   if (score > 0) output['score'] = score
   return output
 }
@@ -94,7 +116,9 @@ exports.parseAssertions = (assertions) => {
 exports.calculateScore = (violations) => {
   let score = STARTING_SCORE
   let i = 0
-  violations.forEach((value, key) => {
+  Object.keys(violations).forEach(key => {
+    const value = violations[key]
+    logger.debug(`Factoring ${value} ${key} violations in score`)
     score -= value/(Math.pow(SCORE_DIVISOR, i))
     i++
   })

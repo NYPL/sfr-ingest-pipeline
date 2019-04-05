@@ -1,13 +1,14 @@
 {
   "name": "sfr-ace-report-api",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "An API that will process an ePub file and generate an accessibility report through the Daisy Ace tool",
   "main": "index.js",
   "scripts": {
     "clean": "./node_modules/.bin/rimraf dist",
     "test": "NODE_ENV=test ./node_modules/.bin/nyc --reporter=lcov --reporter=text ./node_modules/mocha/bin/mocha",
     "build": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src",
-    "run-server": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && node dist/index.js"
+    "run-dev-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=development node dist/index.js",
+    "run-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=production node dist/index.js"
   },
   "keywords": [
     "sfr"
@@ -16,10 +17,10 @@
   "license": "ISC",
   "dependencies": {
     "@daisy/ace": "^1.0.2",
-    "body-parser": "^1.18.3",
-    "compression": "^1.7.3",
-    "express": "^4.16.4",
-    "fs-extra": "^7.0.1"
+    "aws-sdk": "^2.437.0",
+    "dotenv": "^7.0.0",
+    "fs-extra": "^7.0.1",
+    "sqs-consumer": "^5.2.0"
   },
   "devDependencies": {
     "babel-cli": "^6.26.0",
@@ -32,7 +33,7 @@
     "chai-as-promised": "^7.1.1",
     "coveralls": "^3.0.2",
     "mocha": "^5.2.0",
-    "nyc": "^13.1.0",
+    "nyc": "^13.3.0",
     "rimraf": "^2.6.2",
     "sinon": "^7.1.1",
     "sinon-chai": "^3.2.0",

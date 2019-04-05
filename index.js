@@ -1,14 +1,40 @@
-import express from 'express'
-import compression from 'compression'
-import bodyParser from 'body-parser'
+import { Consumer } from 'sqs-consumer'
+import { runAccessibilityReport } from './src/accessibility_report.js'
+import { resultHandler } from './src/kinesis_out.js'
+import { setEnv } from './src/env_config.js'
+import logger from './src/helpers/logger'
+setEnv()
 
-import { router as generateRoute } from './src/routes/report_route.js'
+const app = Consumer.create({
+  queueUrl: process.env.EBOOK_SOURCE_QUEUE,
+  handleMessage: async (message) => {
+    logger.info('Receiving ePub scoring request')
+    const dataBlock = JSON.parse(message.Body)
+    logger.info(`Generating report for ePub file ${dataBlock.fileKey}`)
 
-const app = express(compression())
-app.use(bodyParser.json({limit: '50mb'}))
-
-app.use('/', generateRoute)
-
-app.listen(3000, () => {
-  console.log("Serving Ace Reports!")
+    const reportData = await runAccessibilityReport(dataBlock.fileKey)
+    
+    reportData.instanceID = dataBlock.instanceID
+    reportData.identifier = dataBlock.identifier
+    const report = {
+      status: 200,
+      code: 'accessibility',
+      message: 'Created Accessibility Score',
+      type: 'access_report',
+      method: 'insert',
+      data: reportData,
+    }
+    logger.info(`Outputting report data for ${dataBlock.fileKey}`)
+    resultHandler(report)
+  }
 })
+
+app.on('error', (err) => {
+  logger.error(err.message)
+})
+
+app.on('processing_error', (err) => {
+  logger.error(err.message)
+})
+
+app.start()
