@@ -96,14 +96,13 @@ def parseRecord(encodedRec, session):
         raise DataError('Error in base64 encoding of record')
 
     try:
-        result = importRecord(session, record)
+        session.begin_nested() # Start transaction
+        return importRecord(session, record)
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
-        session.rollback()
+        session.rollback() # Rollback current record only
         logger.error('Failed to store record')
         logger.debug(err)
         logger.debug(traceback.format_exc())
-        raise DBError('unknown', 'Unable to parse/ingest record, see logs for error')
-    return result
