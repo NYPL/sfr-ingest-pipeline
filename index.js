@@ -12,9 +12,12 @@ setEnv()
  * in an environment variable. This manager method invokes the accessiblilty
  * report generator method and places the results in an Kinesis stream to be read
  * by the database manager function
- * 
+ *
  * By default this checks for new messages every 20 seconds.
 */
+
+let dataBlock
+
 const app = Consumer.create({
   queueUrl: process.env.EBOOK_SOURCE_QUEUE,
   /*
@@ -23,11 +26,11 @@ const app = Consumer.create({
   */
   handleMessage: async (message) => {
     logger.info('Receiving ePub scoring request')
-    const dataBlock = JSON.parse(message.Body)
+    dataBlock = JSON.parse(message.Body)
     logger.info(`Generating report for ePub file ${dataBlock.fileKey}`)
 
     const reportData = await runAccessibilityReport(dataBlock.fileKey)
-    
+
     logger.info(`Outputting report data for ${dataBlock.fileKey}`)
     resultHandler(reportData, dataBlock, 200)
   }

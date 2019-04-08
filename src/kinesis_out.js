@@ -22,26 +22,25 @@ const kinesis = new AWS.Kinesis(customKinEndpoint)
  * object with report data or an error object containing an error message. This
  * assumes that the stream these records are being placed in contains only one
  * shard
- * 
+ *
  * @param {object} reportData Full generated report containing ACE and derived metadata
  * @param {object} metaBlock Object containg metadata describing the source record
  * @param {integer} Status code (200/500)
- * 
+ *
  * @returns {object} Kinesis response object
 */
 exports.resultHandler = (reportData, metaBlock, status) => {
   return new Promise((resolve) => {
-
     reportData.instanceID = metaBlock.instanceID
     reportData.identifier = metaBlock.identifier
     const report = {
       status: status,
       code: 'accessibility',
-      report.type = 'access_report',
+      type: 'access_report',
       data: reportData,
     }
 
-    if(status === 200){
+    if (status === 200) {
       report.message = 'Created Accessibility Score'
       report.method = 'insert'
     } else {
@@ -55,7 +54,7 @@ exports.resultHandler = (reportData, metaBlock, status) => {
       StreamName: process.env.INGEST_KINESIS
     }
     logger.debug(`Putting report in ${process.env.INGEST_KINESIS}`)
-    
+
     let kinesisOut = kinesis.putRecord(outParams).promise()
     kinesisOut.then((data) => {
       resolve(data)

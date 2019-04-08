@@ -6,6 +6,7 @@
   "scripts": {
     "clean": "./node_modules/.bin/rimraf dist",
     "test": "NODE_ENV=test ./node_modules/.bin/nyc --reporter=lcov --reporter=text ./node_modules/mocha/bin/mocha",
+    "lint": "./node_modules/.bin/standard",
     "build": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src",
     "run-dev-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=development node dist/index.js",
     "run-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=production node dist/index.js"
