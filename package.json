@@ -9,7 +9,10 @@
     "lint": "./node_modules/.bin/standard",
     "build": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src",
     "run-dev-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=development node dist/index.js",
-    "run-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=production node dist/index.js"
+    "run-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=production node dist/index.js",
+    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
+    "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report",
+    "coverage:open-report": "open -a 'Google Chrome' ./coverage/index.html"
   },
   "keywords": [
     "sfr"
@@ -24,6 +27,7 @@
     "sqs-consumer": "^5.2.0"
   },
   "devDependencies": {
+    "aws-sdk-mock": "^4.4.0",
     "babel-cli": "^6.26.0",
     "babel-plugin-istanbul": "^5.1.0",
     "babel-plugin-transform-runtime": "^6.23.0",

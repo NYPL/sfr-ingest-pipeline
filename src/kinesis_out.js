@@ -15,7 +15,7 @@ if (process.env.ALT_AWS_ACCOUNT) {
 }
 
 // Create a connection to the Kinesis service
-const kinesis = new AWS.Kinesis(customKinEndpoint)
+
 
 /*
  * Output a result object to the Kinesis stream. This can either contain a success
@@ -30,6 +30,7 @@ const kinesis = new AWS.Kinesis(customKinEndpoint)
  * @returns {object} Kinesis response object
 */
 exports.resultHandler = (reportData, metaBlock, status) => {
+  const kinesis = new AWS.Kinesis(customKinEndpoint)
   return new Promise((resolve) => {
     reportData.instanceID = metaBlock.instanceID
     reportData.identifier = metaBlock.identifier

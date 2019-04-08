@@ -83,8 +83,8 @@ exports.downloadEpubFile = async (s3Key) => {
  * @returns {object} A WriteStream object
 */
 exports.createTmpFile = () => {
-  console.log('Saving file in tmp directory')
   const tmpFile = '/tmp/' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+  logger.debug(`Creating tmp file for epub at ${tmpFile.path}`)
   return fs.createWriteStream(tmpFile)
 }
 
