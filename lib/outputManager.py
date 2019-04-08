@@ -46,10 +46,7 @@ class OutputManager():
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
         
-        try:
-            partKey = data['primary_identifier']['identifier']
-        except KeyError:
-            partKey = data['identifiers'][0]['identifier']    
+        partKey = OutputManager._createPartitionKey(data)
 
         try:
             cls.KINESIS_CLIENT.put_record(
@@ -117,3 +114,22 @@ class OutputManager():
             jsonStr = json.dumps(obj, ensure_ascii=False)
 
         return jsonStr
+    
+    @staticmethod
+    def _createPartitionKey(obj):
+        try:
+            return str(obj['primary_identifier']['identifier'])
+        except KeyError:
+            pass
+        
+        try:
+            return str(obj['identifiers'][0]['identifier'])
+        except KeyError:
+            pass
+        
+        try:
+            return str(obj['id'])
+        except KeyError:
+            pass
+        
+        return '0'

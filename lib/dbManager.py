@@ -132,7 +132,7 @@ def importRecord(session, record):
 
         instanceID = itemData.pop('instance_id', None)
 
-        dbItem = Item.insert(session, itemData)
+        dbItem, op = Item.insert(session, itemData)
 
         logger.debug('Got new item record, adding to instance')
         Instance.addItemRecord(session, instanceID, dbItem)
