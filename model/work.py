@@ -157,7 +157,7 @@ class Work(Core, Base):
 
         Work._addDates(work, childFields['dates'])
 
-        Work._addLanguages(work, session, childFields['language'])
+        Work._addLanguages(session, work, childFields['language'])
                 
         return work
     

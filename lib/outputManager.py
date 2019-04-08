@@ -46,7 +46,10 @@ class OutputManager():
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
         
-        partKey = data['primary_identifier']['identifier']
+        try:
+            partKey = data['primary_identifier']['identifier']
+        except KeyError:
+            partKey = data['identifiers'][0]['identifier']    
 
         try:
             cls.KINESIS_CLIENT.put_record(
