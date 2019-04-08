@@ -16,7 +16,7 @@ chai.use(chaiAsPromised)
 const expect = chai.expect
 
 const JSON_BLOCK = require('./testReport.json')
-const REPORT_JSON = ["", JSON_BLOCK]
+const REPORT_JSON = ['', JSON_BLOCK]
 
 describe('Accessibility Checker [accessibilityCheck.js]', () => {
   describe('runAccessibilityReport(url)', () => {
@@ -48,12 +48,12 @@ describe('Accessibility Checker [accessibilityCheck.js]', () => {
           'moderate': 69,
           'minor': 0
         },
-        'json': {'some': 'json'}
+        'json': { 'some': 'json' }
       })
       tmpStub.resolves({ path: resolve('./test/testEpub.epub') })
-      
+
       report = await AccessibilityChecker.runAccessibilityReport('fakeKey')
-      
+
       expect(report).to.not.equal(null)
       expect(report['score']).to.equal(10)
       expect(report['aceVersion']).to.equal('1.0.1')
@@ -61,13 +61,12 @@ describe('Accessibility Checker [accessibilityCheck.js]', () => {
     }).timeout(60000)
 
     it('should return an error if it cannot create a tmp file', async () => {
-      let report
       reportStub.returns({})
-      tmpStub.throws("Could not create tmp file")
+      tmpStub.throws('Could not create tmp file')
 
       try {
-        report = await AccessibilityChecker.runAccessibilityReport('fakeKey')
-      } catch(e) {
+        await AccessibilityChecker.runAccessibilityReport('fakeKey')
+      } catch (e) {
         expect(e).to.not.equal(null)
         expect(e.name).to.equal('Could not create tmp file')
       }
@@ -78,14 +77,13 @@ describe('Accessibility Checker [accessibilityCheck.js]', () => {
       tmpStub.returns(resolve('./test/nonExist.epub'))
 
       try {
-        report = await AccessibilityChecker.runAccessibilityReport('fakeKey')
-      } catch(e) {
+        await AccessibilityChecker.runAccessibilityReport('fakeKey')
+      } catch (e) {
         expect(e).to.not.equal(null)
       }
     })
   })
 
-  
   describe('downloadEpubFile(key)', () => {
     let tmpStub
     beforeEach(() => {
@@ -101,7 +99,7 @@ describe('Accessibility Checker [accessibilityCheck.js]', () => {
       tmpStub.returns(fs.createWriteStream('./test_tmp.epub'))
 
       let fakeFile = await AccessibilityChecker.downloadEpubFile('fakeKey')
-      
+
       expect(fakeFile.path).to.equal('./test_tmp.epub')
       fs.stat(fakeFile.path, false, (err) => {
         expect(err).to.equal(null)
@@ -115,7 +113,7 @@ describe('Accessibility Checker [accessibilityCheck.js]', () => {
     it('should raise an error on missing file', async () => {
       const mockStream = new Readable({
         objectMode: true,
-        read: function(size) {
+        read: function (size) {
           this.emit('error', 'pipe error')
         }
       })
@@ -142,7 +140,7 @@ describe('Accessibility Checker [accessibilityCheck.js]', () => {
       })
     })
   })
-  
+
   describe('parseReport(report)', () => {
     it('should parseReport and return summary', () => {
       let summary = AccessibilityChecker.parseReport(REPORT_JSON)

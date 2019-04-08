@@ -12,15 +12,14 @@ const expect = chai.expect
 describe('Env Var Config [env_config.js]', () => {
   describe('setEnv()', () => {
     it('should load env from process.env.NODE_ENV', () => {
-        setEnv()
-        expect(process.env.ENV).to.equal('test')
+      setEnv()
+      expect(process.env.ENV).to.equal('test')
     })
-    
+
     it('should default to development for env variables', () => {
       process.env.NODE_ENV = undefined
       setEnv()
       expect(process.env.ENV).to.equal('development')
     })
-    
   })
 })

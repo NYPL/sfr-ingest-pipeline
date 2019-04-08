@@ -14,9 +14,6 @@ if (process.env.ALT_AWS_ACCOUNT) {
   }
 }
 
-// Create a connection to the Kinesis service
-
-
 /*
  * Output a result object to the Kinesis stream. This can either contain a success
  * object with report data or an error object containing an error message. This
@@ -30,7 +27,9 @@ if (process.env.ALT_AWS_ACCOUNT) {
  * @returns {object} Kinesis response object
 */
 exports.resultHandler = (reportData, metaBlock, status) => {
+  // Create a connection to the Kinesis service
   const kinesis = new AWS.Kinesis(customKinEndpoint)
+
   return new Promise((resolve) => {
     reportData.instanceID = metaBlock.instanceID
     reportData.identifier = metaBlock.identifier
@@ -38,7 +37,7 @@ exports.resultHandler = (reportData, metaBlock, status) => {
       status: status,
       code: 'accessibility',
       type: 'access_report',
-      data: reportData,
+      data: reportData
     }
 
     if (status === 200) {
