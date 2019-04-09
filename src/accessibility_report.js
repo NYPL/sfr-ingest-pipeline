@@ -66,13 +66,17 @@ exports.downloadEpubFile = async (s3Key) => {
     }
     logger.debug(`Downloading file ${s3Key} from S3`)
     const file = exports.createTmpFile()
-    s3.getObject(s3Params).createReadStream().pipe(file).on('close', () => {
-      logger.debug(`Storing downloaded file in ${file.path}`)
-      resolve(file)
-    }).on('error', (err) => {
+    const s3Stream = s3.getObject(s3Params).createReadStream()
+    s3Stream.on('error', (err) => { reject(err) })
+    file.on('error', (err) => {
       logger.error(err)
       reject(err)
     })
+    file.on('close', () => {
+      logger.debug(`Storing downloaded file in ${file.path}`)
+      resolve(file)
+    })
+    s3Stream.pipe(file)
   })
 }
 

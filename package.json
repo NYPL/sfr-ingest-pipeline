@@ -23,6 +23,7 @@
     "@daisy/ace": "^1.0.2",
     "aws-sdk": "^2.437.0",
     "dotenv": "^7.0.0",
+    "fs-extra": "^7.0.1",
     "sqs-consumer": "^5.2.0"
   },
   "devDependencies": {
