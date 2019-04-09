@@ -14,7 +14,7 @@ if (process.env.ALT_AWS_ACCOUNT) {
   }
 }
 
-/*
+/**
  * Output a result object to the Kinesis stream. This can either contain a success
  * object with report data or an error object containing an error message. This
  * assumes that the stream these records are being placed in contains only one

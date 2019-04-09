@@ -1,7 +1,7 @@
 import { parse } from 'dotenv'
 import fs from 'fs'
 
-/*
+/**
  * Selects the proper .env file defined on the command lind when this app was invoked
 */
 exports.setEnv = () => {

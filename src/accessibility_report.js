@@ -6,13 +6,13 @@ import logger from './helpers/logger'
 const STARTING_SCORE = 10 // Defines total possible score for accessibility reports
 const SCORE_DIVISOR = 4 // Increase for harsher scores, decrease for easier
 
-/*
- * @async
+/**
  * Main method that handles logic around generating Accessibility Reports.
  * Stores the source ePub archive file in the /tmp directory (cleared hourly)
  * and invokes the ACE reporting tool to generate a raw report, which is then
  * parsed and a generated score is added to a report summary
- *
+ * 
+ * @async
  * @param {string} fileKey A full path to an object in the ePub S3 bucket
  * @returns {object} A full report object including the full JSON output by ACE, a brief summary and a generated score
 */
@@ -49,11 +49,11 @@ exports.runAccessibilityReport = async (fileKey) => {
   })
 }
 
-/*
- * @async
+/**
  * Accesses and stores an .epub file (zipped archive) from the S3 bucket defined
  * in the current environement variables.
- *
+ * 
+ * @async
  * @param {string} s3Key The key to an S3 object (full path)
  * @returns {object} A local representation of the .epub file
 */
@@ -80,7 +80,7 @@ exports.downloadEpubFile = async (s3Key) => {
   })
 }
 
-/*
+/**
  * Generate a temporary file where the .epub can be stored. Utilizes multiple
  * Math.random() calls of varying lengths to generate a random string
  *
@@ -92,7 +92,7 @@ exports.createTmpFile = () => {
   return fs.createWriteStream(tmpFile)
 }
 
-/*
+/**
  * Parses the full report object returned by ACE and totals the number of
  * violations received by severity level. These totals are then used to generate
  * an overall score. Both sets of metadata are added with the report JSON to an
@@ -122,7 +122,7 @@ exports.parseReport = (report) => {
   }
 }
 
-/*
+/**
  * Extracts the total number of violations by severity level, without regard
  * to the specific violation that occured. These are used to generate the overall
  * accessibility score.
@@ -161,7 +161,7 @@ exports.parseAssertions = (assertions) => {
   return output
 }
 
-/*
+/**
  * Generates a summary score based of the number and severity of the violations
  * found in the .epub file. This algorithm takes a starting score, defined above,
  * and subtracts a certain number defined by an exponential scale.

@@ -7,7 +7,9 @@ import logger from './src/helpers/logger'
 // Invokes dotenv to load specific env variables from environment specific files
 setEnv()
 
-/*
+let dataBlock
+
+/**
  * Creates a long polling application that listens to the AWS SQS STREAM provided
  * in an environment variable. This manager method invokes the accessiblilty
  * report generator method and places the results in an Kinesis stream to be read
@@ -15,9 +17,6 @@ setEnv()
  *
  * By default this checks for new messages every 20 seconds.
 */
-
-let dataBlock
-
 const app = Consumer.create({
   queueUrl: process.env.EBOOK_SOURCE_QUEUE,
   /*
