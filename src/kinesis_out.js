@@ -21,7 +21,7 @@ if (process.env.ALT_AWS_ACCOUNT) {
  * shard
  *
  * @param {object} reportData Full generated report containing ACE and derived metadata
- * @param {object} metaBlock Object containg metadata describing the source record
+ * @param {object} metaBlock Object containing metadata describing the source record
  * @param {integer} Status code (200/500)
  *
  * @returns {object} Kinesis response object
@@ -44,7 +44,7 @@ exports.resultHandler = (reportData, metaBlock, status) => {
       report.message = 'Created Accessibility Score'
       report.method = 'insert'
     } else {
-      report.message = 'Failed to create Accessiblity Score'
+      report.message = 'Failed to create Accessibility Score'
       report.method = 'error'
     }
 

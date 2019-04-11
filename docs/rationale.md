@@ -4,13 +4,13 @@ This service runs on an EC2 instance and can be accessed via an API. It has been
 
 ## Daisy Ace
 
-The [EPUB Accessibility report generator](https://daisy.github.io/ace/) was designed as a command-line tool only, without documented support for use as a npm package in another project (though it is written in node.js). In order to use it for this service (on demand in response to a Kinesis stream) it was necessary to use it as a package. The Report generator works by splitting a zipped EPUB file into its component parts and reading them in part, by loading them into a headless chromium instance. This then generates a block of JSON data which can be returned via API for the rest of the data ingest process.
+The [EPUB Accessibility report generator](https://daisy.github.io/ace/) was designed as a command-line tool only, without documented support for use as a npm package in another project (though it is written in node.js). In order to use it for this service (on demand in response to a Kinesis stream) it was necessary to use it as a package. The Report generator works by splitting a zipped EPUB file into its component parts and reading them in part, by loading them into a headless Chromium instance. This then generates a block of JSON data which can be returned via API for the rest of the data ingest process.
 
 ## AWS Lambda
 
-The main components of the ResearchNow data ingest pipeline are running in Lambda instances to allow for an easily scaleable and maintainable pipeline. The function that takes EPUB files and stores them in s3 takes the zipped EPUB files, explodes them into their components and stores them as both zipped and exploded versions. This runs smoothly but encounters several problems.
+The main components of the ResearchNow data ingest pipeline are running in Lambda instances to allow for an easily scaleable and maintainable pipeline. The function that takes EPUB files and stores them in S3 takes the zipped EPUB files, explodes them into their components and stores them as both zipped and exploded versions. This runs smoothly but encounters several problems.
 
-First, the package size of Lambdas is generally limited to 50MB for the most common upload methods. Including the Ace Report tool in this Lambda increased the size of the package to 200MB+ due to various dependencies. This could be mitigated by uploading the package via s3, however that is not ideal from a maintainability standpoint.
+First, the package size of Lambdas is generally limited to 50MB for the most common upload methods. Including the Ace Report tool in this Lambda increased the size of the package to 200MB+ due to various dependencies. This could be mitigated by uploading the package via S3, however that is not ideal from a maintainability standpoint.
 
 Second, the startup time of the Lambda is severly affected by inlcuding the Ace Reporting tool. It adds several seconds to the startup of each Lambda instance (largely due to Chromium) and its use is therefore generally not encouraged. One of the main reasons an ec2 instance was created was because it is always available and eliminates the need for startup on each call.
 
@@ -20,7 +20,7 @@ As a dependency of the Ace Reporter Chromium adds over 80MB in requirements. Add
 
 ## EC2 Size/Responsiveness
 
-As it stands now this service is running on a t3.small ec2 instance. This was selected as the t3 isntances offer more vCPU cores at lower levels than the standard t2 instances. This allows for better parallel performance as multiple EPUBs can be processed at once (ideally having a 3+ core machine would process a full batch in parallel, but having 2 cores seems to work well at the moment). The Ace Report tool is also somewhat of a memory hog, and it would perhaps improve processing time if additional memory was provisioned. However, that has not been done yet out of caution, it can be increased at any time.
+As it stands now this service is running on a t3.small ec2 instance. This was selected as the t3 instances offer more vCPU cores at lower levels than the standard t2 instances. This allows for better parallel performance as multiple EPUBs can be processed at once (ideally having a 3+ core machine would process a full batch in parallel, but having 2 cores seems to work well at the moment). The Ace Report tool is also somewhat of a memory hog, and it would perhaps improve processing time if additional memory was provisioned. However, that has not been done yet out of caution, it can be increased at any time.
 
 ## Future Work
 
@@ -38,7 +38,7 @@ However, assessment revealed that the EpubCheck tool is primarily focused on val
 
 TODO
 
-- Fine tune ec2 instance for performance/cost
+- Fine tune EC2 instance for performance/cost
 - Implement Lambda-compliant Chromium version for fork of @daisy/ace
-- Review @daisy/ace for unecessary packages/dependencies with eye to decreasing size and making Lambda deployments easier
+- Review @daisy/ace for unnecessary packages/dependencies with eye to decreasing size and making Lambda deployments easier
 - Implement standalone Lambda for processing/generate Ace Reports given standard in SFR-193 

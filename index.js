@@ -1,17 +1,17 @@
 import { Consumer } from 'sqs-consumer'
 import { runAccessibilityReport } from './src/accessibility_report.js'
 import { resultHandler } from './src/kinesis_out.js'
-import { setEnv } from './src/env_config.js'
+import { loadEnv } from './src/env_config.js'
 import logger from './src/helpers/logger'
 
 // Invokes dotenv to load specific env variables from environment specific files
-setEnv()
+loadEnv()
 
 let dataBlock
 
 /**
  * Creates a long polling application that listens to the AWS SQS STREAM provided
- * in an environment variable. This manager method invokes the accessiblilty
+ * in an environment variable. This manager method invokes the accessibility
  * report generator method and places the results in an Kinesis stream to be read
  * by the database manager function
  *
