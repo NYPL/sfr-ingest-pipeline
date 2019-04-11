@@ -1,18 +1,18 @@
 const config = require('config')
 const express = require('express')
 const bodyParser = require('body-parser')
-const logger = require('./lib/logger')
 const SwaggerParser = require('swagger-parser')
+const logger = require('./lib/logger')
 const swaggerDocs = require('./swagger.v2.json')
 
 require('dotenv').config()
 
-var app = express()
+const app = express()
 app.logger = logger
 
 app.use(bodyParser.json())
 
-app.all('*', function (req, res, next) {
+app.all('*', (req, res, next) => {
   res.header('Access-Control-Allow-Origin', '*')
   res.header('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
   res.header('Access-Control-Allow-Headers', 'Content-Type')
@@ -27,26 +27,27 @@ app.all('*', function (req, res, next) {
 // Further, old/deprecated versions can eventually be disabled.
 const v1 = require('./routes/v1/v1')
 const { v2Router } = require('./routes/v2/v2')
+
 app.use('/v2', v2Router)
 app.use('/v1', v1)
 app.use('/', v1)
 
 // TODO: Implement different Swagger doc versions for versions of the API
-app.get('/research-now/swagger', function (req, res) {
+app.get('/research-now/swagger', (req, res) => {
   res.send(swaggerDocs)
 })
 
-app.get('/research-now/swagger-test', function (req, res) {
+app.get('/research-now/swagger-test', (req, res) => {
   SwaggerParser.validate(swaggerDocs, (err, api) => {
     if (err) res.send(err)
     else res.send(`API name: ${api.info.title}, Version: ${api.info.version}`)
   })
 })
 
-const port = process.env.PORT || config['port']
+const port = process.env.PORT || config.port
 
-const server = app.listen(port, function () {
-  app.logger.info('Server started on port ' + port)
+const server = app.listen(port, () => {
+  app.logger.info(`Server started on port ${port}`)
 })
 
 module.exports = server
