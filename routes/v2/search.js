@@ -14,16 +14,15 @@ const searchEndpoints = (app, respond, handleError) => {
     const params = req.body
 
     const searcher = new Search(app, params)
-    let searchRes
+
     try {
       searcher.buildSearch()
       await searcher.addPaging()
-      searchRes = await searcher.execSearch()
+      const searchRes = await searcher.execSearch()
+      respond(res, searchRes, params)
     } catch (err) {
       handleError(res, err)
     }
-
-    respond(res, searchRes, params)
   })
 
   app.get('/sfr/search', async (rec, res) => {
@@ -31,16 +30,14 @@ const searchEndpoints = (app, respond, handleError) => {
 
     const searcher = new Search(app, params)
 
-    let searchRes
     try {
       searcher.buildSearch()
       await searcher.addPaging()
-      searchRes = await searcher.execSearch()
+      const searchRes = await searcher.execSearch()
+      respond(res, searchRes, params)
     } catch (err) {
       handleError(res, err)
     }
-
-    respond(res, searchRes, params)
   })
 }
 
@@ -102,14 +99,6 @@ class Search {
       this.invertSort()
       this.query.from(this.total - fromPosition)
       this.reverseResult = true
-    } else if (fromPosition > 10000 && fromPosition < (this.total - 10000)) {
-      this.logger.debug('SETTING DEEP SEARCH')
-      const searchPoint = 10000
-      const deepSearchAfter = await this.recursiveSearch(1000, fromPosition, searchPoint)
-      this.query.rawOption('search_after', deepSearchAfter)
-      this.query.from(0) // search_after essentially starts a new result set from zero
-      this.query.size(perPage) // Reset page size after walking size override
-      this.query.rawOption('_source', true) // Turn _source object back on for real result
     } else if (nextSort) {
       this.logger.debug('SETTING NEXT PAGE SEARCH')
       this.query.rawOption('search_after', nextSort)
@@ -120,6 +109,14 @@ class Search {
       this.query.rawOption('search_after', prevSort)
       this.query.from(0)
       this.reverseResult = true
+    } else if (fromPosition > 10000 && fromPosition < (this.total - 10000)) {
+      this.logger.debug('SETTING DEEP SEARCH')
+      const searchPoint = 10000
+      const deepSearchAfter = await this.recursiveSearch(1000, fromPosition, searchPoint)
+      this.query.rawOption('search_after', deepSearchAfter)
+      this.query.from(0) // search_after essentially starts a new result set from zero
+      this.query.size(perPage) // Reset page size after walking size override
+      this.query.rawOption('_source', true) // Turn _source object back on for real result
     }
   }
 

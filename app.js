@@ -22,7 +22,7 @@ app.all('*', (req, res, next) => {
 // Versioning
 // The API implements a new version when breaking changes are introduced
 // Different versions are routed off a base component in the URL
-// By default the API will implment v1, though this behavior can easily be
+// By default the API will implement v1, though this behavior can easily be
 // altered at a future point.
 // Further, old/deprecated versions can eventually be disabled.
 const v1 = require('./routes/v1/v1')
@@ -30,7 +30,7 @@ const { v2Router } = require('./routes/v2/v2')
 
 app.use('/v2', v2Router)
 app.use('/v1', v1)
-app.use('/', v1)
+app.use('/', v1) // Controls default version of app
 
 // TODO: Implement different Swagger doc versions for versions of the API
 app.get('/research-now/swagger', (req, res) => {
