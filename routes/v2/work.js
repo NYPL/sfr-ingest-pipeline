@@ -52,6 +52,7 @@ const fetchWork = (params, app) => {
         const respCount = resp.hits.hits.length
         if (respCount < 1) reject(new ElasticSearchError('Could not locate a record with that identifier'))
         else if (respCount > 1) reject(new ElasticSearchError('Returned multiple records, identifier lacks specificity'))
+        // eslint-disable-next-line dot-notation
         resolve(resp.hits.hits[0]['_source'])
       })
       .catch(error => reject(error))
