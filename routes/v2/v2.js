@@ -2,12 +2,10 @@ const express = require('express')
 const elasticsearch = require('elasticsearch')
 const logger = require('../../lib/logger')
 const pjson = require('../../package.json')
+const { searchEndpoints } = require('./search')
+const { workEndpoints } = require('./work')
 
-// v2 of the SFR API. This is a simple test endpoint to demonstrate the
-// ability to route users based on a version provided. No search/lookup
-// abilities have been implemented here yet. The structure will be similar to
-// the v1 endpoints, but will utilize a different ElasticSearch endpoint
-
+// Create an instance of an Express router to handle requests to v2 of the API
 const v2Router = express.Router()
 
 // Initialize logging
@@ -18,6 +16,7 @@ v2Router.client = new elasticsearch.Client({
   host: process.env.ELASTICSEARCH_HOST,
 })
 
+// Status endpoint to verify that v2 is available
 v2Router.get('/', (req, res) => {
   res.send({
     codeVersion: pjson.version,
@@ -25,6 +24,13 @@ v2Router.get('/', (req, res) => {
   })
 })
 
+/**
+ * Parses and returns the results of a query against the API.
+ *
+ * @param {Res} res An Express response object.
+ * @param {Object} _resp The body of the response.
+ * @param {Object} params An object representing the query made against the API.
+ */
 const respond = (res, _resp, params) => {
   const contentType = 'application/json'
 
@@ -37,6 +43,12 @@ const respond = (res, _resp, params) => {
   return true
 }
 
+/**
+ * Handle errors returned in the course of making a query.
+ *
+ * @param {Res} res An Express response object.
+ * @param {Error} error An error received, to be parsed and returned as non-200 status.
+ */
 const handleError = (res, error) => {
   v2Router.logger.error('Resources#handleError:', error)
   let statusCode = 500
@@ -58,13 +70,8 @@ const handleError = (res, error) => {
   return false
 }
 
-// Load endpoints for version
-const { searchEndpoints } = require('./search')
-
+// Load endpoints
 searchEndpoints(v2Router, respond, handleError)
-
-const { workEndpoints } = require('./work')
-
 workEndpoints(v2Router, respond, handleError)
 
 module.exports = { v2Router, respond, handleError }

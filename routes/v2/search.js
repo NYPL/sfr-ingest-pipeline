@@ -1,11 +1,13 @@
 const bodybuilder = require('bodybuilder')
-const { MissingParamError, ElasticSearchError } = require('../../lib/errors')
+const { MissingParamError } = require('../../lib/errors')
 
 /**
- * 
- * @param {Object} app  
- * @param {*} respond 
- * @param {*} handleError 
+ * Constructs the simple search endpoints for GET/POST requests. Invokes the search
+ * object to construct a query and execute it.
+ *
+ * @param {Object} app The express application, used to construct endpoints
+ * @param {Response} respond Function that responds to the API request
+ * @param {ErrorResponse} handleError Function that responds with non-200 Status Code
  */
 const searchEndpoints = (app, respond, handleError) => {
   app.post('/sfr/search', async (req, res) => {
@@ -42,13 +44,25 @@ const searchEndpoints = (app, respond, handleError) => {
   })
 }
 
+/** Class representing a search object. */
 class Search {
+  /**
+   * Create a search object.
+   *
+   * @param {Object} app Express object, contains various components needed for search.
+   * @param {Object} params Object containing search request from user.
+   */
   constructor(app, params) {
     this.app = app
     this.params = params
     this.logger = this.app.logger
   }
 
+  /**
+   * Executes a search against the ElasticSearch index
+   *
+   * @returns {Promise} Promise object representing the result of the search request
+   */
   execSearch() {
     const esQuery = {
       index: process.env.ELASTICSEARCH_INDEX_V2,
@@ -65,6 +79,11 @@ class Search {
     })
   }
 
+  /**
+   * Adds paging parameters to the request body.
+   *
+   * @async
+   */
   async addPaging() {
     this.logger.info('Adding paging information')
     const pageNum = (this.params.page) ? this.params.page : 0
@@ -104,6 +123,15 @@ class Search {
     }
   }
 
+  /**
+   * Recursively executes a search in ElasticSearch to retrieve deeply paged search requests. This
+   * avoids the 10,000 record default search request depth on ElasticSearch indexes.
+   *
+   * @param {Number} perPage Number of results to include in iterative paging requests.
+   * @param {Number} fromPosition Position/page in index to retrieve.
+   * @param {Number} searchPoint Current position/page in the index.
+   * @param {Object} searchAfter ElasticSearch search_after object used to retrieve next page in results.
+   */
   async recursiveSearch(perPage, fromPosition, searchPoint, searchAfter = null) {
     const walkSize = (fromPosition - searchPoint < 1000) ? (fromPosition % 1000) : perPage
     searchPoint += walkSize
@@ -126,11 +154,19 @@ class Search {
     return newAfter
   }
 
+  /**
+   * If the user does not provide the total number of records in their paging request, execute a
+   * simple query to retrieve them. Utilizes the internal ElasticSearch index._count method.
+   */
   async getQueryCount() {
     const totalObj = await this.app.client.count({ body: this.queryCount })
     return totalObj.count
   }
 
+  /**
+   * Invert the sort direction to enable fast retrieval of previous page results and queries
+   * for pages from the end of the result set.
+   */
   invertSort() {
     const newSort = []
     const tmpQuery = this.query.build()
@@ -143,6 +179,10 @@ class Search {
     this.query.sort(newSort)
   }
 
+  /**
+   * Create the main ElasticSearch query body utilizing the BodyBuilder library.
+   * Creates the query, sort, filter, and aggregations
+   */
   buildSearch() {
     if (!('field' in this.params) || !('query' in this.params)) {
       throw new MissingParamError('Your POST request must include either queries or filters')
@@ -152,8 +192,7 @@ class Search {
 
     this.query = bodybuilder()
 
-    // Catch case where escape charaacter has been escaped and reduce to a single
-    // escape character
+    // Catch case where escape character has been escaped and reduce to a single escape character
     const queryTerm = query.replace(/[\\]+([^\w\s]{1})/g, '\\$1')
 
     switch (field) {
@@ -199,7 +238,7 @@ class Search {
     // results in conjunction with a query
     if ('filters' in this.params && this.params.filters instanceof Array) {
       // eslint-disable-next-line array-callback-return
-      params.filters.map((filter) => {
+      this.params.filters.map((filter) => {
         switch (filter.field) {
           case 'year':
             this.query.query('nested', { path: 'instances', query: { range: { 'instances.pub_date': { gte: filter.value, lte: filter.value } } } })
