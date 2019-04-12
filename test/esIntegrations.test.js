@@ -1,13 +1,16 @@
+/* eslint-disable no-undef */
 const request = require('supertest')
 const chai = require('chai')
 const sinonChai = require('sinon-chai')
+
 chai.should()
 chai.use(sinonChai)
-const expect = chai.expect
+const { expect } = chai
 
 describe('Testing ElasticSearch Integration', () => {
   let server
   beforeEach(() => {
+    // eslint-disable-next-line global-require
     server = require('../app.js')
   })
   afterEach(() => {
@@ -17,7 +20,7 @@ describe('Testing ElasticSearch Integration', () => {
   it('responds to v2 search', (done) => {
     request(server)
       .get('/v2/sfr/search?field=keyword&query=the')
-      .then(resp => {
+      .then((resp) => {
         expect(resp.body.hits.total).to.be.greaterThan(0)
         done()
       })
@@ -29,10 +32,10 @@ describe('Testing ElasticSearch Integration', () => {
       .send({
         queries: [{
           field: 'keyword',
-          value: 'war'
-        }]
+          value: 'war',
+        }],
       })
-      .then(resp => {
+      .then((resp) => {
         expect(resp.body.hits.total).to.be.greaterThan(0)
         done()
       })
