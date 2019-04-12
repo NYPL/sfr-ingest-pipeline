@@ -1,11 +1,13 @@
+/* eslint-disable no-undef */
 const chai = require('chai')
 const sinon = require('sinon')
 const sinonChai = require('sinon-chai')
 const chaiPromise = require('chai-as-promised')
+
 chai.should()
 chai.use(sinonChai)
 chai.use(chaiPromise)
-const expect = chai.expect
+const { expect } = chai
 
 const { fetchWork } = require('../routes/v2/work')
 const { ElasticSearchError, MissingParamError } = require('../lib/errors')
@@ -13,7 +15,7 @@ const { ElasticSearchError, MissingParamError } = require('../lib/errors')
 describe('v2 single work retrieval tests', () => {
   it('should raise an error if identifier is missing', (done) => {
     const params = {
-      'field': 'testing'
+      field: 'testing',
     }
     expect(fetchWork.bind(fetchWork, params, 'app')).to.throw(MissingParamError('Your request must include an identifier field or parameter'))
     done()
@@ -35,19 +37,19 @@ describe('v2 single work retrieval tests', () => {
             _score: 1,
             _source: {
               uuid: 1,
-              title: 'Test Work'
-            }
-          }
-        ]
-      }
+              title: 'Test Work',
+            },
+          },
+        ],
+      },
     })
     const testApp = {
       client: {
-        search: testClient
-      }
+        search: testClient,
+      },
     }
     const params = {
-      identifier: 1
+      identifier: 1,
     }
     const resp = await fetchWork(params, testApp)
     expect(resp.uuid).to.equal(1)
@@ -64,17 +66,17 @@ describe('v2 single work retrieval tests', () => {
         max_score: 1,
         hits: [
           'hit1',
-          'hit2'
-        ]
-      }
+          'hit2',
+        ],
+      },
     })
     const testApp = {
       client: {
-        search: testClient
-      }
+        search: testClient,
+      },
     }
     const params = {
-      identifier: 1
+      identifier: 1,
     }
     const outcome = fetchWork(params, testApp)
     expect(outcome).to.eventually.throw(ElasticSearchError('Returned multiple records, identifier lacks specificity'))

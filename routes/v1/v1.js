@@ -2,6 +2,8 @@ const express = require('express')
 const elasticsearch = require('elasticsearch')
 const pjson = require('./../../package.json')
 const logger = require('./../../lib/logger')
+const { v1Search } = require('./search')
+const { v1Work } = require('./work')
 
 // Initialize v1 routes
 // These are accessible at /v1/* or /*
@@ -16,8 +18,8 @@ v1Router.client = new elasticsearch.Client({
 v1Router.logger = logger
 
 // Load endpoints for version
-require('./search')(v1Router)
-require('./work')(v1Router)
+v1Search(v1Router)
+v1Work(v1Router)
 
 // Return basic status update on API
 v1Router.get('/', (req, res) => {
@@ -27,4 +29,4 @@ v1Router.get('/', (req, res) => {
   })
 })
 
-module.exports = v1Router
+module.exports = { v1Router }

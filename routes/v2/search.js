@@ -1,4 +1,4 @@
-import Search from '../../lib/search'
+const { Search } = require('../../lib/search')
 
 /**
  * Constructs the simple search endpoints for GET/POST requests. Invokes the search
@@ -8,6 +8,7 @@ import Search from '../../lib/search'
  * @param {Response} respond Function that responds to the API request
  * @param {ErrorResponse} handleError Function that responds with non-200 Status Code
  */
+
 const searchEndpoints = (app, respond, handleError) => {
   app.post('/sfr/search', async (req, res) => {
     const params = req.body

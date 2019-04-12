@@ -4,6 +4,8 @@ const bodyParser = require('body-parser')
 const SwaggerParser = require('swagger-parser')
 const logger = require('./lib/logger')
 const swaggerDocs = require('./swagger.v2.json')
+const { v1Router } = require('./routes/v1/v1')
+const { v2Router } = require('./routes/v2/v2')
 
 require('dotenv').config()
 
@@ -25,12 +27,10 @@ app.all('*', (req, res, next) => {
 // By default the API will implement v1, though this behavior can easily be
 // altered at a future point.
 // Further, old/deprecated versions can eventually be disabled.
-const v1 = require('./routes/v1/v1')
-const { v2Router } = require('./routes/v2/v2')
 
 app.use('/v2', v2Router)
-app.use('/v1', v1)
-app.use('/', v1) // Controls default version of app
+app.use('/v1', v1Router)
+app.use('/', v1Router) // Controls default version of app
 
 // TODO: Implement different Swagger doc versions for versions of the API
 app.get('/research-now/swagger', (req, res) => {
