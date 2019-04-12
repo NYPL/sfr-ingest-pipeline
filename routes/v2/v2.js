@@ -12,9 +12,8 @@ const v2Router = express.Router()
 v2Router.logger = logger
 
 // Set ElasticSearch endpoint for routes
-console.log(process.env.ELASTICSEARCH_HOST)
 v2Router.client = new elasticsearch.Client({
-  host: 'https://vpc-search-sfr-development-3vgqce5wzyy3i3ywvsnz6xedum.us-east-1.es.amazonaws.com',
+  host: process.env.ELASTICSEARCH_HOST,
 })
 
 // Status endpoint to verify that v2 is available

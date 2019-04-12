@@ -4,10 +4,11 @@ const bodyParser = require('body-parser')
 const SwaggerParser = require('swagger-parser')
 const logger = require('./lib/logger')
 const swaggerDocs = require('./swagger.v2.json')
-const { v1Router } = require('./routes/v1/v1')
-const { v2Router } = require('./routes/v2/v2')
 
 require('dotenv').config()
+
+const { v2Router } = require('./routes/v2/v2')
+const { v1Router } = require('./routes/v1/v1')
 
 const app = express()
 app.logger = logger
