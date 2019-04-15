@@ -29,7 +29,7 @@ class OutputManager():
         pass
 
     @classmethod
-    def putKinesis(cls, data, stream):
+    def putKinesis(cls, data, stream, recType='work'):
         """Puts records into a Kinesis stream for processing by other parts of
         the SFR data pipeline. Takes data as an object and converts it into a
         JSON string. This is then passed to the specified stream.
@@ -40,7 +40,8 @@ class OutputManager():
         logger.info('Writing results to Kinesis')
         outputObject = {
             'status': 200,
-            'data': data
+            'data': data,
+            'type': recType
         }
 
         # The default lambda function here converts all objects into dicts

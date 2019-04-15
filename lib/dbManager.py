@@ -104,7 +104,11 @@ def importRecord(session, record):
                 'identifier': instanceID,
                 'weight': 1
             }
-            OutputManager.putKinesis(instanceData, 'sfr-db-update-development')
+            OutputManager.putKinesis(
+                instanceData,
+                'sfr-db-update-development',
+                recType='instance'
+            )
             return 'Existing instance Row ID {}'.format(instanceID)
 
         dbInstance = Instance.insert(session, instanceData)
@@ -127,7 +131,11 @@ def importRecord(session, record):
                 'identifier': itemID,
                 'weight': 1
             }
-            OutputManager.putKinesis(itemData, 'sfr-db-update-development')
+            OutputManager.putKinesis(
+                itemData,
+                'sfr-db-update-development',
+                recType='item'
+            )
             return 'Existing item Row ID {}'.format(itemID)
 
         instanceID = itemData.pop('instance_id', None)
