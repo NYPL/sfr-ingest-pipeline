@@ -253,6 +253,16 @@ class Item(Core, Base):
 
             existing.access_reports.append(newReport)
             return existing
+    
+    @classmethod
+    def lookupItem(cls, session, identifiers, primaryIdentifier=None):
+        """Lookup a work either by UUID or by another identifier"""
+        if primaryIdentifier is not None and primaryIdentifier['type'] == 'row_id':
+            return session.query(Item).get(primaryIdentifier['identifier'])
+        else:
+            existingItemID = Identifier.getByIdentifier(Item, session, identifiers)
+            if existingItemID:
+                return session.query(Item).get(existingItemID)
 
 
 class AccessReport(Core, Base):
