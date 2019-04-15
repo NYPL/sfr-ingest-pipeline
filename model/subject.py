@@ -131,4 +131,8 @@ class Subject(Core, Base):
             logger.error('Too many subjects found for {}'.format(
                 subject['subject']
             ))
-            raise DBError('subjects', 'Found multiple subject entries')
+            logger.debug('Adding first found subject as relation')
+            return session.query(Subject)\
+                .filter(Subject.authority == subject['authority'])\
+                .filter(Subject.subject == subject['subject'])\
+                .first()
