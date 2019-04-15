@@ -101,17 +101,19 @@ def importRecord(session, record):
         return 'Instance #{}'.format(existing.id)
 
     elif record['type'] == 'item':
-        logger.info('Ingesting item record')
         itemData = record['data']
         instanceID = itemData.pop('instance_id', None)
         primaryID = itemData.pop('primary_identifier', None)
-
-        existingID = Item.lookupItem(
+        logger.debug('Ingesting Item #{}'.format(primaryID['identifier']))
+        existing = Item.lookupItem(
             session,
             itemData.get('identifiers', []),
             primaryID
         )
-        existing = session.query(Item).get(existingID)
+
+        if existing is None:
+            logger.warning('Could not locate item, skipping record')
+            raise DBError('items', 'Could not locate item in database, skipping')
 
         Item.update(session, existing, itemData)
 
