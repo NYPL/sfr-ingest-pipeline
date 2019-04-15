@@ -7,6 +7,7 @@ from model.core import Base
 from model.work import Work
 from model.instance import Instance
 from model.item import Item
+from model.identifiers import Identifier
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError
@@ -103,11 +104,12 @@ def importRecord(session, record):
         logger.info('Ingesting item record')
         itemData = record['data']
         instanceID = itemData.pop('instance_id', None)
+        primaryID = itemData.pop('primary_identifier', None)
 
-        existingID = Identifier.getByIdentifier(
-            Item,
+        existingID = Item.lookupItem(
             session,
-            itemData.get('identifiers', [])
+            itemData.get('identifiers', []),
+            primaryID
         )
         existing = session.query(Item).get(existingID)
 
