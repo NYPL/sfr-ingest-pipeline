@@ -91,7 +91,7 @@ def importRecord(session, record):
         )
         if existingID is None:
             logger.warning('Could not locate instance, skipping record')
-            raise DBError('Could not locate instance in database, skipping')
+            raise DBError('instances', 'Could not locate instance in database, skipping')
 
         existing = session.query(Instance).get(existingID)
 
