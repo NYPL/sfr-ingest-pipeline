@@ -1,12 +1,12 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "v2",
+    "version": "v2.2",
     "title": "ResearchNow Search API",
     "description": "REST API for Elasticsearch index for the ResearchNow Project"
   },
   "host": "platform.nypl.org",
-  "basePath": "/api/v0.1/research-now",
+  "basePath": "/api",
   "schemes": [
     "http",
     "https"
@@ -18,7 +18,7 @@
     }
   ],
   "paths": {
-    "/sfr/work": {
+    "/v0.1/research-now/work": {
       "get": {
         "tags": [
           "research-now"
@@ -74,7 +74,7 @@
         }
       }
     },
-    "/sfr/works": {
+    "/v0.1/research-now/works": {
       "get": {
         "tags": [
           "research-now"
@@ -186,7 +186,7 @@
         }
       }
     },
-    "/v2/sfr/work": {
+    "/v0.1/research-now/v2/work": {
       "get": {
         "tags": [
           "research-now"
@@ -298,7 +298,7 @@
         }
       }
     },
-    "/v2/sfr/search": {
+    "/v0.1/research-now/v2/search-api": {
       "get": {
         "tags": [
           "research-now"
@@ -322,13 +322,32 @@
           },{
             "name": "per_page",
             "in": "query",
-            "description": "Results to return per page. Defaults to 10",
+            "description": "Results to return per page.",
             "required": false,
-            "type": "integer"
+            "type": "integer",
+            "default": 10
           },{
             "name": "page",
             "in": "query",
-            "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+            "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm.",
+            "required": false,
+            "type": "integer"
+          },{
+            "name": "prev_page_sort",
+            "in": "query",
+            "description": "The first `sort` parameter from the current result set. If provided will retrieve the results from the previous page.",
+            "required": false,
+            "type": "array"
+          },{
+            "name": "next_page_sort",
+            "in": "query",
+            "description": "The last `sort` parameter from the current result set. If provided will retrieve the next page of results.",
+            "required": false,
+            "type": "array"
+          },{
+            "name": "total",
+            "in": "query",
+            "description": "The total number of results for the current result set. Used to retrieve arbitrary results pages. This is optional but increases the speed of query responses",
             "required": false,
             "type": "integer"
           }
@@ -511,6 +530,25 @@
         "page": {
           "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
           "example": 0,
+          "type": "integer"
+        },
+        "prev_page_sort": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A sort value provided by ElasticSearch"
+          }
+        },
+        "next_page_sort": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "A sort value provided by ElasticSearch"
+          }
+        },
+        "total":{
+          "description": "The total number of results for the current result set. Used to retrieve arbitrary results pages. This is optional but increases the speed of query responses",
+          "example": 1000,
           "type": "integer"
         }
       }
