@@ -48,7 +48,7 @@
             }
           },
           "422": {
-            "description": "An Invalid Parameter was recieved in the Request",
+            "description": "An Invalid Parameter was received in the Request",
             "schema": {
               "$ref": "#/definitions/ErrorResponse"
             }
@@ -60,7 +60,7 @@
             }
           },
           "522": {
-            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "description": "An ElasticSearch error, commonly none or too many responses received",
             "schema": {
               "$ref": "#/definitions/ErrorResponse"
             }
@@ -166,7 +166,7 @@
             }
           },
           "422": {
-            "description": "An Invalid Parameter was recieved in the Request",
+            "description": "An Invalid Parameter was received in the Request",
             "schema": {
               "$ref": "#/definitions/ErrorResponse"
             }
@@ -337,13 +337,19 @@
             "in": "query",
             "description": "The first `sort` parameter from the current result set. If provided will retrieve the results from the previous page.",
             "required": false,
-            "type": "array"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },{
             "name": "next_page_sort",
             "in": "query",
             "description": "The last `sort` parameter from the current result set. If provided will retrieve the next page of results.",
             "required": false,
-            "type": "array"
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           },{
             "name": "total",
             "in": "query",
@@ -535,15 +541,13 @@
         "prev_page_sort": {
           "type": "array",
           "items": {
-            "type": "string",
-            "description": "A sort value provided by ElasticSearch"
+            "type": "string"
           }
         },
         "next_page_sort": {
           "type": "array",
           "items": {
-            "type": "string",
-            "description": "A sort value provided by ElasticSearch"
+            "type": "string"
           }
         },
         "total":{
