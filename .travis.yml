@@ -1,0 +1,24 @@
+language: python
+dist: xenial
+python:
+  - 3.6
+  - 3.7
+install:
+  - pip install --upgrade pip
+  - pip install -r dev-requirements.txt
+  - pip install -r requirements.txt
+
+script: make lint && make test
+
+#after_success:
+#  - ENVIRONMENT_NAME=$TRAVIS_BRANCH
+#  - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
+#deploy:
+#  - provider: script
+#    skip_cleanup: true
+#    script: "make deploy ENV=$ENVIRONMENT_NAME"
+#    on:
+#      branch: development
+#
+# If you are deploying an NYPL Lambda, see the engineering documentation in
+# github for instructions on adding encrypted variables to you travis scripts
