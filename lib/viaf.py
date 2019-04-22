@@ -1,5 +1,6 @@
 import os
 import time
+import json
 import requests
 import redis
 
@@ -159,5 +160,5 @@ class VIAFSearch():
                 'req-time': time.time()
             },
             'isBase64Encoded': False,
-            'body': data
+            'body': json.dumps(data)
         }
