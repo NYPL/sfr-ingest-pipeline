@@ -1,4 +1,5 @@
 import os
+import time
 import requests
 import redis
 
@@ -153,6 +154,10 @@ class VIAFSearch():
             relevant data.
         """
         return {
-            'status': status,
-            'data': data
+            'statusCode': status,
+            'headers': {
+                'req-time': time.time()
+            },
+            'isBase64Encoded': False,
+            'body': data
         }
