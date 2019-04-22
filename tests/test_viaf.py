@@ -1,9 +1,10 @@
 import os
 import unittest
-from unittest.mock import patch, mock_open, call, MagicMock
+from unittest.mock import patch, MagicMock
 
 from helpers.errorHelpers import VIAFError
 from lib.viaf import VIAFSearch
+
 
 @patch.dict(os.environ, {'VIAF_API': 'oclcAPI', 'REDIS_ARN': 'AWSARN'})
 class TestVIAFSearch(unittest.TestCase):
@@ -11,7 +12,7 @@ class TestVIAFSearch(unittest.TestCase):
         testInstance = VIAFSearch('Test Name')
         self.assertEqual(testInstance.queryName, 'Test Name')
         self.assertEqual(testInstance.viaf_endpoint, 'oclcAPI')
-    
+
     @patch('lib.viaf.VIAFSearch.checkCache', return_value=None)
     @patch('lib.viaf.VIAFSearch.searchVIAF')
     @patch('lib.viaf.VIAFSearch.parseVIAF', return_value=True)
@@ -22,7 +23,7 @@ class TestVIAFSearch(unittest.TestCase):
         mock_search.assert_called_once()
         mock_parse.assert_called_once()
         self.assertTrue(response)
-    
+
     @patch('lib.viaf.VIAFSearch.checkCache', return_value={b'test': b'test'})
     @patch('lib.viaf.VIAFSearch.formatResponse', return_value=True)
     def test_exec_query_hit_cache(self, mock_format, mock_cache):
@@ -31,11 +32,11 @@ class TestVIAFSearch(unittest.TestCase):
         mock_format.assert_called_once()
         mock_cache.assert_called_once()
         self.assertTrue(response)
-    
+
     @patch('lib.viaf.requests.get')
     def test_viaf_search_success(self, mock_get):
         searchTest = VIAFSearch('Test')
-        
+
         req_mock = MagicMock()
         mock_get.return_value = req_mock
         req_mock.status_code = 200
@@ -44,21 +45,21 @@ class TestVIAFSearch(unittest.TestCase):
         result = searchTest.searchVIAF()
         mock_get.assert_called_once()
         self.assertTrue(result)
-    
+
     @patch('lib.viaf.requests.get')
     def test_viaf_search_error(self, mock_get):
         searchTest = VIAFSearch('Test')
-        
+
         req_mock = MagicMock()
         mock_get.return_value = req_mock
         req_mock.status_code = 500
         try:
-            result = searchTest.searchVIAF()
+            searchTest.searchVIAF()
         except VIAFError:
             pass
         mock_get.assert_called_once()
         self.assertRaises(VIAFError)
-    
+
     @patch('lib.viaf.VIAFSearch.setCache')
     @patch('lib.viaf.VIAFSearch.formatResponse', return_value=True)
     def test_viaf_parse_response(self, mock_format, mock_cache):
@@ -72,14 +73,14 @@ class TestVIAFSearch(unittest.TestCase):
         mock_cache.assert_called_once()
         mock_format.assert_called_once()
         self.assertTrue(parsed)
-    
+
     @patch('lib.viaf.VIAFSearch.formatResponse', return_value=True)
     def test_viaf_parse_none(self, mock_format):
         parseTest = VIAFSearch('Test')
         parsed = parseTest.parseVIAF(None)
         mock_format.assert_called_once()
         self.assertTrue(parsed)
-    
+
     def test_check_cache_found(self):
         cacheTest = VIAFSearch('Test')
         mock_redis = MagicMock()
@@ -88,7 +89,7 @@ class TestVIAFSearch(unittest.TestCase):
 
         cacheOut = cacheTest.checkCache()
         self.assertEqual(cacheOut['test'], 'test')
-    
+
     def test_check_cache_not_found(self):
         cacheTest = VIAFSearch('Test')
         mock_redis = MagicMock()
@@ -97,7 +98,7 @@ class TestVIAFSearch(unittest.TestCase):
 
         cacheOut = cacheTest.checkCache()
         self.assertEqual(cacheOut, None)
-    
+
     def test_set_cache_value(self):
         cacheTest = VIAFSearch('Test')
         mock_redis = MagicMock()
@@ -117,7 +118,7 @@ class TestVIAFSearch(unittest.TestCase):
                 'viaf': '123456789'
             }
         )
-    
+
     def test_format_response(self):
         testResp = VIAFSearch.formatResponse(200, {'test': 'test'})
         self.assertEqual(testResp['status'], 200)

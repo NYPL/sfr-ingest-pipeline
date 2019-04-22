@@ -36,7 +36,7 @@ def handler(event, context):
     except KeyError:
         logger.error('Missing required lookup name parameter')
         raise InvalidExecutionType('queryName parameter required')
-    
+
     viaf = VIAFSearch(queryName)
 
     try:
@@ -44,5 +44,5 @@ def handler(event, context):
     except VIAFError as err:
         logger.error(err)
         returnObj = VIAFSearch.formatResponse(500, 'OCLC API Error Received')
-    
+
     return returnObj

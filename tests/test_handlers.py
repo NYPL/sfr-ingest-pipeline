@@ -24,7 +24,7 @@ class TestHandler(unittest.TestCase):
         resp = handler(testRec, None)
         self.assertEqual(resp['status'], 200)
         self.assertEqual(resp['data']['test'], 'test')
-    
+
     def test_handler_error(self):
         testRec = {
             'httpMethod': 'GET',
@@ -53,6 +53,7 @@ class TestHandler(unittest.TestCase):
         }
         resp = handler(testRec, None)
         self.assertEqual(resp['status'], 500)
+
 
 if __name__ == '__main__':
     unittest.main()
