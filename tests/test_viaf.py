@@ -121,5 +121,5 @@ class TestVIAFSearch(unittest.TestCase):
 
     def test_format_response(self):
         testResp = VIAFSearch.formatResponse(200, {'test': 'test'})
-        self.assertEqual(testResp['status'], 200)
-        self.assertEqual(testResp['data']['test'], 'test')
+        self.assertEqual(testResp['statusCode'], 200)
+        self.assertEqual(testResp['body']['test'], 'test')
