@@ -8,12 +8,15 @@ role: lambda_basic_execution
 
 # if access key and secret are left blank, boto will use the credentials
 # defined in the [default] section of ~/.aws/credentials.
-aws_access_key_id:
-aws_secret_access_key:
+# aws_access_key_id:
+# aws_secret_access_key:
 
 # dist_directory: dist
-timeout: 1
+timeout: 5
 memory_size: 128
+
+subnet_ids: ['subnet-12aa8a65', 'subnet-58aa8a2f']
+security_group_ids: ['sg-5521ef32']
 
 # If tags are used they will overwrite all existing tags at deployment time
 #tags:
