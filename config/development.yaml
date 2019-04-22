@@ -2,3 +2,5 @@
 # === ENVIRONMENT_VARIABLES ===
 environment_variables:
     LOG_LEVEL: debug
+    VIAF_API: http://www.viaf.org/viaf/AutoSuggest?query=
+    REDIS_ARN: sfr-viaf-agent.rtovuw.0001.use1.cache.amazonaws.com
