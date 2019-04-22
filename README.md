@@ -1,10 +1,12 @@
-# Python Lambda Boilerplate
+# SFR VIAF Lookup
 
-[![Build Status](https://travis-ci.com/NYPL/python-lambda-boilerplate.svg?branch=master)](https://travis-ci.com/NYPL/python-lambda-boilerplate)
+[![Build Status](https://travis-ci.com/NYPL/sfr-viaf-lookup.svg?token=Fv4twsPZbkerqgdJB89v&branch=development)](https://travis-ci.com/NYPL/sfr-viaf-lookup)
 
+This function queries the OCLC VIAF API service to retrieve both controlled version of agent (individual and organizational) names and VIAF/LCNAF identifiers. This metadata is used to achieve more accurate matches of agent records within the SFR database and to improve performance by eliminating the need to do computationally expensive lookups within the `agent` table of the SFR database (specifically eliminating the need for fuzzy string matching queries)
 
+This uses the [OCLC VIAF API](https://platform.worldcat.org/api-explorer/apis/VIAF), specifically the `Auto Suggest` endpoint, which returns a ranked set of `JSON` records containing basic metadata describing agent records. When a match is found, the result is both returned to the requesting service and cached in a `redis` cluster, which increases response times for the same query in the future by 10x.
 
-A simple boilerplate/starter for creating AWS Lambdas in python (python3.3+). This relies on the [python-lambda](https://github.com/nficano/python-lambda) module for deployment and managing environment variables. It allows you to run local tests and automatically deploy code to AWS based on local variables. This was inspired and largely guided by the [node-lambda-boilerplate](https://github.com/nypl/node-lambda-boilerplate) repository
+The function is intended to be invoked by the AWS API Gateway and is configured to meet the request/response standards for that service.
 
 ## Version
 
@@ -12,41 +14,27 @@ v0.1.0
 
 ## Requirements
 
-Python 3.6+ (written with Python 3.7)
+- pyyaml
+- redis
+- requests
 
-## Features
+## Installation
 
-- Makefile to run basic commands for building/testing/deploying the Lambda
-- Contains unit test scaffolding in /tests
-- Includes linting via flake8
-- Contains logger and custom error message helpers in /helpers
-- Supports TravisCI
-
-## Getting Started
-
-### Installation
-
-1. Create a virtualenv (varies depending on your shell) and activate it
+1. OPTIONAL - Create a virtualenv (varies depending on your shell) and activate it
 2. Install dependencies via `pip install -r requirements.txt`
+3. Create a test event in a file `event.json` with the format shown below
+4. Run created test event with `make run-local`
 
-### Setup Configurations
+### Sample event format
 
-**Step 1**
-After installing dependencies, copy the config.yaml.sample file to config.yaml and modify the relevant values. At a minimum the following settings should be changed:
-
-- function_name
-- description
-- role
-
-**Step 2**
-Uncomment the `environment_variable` blocks in the relevant config files (if necessary) and add environment-specific configuration in those areas
-
-**Step 3**
-Modify the included event.json to add to the Records block, which enables the Lambda to be tested locally
-
-### Develop Locally
-
-To run your lambda locally run `make local-run` which will execute the Lambda (initially outputting "Hello, World")
+``` json
+{
+  "httpMethod": "GET",
+  "queryStringParameters": {
+    "queryName": "[agent_name_here]"
+  }
+}
+```
 
 ### Deploy the Lambda
 
@@ -55,7 +43,7 @@ To deploy the Lambda be sure that you have completed the setup steps above and h
 To run the deployment run `make deploy ENV=[environment]` where environment is one of development/qa/production
 
 **Deploy via TravisCI**
-Lambdas based on this code can also be deployed via TravisCI. To do uncomment the relevant lines in the .travis.yaml file and see the [NYPL General Engineering](https://github.com/NYPL/engineering-general/blob/master/standards/travis-ci.md#deploy) documentation for a guide on how to add the deploy step and *necessary* encrypted credentials
+This function will be automatically deployed when changes are pushed to the `development` or `production` branches via the settings defined in the `.travis.yml` file.
 
 ## Tests
 
