@@ -1,24 +1,22 @@
 language: python
 dist: xenial
 python:
-  - 3.6
-  - 3.7
+- 3.6
+- 3.7
 install:
-  - pip install --upgrade pip
-  - pip install -r dev-requirements.txt
-  - pip install -r requirements.txt
-
+- pip install --upgrade pip
+- pip install -r dev-requirements.txt
+- pip install -r requirements.txt
 script: make lint && make test
-
-#after_success:
-#  - ENVIRONMENT_NAME=$TRAVIS_BRANCH
-#  - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
-#deploy:
-#  - provider: script
-#    skip_cleanup: true
-#    script: "make deploy ENV=$ENVIRONMENT_NAME"
-#    on:
-#      branch: development
-#
-# If you are deploying an NYPL Lambda, see the engineering documentation in
-# github for instructions on adding encrypted variables to you travis scripts
+after_success:
+- ENVIRONMENT_NAME=$TRAVIS_BRANCH
+- if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: make deploy ENV=$ENVIRONMENT_NAME
+  on:
+    branch: development
+env:
+  global:
+    secure: Pi8avvYbOEcMxKbShvKScb/V1TcQP+v4BrNZI72wlYpJBkP0uIfzGuCRSScpp/JBbCHcT15gYeTFVY9+s+DbkFd+TADqNIB9OFD+Pi385zNLJa1VYUj8tS4+NworzfQBFPZAOFre3PSFuAwZqIGZjG/+hOzTtCCno6h0ZhFpvtrhLRlmoH/jZafCG4kE0qPqC1Tle3nQRUzoKgxR1euLgATsxwlHpx7Oas/po1S7o+Ikwhl/zOB511oXgujSsKpGVkbsIkLTkRjOM1tVomfzSAv+2T6aTNy8KSGpBKb0qwt7Tz63C4rF1JrAwNwiPCQmlgBYi16Mso6YwZi9legMhF+/uhFTbX4m44NOKWRdDmowJFeSqJagAmRziJQUweRPYfbQIFPnLvv58/cnp8RG06SRfdTmLhPZORp19uGOWZeP1BLliyPHjuMwWaCapxbW5PnynD2iCZHll/B2xK+odEqw2UmLtoQWgMlgTHZRnpDNNTkCePDYG1Oi5gVeBGGq+TAfp5ceVYCmxz4KKvxjb3kxo2Mv259d4Ak8IjWZ5zliDC6ihDhf5kDGHtEyPu6XBGqtGdFXEO/mT5hXWIiiDARN0Cc5/mgXQo5k6/uR05s3MB5yV+ddg6t9upu1sl2RdMKGatazbpRE4UYFd3AOs6YIxbYP6AJCGvZElDiAKLI=
