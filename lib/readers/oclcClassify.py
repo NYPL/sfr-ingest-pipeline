@@ -2,7 +2,7 @@ import requests
 import os
 from lxml import etree
 
-from helpers.errorHelpers import OCLCError
+from helpers.errorHelpers import OCLCError, DataError
 from helpers.logHelpers import createLog
 
 from lib.outputManager import OutputManager
@@ -13,35 +13,36 @@ NAMESPACE = {
     None: 'http://classify.oclc.org'
 }
 
-LOOKUP_IDENTIFIERS = [
-    'oclc', # OCLC Number
-    'isbn', # ISBN (10 or 13)
-    'issn', # ISSN
-    'upc',  # UPC (Probably unused)
-    'lccn', # LCCN
-    'swid', # OCLC Work Identifier
-    'stdnbr'# Sandard Number (unclear)
-]
 
 def classifyRecord(searchType, searchFields, workUUID):
     """Generates a query for the OCLC Classify service and returns the raw
-    XML response recieved from that service. This method takes 3 arguments:
+    XML response received from that service. This method takes 3 arguments:
     - searchType: identifier|authorTitle
     - searchFields: identifier+idType|authors+title
     - uuid: UUID of the parent work record"""
-    # TODO Check to be sure that we have not queried this URL recently
-    # Probably within the last 24 hours
-    queryURL, title = formatURL(searchType, searchFields)
-    logger.info('Fetching data for url: {}'.format(queryURL))
+    try:
+        classifyQuery = QueryManager(
+            searchType,
+            searchFields.get('recID', None),
+            searchFields.get('recType', None),
+            searchFields.get('title', None),
+            searchFields.get('author', None)
+        )
+        classifyQuery.generateQueryURL()
+        logger.info('Fetching data for url: {}'.format(classifyQuery.query))
+    except DataError as err:
+        logger.warning('Unable to create valid Classify query')
+        logger.debug(err)
+        raise OCLCError('Invalid query options provided, unable to execute.')
 
     # Load Query Response from OCLC Classify
     logger.debug('Making Classify request')
-    rawData = queryClassify(queryURL)
+    rawData = classifyQuery.execQuery()
 
     # Parse response, and if it is a Multi-Work response, parse further
     logger.debug('Parsing Classify Response')
 
-    return parseClassify(rawData, workUUID, title)
+    return parseClassify(rawData, workUUID, classifyQuery.title)
 
 
 def parseClassify(rawXML, workUUID, checkTitle):
@@ -103,49 +104,6 @@ def parseClassify(rawXML, workUUID, checkTitle):
         raise OCLCError('Recieved unexpected response {} from Classify'.format(responseCode))
 
 
-def queryClassify(queryURL):
-    """Execute a request against the OCLC Classify service"""
-    classifyResp = requests.get(queryURL)
-    if classifyResp.status_code != 200:
-        logger.error('OCLC Classify Request failed')
-        raise OCLCError('Failed to reach OCLC Classify Service')
-
-    classifyBody = classifyResp.text
-    return classifyBody
-
-
-def formatURL(searchType, searchFields):
-    """Create a URL query for the Classify service depending on the type.
-    authorTitle search will create a query based on the title and author(s) of
-    a work. identifier will create a query based on one of a standardized set
-    of identifiers."""
-    if searchType == 'authorTitle':
-        searchTitle = searchFields['title'].replace('\r', ' ').replace('\n', ' ')
-        return generateClassifyURL(None, None, searchFields['title'], searchFields['authors']), searchTitle
-    elif searchType == 'identifier':
-        return generateClassifyURL(searchFields['identifier'], searchFields['idType'], None, None), None
-
-
-
-def generateClassifyURL(recID=None, recType=None, title=None, author=None):
-    """Append the parameters recieved from formatURL to the Classify service
-    base URL and return a formatted URL"""
-    classifyRoot = "http://classify.oclc.org/classify2/Classify?"
-    if recID is not None:
-        classifySearch = "{}{}={}".format(classifyRoot, recType, recID)
-    else:
-        titleParam = 'title={}'.format(title)
-        if author is not None:
-            authorParam = '&author={}'.format(author)
-
-        classifySearch = "{}{}{}".format(classifyRoot, titleParam, authorParam)
-
-    return '{}&wskey={}&summary=false&maxRecs=250'.format(
-        classifySearch, 
-        os.environ['OCLC_KEY']
-    )
-
-
 def titleCheck(startTitle, oclcTitle):
     compTitles = ['collected', 'complete', 'compilation']
     for coll in compTitles:
@@ -153,3 +111,119 @@ def titleCheck(startTitle, oclcTitle):
             return False
     
     return True
+
+
+class QueryManager():
+    """Manages creation and execution of queries to the OCLC Classify API.
+
+    Raises:
+        DataError: Raised when an invalid title/author query is attempted
+        OCLCError: Raised when the query to the API fails
+
+    Returns:
+        [str] -- A string of XML data comprising of the Classify response body.
+    """
+    CLASSIFY_ROOT = 'http://classify.oclc.org/classify2/Classify'
+
+    LOOKUP_IDENTIFIERS = [
+        'oclc', # OCLC Number
+        'isbn', # ISBN (10 or 13)
+        'issn', # ISSN
+        'upc',  # UPC (Probably unused)
+        'lccn', # LCCN
+        'swid', # OCLC Work Identifier
+        'stdnbr'# Sandard Number (unclear)
+    ]
+
+    def __init__(self, searchType, recID, recType, author, title):
+        self.searchType = searchType
+        self.recID = recID
+        self.recType = recType
+        self.author = author
+        self.title = title
+        self.query = None
+
+    def generateQueryURL(self):
+        """Parses the received data and generates a Classify query based either
+        on an identifier (preferred) or an author/title combination.
+        """
+        self.cleanTitle()
+        if self.searchType == 'identifier':
+            self.generateIdentifierURL()
+        else:
+            self.generateAuthorTitleURL()
+
+    def cleanTitle(self):
+        """Removes return and line break characters from the current work's
+        title. This allows for better matching and cleaner results.
+        """
+        self.title = ' '.join(
+            self.title\
+            .replace('\r', ' ')\
+            .replace('\n', ' ')\
+            .split()
+        )
+
+    def generateAuthorTitleURL(self):
+        """Generates an author/title query for Classify.
+
+        Raises:
+            DataError: Raised if no author is received, which can cause
+            unexpectedly large results to be returned for a query.
+        """
+        if self.author is None:
+            raise DataError('Author required for title/author search')
+
+        titleAuthorParam = 'title={}&author={}'.format(self.title, self.author)
+
+        self.query = "{}?{}".format(
+            QueryManager.CLASSIFY_ROOT,
+            titleAuthorParam
+        )
+
+        self.addClassifyOptions()
+
+    def generateIdentifierURL(self):
+        """Creates a query based of an identifier and its type. If either field
+        is missing for this request, default to an author/title search.
+        """
+        if self.recID is not None and self.recType is not None:
+            if self.recType not in QueryManager.LOOKUP_IDENTIFIERS:
+                raise DataError(
+                    'Unrecognized/invalid identifier type {} recieved'.format(
+                        self.recType
+                    )
+                )
+            self.query = "{}?{}={}".format(
+                QueryManager.CLASSIFY_ROOT,
+                self.recType,
+                self.recID
+            )
+            self.addClassifyOptions()
+        else:
+            self.generateAuthorTitleURL()
+
+    def addClassifyOptions(self):
+        """Adds standard options to the Classify queries. "summary=false"
+        indicates that a full set of edition records should be returned with a
+        single work response and "maxRecs" controls the upper limit on the
+        number of possible editions returned with a work.
+        """
+        self.query = '{}&summary=false&maxRecs=500'.format(self.query)
+
+    def execQuery(self):
+        """Executes the constructed query against the OCLC endpoint
+
+        Raises:
+            OCLCError: Raised if a non-200 status code is received
+
+        Returns:
+            [str] -- A string of XML data comprising of the body of the
+            Classify response.
+        """
+        classifyResp = requests.get(self.query)
+        if classifyResp.status_code != 200:
+            logger.error('OCLC Classify Request failed')
+            raise OCLCError('Failed to reach OCLC Classify Service')
+
+        return classifyResp.text

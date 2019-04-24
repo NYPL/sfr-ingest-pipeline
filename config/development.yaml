@@ -4,7 +4,6 @@ environment_variables:
     LOG_LEVEL: debug
     OUTPUT_STAGE: complete
     OUTPUT_REGION: us-east-1
-    OUTPUT_KINESIS: sfr-db-ingest-development
-    OUTPUT_SHARD: '0'
-    
-    LOOKUP_STREAM: sfr-oclc-lookup-development
+    OUTPUT_KINESIS: sfr-db-update-development
+    OUTPUT_SQS: https://sqs.us-east-1.amazonaws.com/224280085904/sfr-oclc-lookup-development
+    CLASSIFY_QUEUE: https://sqs.us-east-1.amazonaws.com/224280085904/sfr-oclc-classify-development
