@@ -125,7 +125,6 @@ class VIAFSearch():
         self.logger.debug('Found match in cache')
         return nameNumbers
 
-
     def setCache(self, viafObj):
         """Inserts a VIAF object for the current name string into the cache,
         allowing for faster lookups of this name in the future.
