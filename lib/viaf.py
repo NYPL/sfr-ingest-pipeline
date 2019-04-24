@@ -118,14 +118,13 @@ class VIAFSearch():
         ))
         nameNumbers = self.redis.hgetall(self.queryName)
 
-        nameNumbers = nameNumbers if len(nameNumbers.keys()) > 0 else None
+        if not len(nameNumbers.keys()):
+            self.logger.debug('Did not find matching cache key')
+            return None
 
-        if nameNumbers is not None:
-            self.logger.debug('Found match in cache')
-            return nameNumbers
+        self.logger.debug('Found match in cache')
+        return nameNumbers
 
-        self.logger.debug('Did not find matching cache key')
-        return None
 
     def setCache(self, viafObj):
         """Inserts a VIAF object for the current name string into the cache,
