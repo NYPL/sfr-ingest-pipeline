@@ -90,7 +90,7 @@ def parseClassify(rawXML, workUUID, checkTitle):
                     continue
                 
             if OutputManager.checkRecentQueries('classify/oclc/{}'.format(oclcID)) is False:
-                OutputManager.putKinesis({
+                OutputManager.putQueue({
                     'type': 'identifier',
                     'uuid': workUUID,
                     'fields': {
