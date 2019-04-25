@@ -11,7 +11,7 @@ from sqlalchemy import (
     ForeignKey
 )
 from sqlalchemy.dialects.postgresql import DATERANGE
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -91,7 +91,7 @@ class DateField(Core, Base):
     agents = relationship(
         'Agent',
         secondary=AGENT_DATES,
-        backref='dates'
+        backref=backref('dates', collection_class=set)
     )
     rights = relationship(
         'Rights',
@@ -108,13 +108,15 @@ class DateField(Core, Base):
         """Query the database for a date on the current record. If found,
         update the existing date, if not, insert new row"""
         existing = DateField.lookupDate(session, dateInst, model, recordID)
-        if existing is not None:
+        if existing is None:
+            logger.info('Inserting new date object')
+            outDate = DateField.insert(dateInst)
+        else:
             logger.info('Updating existing date record {}'.format(existing.id))
             DateField.update(existing, dateInst)
-            return None
+            outDate = existing
 
-        logger.info('Inserting new date object')
-        return DateField.insert(dateInst)
+        return outDate
 
     @classmethod
     def update(cls, existing, dateInst):

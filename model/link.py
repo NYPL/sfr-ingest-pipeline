@@ -83,11 +83,13 @@ class Link(Core, Base):
         """Query the database for a link on the current record. If found,
         update the existing link, if not, insert new row"""
         existing = Link.lookupLink(session, link, model, recordID)
-        if existing is not None:
+        if existing is None:
+            outLink = Link(**link)
+        else:
             Link.update(existing, link)
-            return None
+            outLink = existing
 
-        return Link(**link)
+        return outLink
 
     @classmethod
     def update(cls, existing, link):
