@@ -84,7 +84,16 @@ class Item(Core, Base):
         secondary=ITEM_LINKS,
         back_populates='items'
     )
-    
+
+    CHILD_FIELDS = [
+        'links',
+        'identifiers',
+        'measurements',
+        'dates',
+        'rights',
+        'agents'
+    ]
+
     def __repr__(self):
         return '<Item(source={}, instance={})>'.format(
             self.source,
@@ -92,7 +101,11 @@ class Item(Core, Base):
         )
 
     @classmethod
-    def createOrStore(cls, session, item, instanceID):
+    def _buildChildDict(cls, itemData):
+        return { field: itemData.pop(field, []) for field in cls.CHILD_FIELDS }
+
+    @classmethod
+    def createOrStore(cls, session, item, instance):
         links = deque(item.pop('links', []))
         item['links'] = []
         while len(links) > 0:
@@ -104,16 +117,27 @@ class Item(Core, Base):
                 try:
                     if re.search(regex, url):
                         if source in EPUB_SOURCES:
-                            cls.createLocalEpub(item, link, instanceID)
+
+                            # We need to get the ID of the instance to allow 
+                            # for asynchronously storing the ePub file, so
+                            # instance is added and flushed here
+                            if instance.id is None:
+                                session.add(instance)
+                                session.flush()
+
+                            cls.createLocalEpub(item, link, instance.id)
                             break
                 except TypeError as err:
-                    logger.warning('Found link {} with no url {}'.format(link, url))
+                    logger.warning('Found link {} with no url {}'.format(
+                        link,
+                        url
+                    ))
                     logger.debug(err)
             else:
                 item['links'].append(link)
         
         if len(item['links']) > 0:
-            return cls.updateOrInsert(session, item)
+            return cls.insert(session, item)
         else:
             return None, 'creating'
 
@@ -144,92 +168,50 @@ class Item(Core, Base):
         OutputManager.putKinesis(epubPayload, os.environ['EPUB_STREAM'])
 
     @classmethod
-    def updateOrInsert(cls, session, item):
-        """Will query for existing items and either update or insert an item
-        record pending the outcome of that query"""
-        links = item.pop('links', [])
-        identifiers = item.pop('identifiers', [])
-        measurements = item.pop('measurements', [])
-        dates = item.pop('dates', [])
-        rights = item.pop('rights', [])
-        agents = item.pop('agents', [])
+    def insert(cls, session, itemData):
+        """Insert a new item record"""
 
-        existingID = Identifier.getByIdentifier(cls, session, identifiers)
+        childFields = Item._buildChildDict(itemData)
 
-        if existingID is not None:
-            logger.debug('Found existing item by identifier')
-            existing = session.query(Item).get(existingID)
-            cls.update(
-                session,
-                existing,
-                item,
-                identifiers=identifiers,
-                links=links,
-                measurements=measurements,
-                dates=dates,
-                rights=rights,
-                agents=agents
-            )
-            return existing, 'updated'
+        item = cls(**itemData)
+        session.add(item)
 
-        logger.debug('Inserting new item record')
-        itemRec = cls.insert(
-            session,
-            item,
-            links=links,
-            measurements=measurements,
-            identifiers=identifiers,
-            dates=dates,
-            rights=rights,
-            agents=agents
-        )
+        Item._addIdentifiers(session, item, childFields['identifiers'])
 
-        return itemRec, 'inserted'
+        Item._addAgents(session, item, childFields['agents'])
+
+        Item._addMeasurements(session, item, childFields['measurements'])
+
+        Item._addLinks(item, childFields['links'])
+
+        Item._addDates(item, childFields['dates'])
+
+        Item._addRights(item, childFields['rights'])
+
+        return item, 'inserted'
 
     @classmethod
-    def insert(cls, session, itemData, **kwargs):
-        """Insert a new item record"""
-        item = cls(**itemData)
-
-        links = kwargs.get('links', [])
-        measurements = kwargs.get('measurements', [])
-        identifiers = kwargs.get('identifiers', [])
-        dates = kwargs.get('dates', [])
-        rights = kwargs.get('rights', [])
-        agents = kwargs.get('agents', [])
-
-        for identifier in identifiers:
+    def _addIdentifiers(cls, session, item, identifiers):
+        for iden in identifiers:
             try:
                 status, idenRec = Identifier.returnOrInsert(
                     session,
-                    identifier
+                    iden
                 )
                 item.identifiers.append(idenRec)
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
-
-        for link in links:
-            newLink = Link(**link)
-            item.links.append(newLink)
-
-        for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            item.measurements.append(measurementRec)
-
-        for date in dates:
-            newDate = DateField.insert(date)
-            item.dates.append(newDate)
-        
-        for rightsStmt in rights:
-            rightsDates = rightsStmt.pop('dates', [])
-            newRights = Rights.insert(rightsStmt, dates=rightsDates)
-            item.rights.append(newRights)
-
+    
+    @classmethod
+    def _addAgents(cls, session, item, agents):
+        relsCreated = []
         for agent in agents:
             try:
                 agentRec, roles = Agent.updateOrInsert(session, agent)
                 for role in roles:
+                    if (agentRec.name, role) in relsCreated: continue
+                    relsCreated.append((agentRec.name, role))
                     AgentItems(
                         agent=agentRec,
                         item=item,
@@ -237,90 +219,31 @@ class Item(Core, Base):
                     )
             except DataError:
                 logger.warning('Unable to read agent {}'.format(agent['name']))
-
-        return item
-
+    
     @classmethod
-    def update(cls, session, existing, item, **kwargs):
-        """Update an existing item record"""
-
-        links = kwargs.get('links', [])
-        measurements = kwargs.get('measurements', [])
-        identifiers = kwargs.get('identifiers', [])
-        dates = kwargs.get('dates', [])
-        rights = kwargs.get('rights', [])
-        agents = kwargs.get('agents', [])
-
-        for field, value in item.items():
-            if(value is not None and value.strip() != ''):
-                setattr(existing, field, value)
-
-        for identifier in identifiers:
-            try:
-                status, idenRec = Identifier.returnOrInsert(
-                    session,
-                    identifier
-                )
-                if status == 'new':
-                    existing.identifiers.append(idenRec)
-                else:
-                    if Identifier.getIdentiferRelationship(
-                        session,
-                        idenRec,
-                        Item,
-                        existing.id
-                    ) is None:
-                        existing.identifiers.append(idenRec)
-            except DataError as err:
-                logger.warning('Received invalid identifier')
-                logger.debug(err)
-
+    def _addMeasurements(cls, session, item, measurements):
         for measurement in measurements:
-            op, measurementRec = Measurement.updateOrInsert(
-                session,
-                measurement,
-                Item,
-                existing.id
-            )
-            if op == 'insert':
-                existing.measurements.append(measurementRec)
-
+            measurementRec = Measurement.insert(measurement)
+            item.measurements.append(measurementRec)
+    
+    @classmethod
+    def _addLinks(cls, item, links):
         for link in links:
-            existingLink = Link.lookupLink(session, link, cls, existing.id)
-            if existingLink is None:
-                existing.links.append(Link(**link))
-            else:
-                Link.update(existingLink, link)
-
+            newLink = Link(**link)
+            item.links.append(newLink)
+    
+    @classmethod
+    def _addDates(cls, item, dates):
         for date in dates:
-            updateDate = DateField.updateOrInsert(session, date, Item, existing.id)
-            if updateDate is not None:
-                existing.dates.append(updateDate)
-        
+            newDate = DateField.insert(date)
+            item.dates.append(newDate)
+    
+    @classmethod
+    def _addRights(cls, item, rights):
         for rightsStmt in rights:
-            updateRights = Rights.updateOrInsert(
-                session,
-                rightsStmt,
-                Item,
-                existing.id
-            )
-            if updateRights is not None:
-                existing.rights.append(updateRights)
-        
-        for agent in agents:
-            try:
-                agentRec, roles = Agent.updateOrInsert(session, agent)
-                if roles is None:
-                    roles = ['repository']
-                for role in roles:
-                    if AgentItems.roleExists(session, agentRec, role, existing.id) is None:
-                        AgentItems(
-                            agent=agentRec,
-                            item=existing,
-                            role=role
-                        )
-            except DataError:
-                logger.warning('Unable to read agent {}'.format(agent['name']))
+            rightsDates = rightsStmt.pop('dates', [])
+            newRights = Rights.insert(rightsStmt, dates=rightsDates)
+            item.rights.append(newRights)
 
     @classmethod
     def addReportData(cls, session, aceReport):

@@ -29,7 +29,7 @@ class OutputManager():
         pass
 
     @classmethod
-    def putKinesis(cls, data, stream):
+    def putKinesis(cls, data, stream, recType='work'):
         """Puts records into a Kinesis stream for processing by other parts of
         the SFR data pipeline. Takes data as an object and converts it into a
         JSON string. This is then passed to the specified stream.
@@ -40,17 +40,20 @@ class OutputManager():
         logger.info('Writing results to Kinesis')
         outputObject = {
             'status': 200,
-            'data': data
+            'data': data,
+            'type': recType
         }
 
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
         
+        partKey = OutputManager._createPartitionKey(data)
+
         try:
             cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
                 Data=kinesisStream,
-                PartitionKey='0'
+                PartitionKey=partKey
             )
 
         except:
@@ -58,22 +61,19 @@ class OutputManager():
             raise OutputError('Failed to write result to output stream!')
 
     @classmethod
-    def putQueue(cls, data):
+    def putQueue(cls, data, outQueue):
         """This puts record identifiers into an SQS queue that is read for
         records to (re)index in ElasticSearch. Takes an object which is
         converted into a JSON string."""
 
         logger.info('Writing results to SQS')
-        outputObject = {
-            'type': data['type'],
-            'identifier': data['identifier']
-        }
+
         # The default lambda function here converts all objects into dicts
-        messageData = OutputManager._convertToJSON(outputObject)
+        messageData = OutputManager._convertToJSON(data)
 
         try:
             cls.SQS_CLIENT.send_message(
-                QueueUrl=os.environ['OUTPUT_SQS'],
+                QueueUrl=outQueue,
                 MessageBody=messageData
             )
         except:
@@ -105,4 +105,32 @@ class OutputManager():
         """Converts an object or dict to a JSON string.
         the DEFAULT parameter implements a lambda function to get the values
         from an object using the vars() builtin."""
-        return json.dumps(obj, ensure_ascii=False, default=lambda x: vars(x))
+        try:
+            jsonStr = json.dumps(
+                obj, 
+                ensure_ascii=False, 
+                default=lambda x: vars(x)
+            )
+        except TypeError:
+            jsonStr = json.dumps(obj, ensure_ascii=False)
+
+        return jsonStr
+    
+    @staticmethod
+    def _createPartitionKey(obj):
+        try:
+            return str(obj['primary_identifier']['identifier'])
+        except KeyError:
+            pass
+        
+        try:
+            return str(obj['identifiers'][0]['identifier'])
+        except KeyError:
+            pass
+        
+        try:
+            return str(obj['id'])
+        except KeyError:
+            pass
+        
+        return '0'

@@ -82,6 +82,18 @@ class Instance(Core, Base):
         back_populates='instance'
     )
 
+    CHILD_FIELDS = [
+        'formats',
+        'agents',
+        'identifiers',
+        'measurements',
+        'dates',
+        'links',
+        'alt_titles',
+        'rights',
+        'language'
+    ]
+
     def __repr__(self):
         return '<Instance(title={}, edition={}, work={})>'.format(
             self.title,
@@ -90,226 +102,50 @@ class Instance(Core, Base):
         )
 
     @classmethod
-    def updateOrInsert(cls, session, instance, work=None):
-        """Check for existing instance, if found update that instance. If not
-        found, create a new record."""
-        items = instance.pop('formats', None)
-        agents = instance.pop('agents', None)
-        identifiers = instance.pop('identifiers', None)
-        measurements = instance.pop('measurements', None)
-        dates = instance.pop('dates', [])
-        links = instance.pop('links', [])
-        alt_titles = instance.pop('alt_titles', None)
-        rights = instance.pop('rights', [])
-        language = instance.pop('language', [])
-
-        # Get fields targeted for works
-        series = instance.pop('series', None)
-        seriesPos = instance.pop('series_position', None)
-        subjects = instance.pop('subjects', [])
-
-        # Check for a matching instance by identifiers (and volume if present)
-        existingID = Instance.lookupInstance(
-            session,
-            identifiers,
-            instance.get('volume', None)    
-        )
-        if existingID is not None:
-            existing = session.query(Instance).get(existingID)
-            parentWork = existing.work
-            if parentWork is None and work is not None:
-                existing.work = work
-                parentWork = work
-            try:
-                parentWork.updateFields(**{
-                    'series': series,
-                    'series_position': seriesPos
-                })
-                parentWork.importSubjects(session, subjects)
-            except AttributeError:
-                logger.warning('Matched orphan instance {}, cannot update parent'.format(
-                    str(existing.id)
-                ))
-            Instance.update(
-                session,
-                existing,
-                instance,
-                items=items,
-                agents=agents,
-                identifiers=identifiers,
-                measurements=measurements,
-                dates=dates,
-                links=links,
-                alt_titles=alt_titles,
-                rights=rights,
-                language=language
-            )
-            return existing, 'updated'
-
-        newInstance = Instance.insert(
-            session,
-            instance,
-            items=items,
-            agents=agents,
-            identifiers=identifiers,
-            measurements=measurements,
-            dates=dates,
-            links=links,
-            alt_titles=alt_titles,
-            rights=rights,
-            language=language
-        )
-        return newInstance, 'inserted'
+    def _buildChildDict(cls, instData):
+        return { field: instData.pop(field, []) for field in cls.CHILD_FIELDS }
 
     @classmethod
-    def lookupInstance(cls, session, identifiers, volume):
-        """Query for an existing instance. Generally this will be returned
-        by a simple identifier match, but if we have volume data, check to
-        be sure that these are the same volume (generally only for) periodicals
-        """
-        existingID = Identifier.getByIdentifier(Instance, session, identifiers)
-        if existingID is not None and volume is not None:
-            existingVol = session.query(Instance.volume).filter(Instance.id == existingID).one_or_none()
-            if existingVol != volume:
-                existingID = None
-
-        return existingID
-
-    @classmethod
-    def update(cls, session, existing, instance, **kwargs):
-        """Update an existing instance"""
-        identifiers = kwargs.get('identifiers', [])
-        measurements = kwargs.get('measurements', [])
-        items = kwargs.get('items', [])
-        agents = kwargs.get('agents', [])
-        altTitles = kwargs.get('alt_titles', [])
-        links = kwargs.get('links', [])
-        dates = kwargs.get('dates', [])
-        rights = kwargs.get('rights', [])
-        language = kwargs.get('language', [])
-
-        for field, value in instance.items():
-            if(value is not None):
-                setattr(existing, field, value)
-
-        for iden in identifiers:
-            try:
-                status, idenRec = Identifier.returnOrInsert(
-                    session,
-                    iden
-                )
-                if status == 'new':
-                    existing.identifiers.append(idenRec)
-                else:
-                    if Identifier.getIdentiferRelationship(
-                        session,
-                        idenRec,
-                        Instance,
-                        existing.id
-                    ) is None:
-                        existing.identifiers.append(idenRec)
-            except DataError as err:
-                logger.warning('Received invalid identifier')
-                logger.debug(err)
-
-        for measurement in measurements:
-            op, measurementRec = Measurement.updateOrInsert(
-                session,
-                measurement,
-                Instance,
-                existing.id
-            )
-            if op == 'insert':
-                existing.measurements.append(measurementRec)
-
-        for date in dates:
-            updateDate = DateField.updateOrInsert(session, date, Instance, existing.id)
-            if updateDate is not None:
-                existing.dates.append(updateDate)
-
-        for item in items:
-            # Check if the provided record contains an epub that can be stored
-            # locally. If it does, defer insert to epub creation process
-            itemRec, op = Item.createOrStore(session, item, existing.id)
-            if op == 'inserted':
-                existing.items.append(itemRec)
-
-        for agent in agents:
-            try:
-                agentRec, roles = Agent.updateOrInsert(session, agent)
-                if roles is None:
-                    roles = ['author']
-                for role in roles:
-                    if AgentInstances.roleExists(session, agentRec, role, existing.id) is None:
-                        AgentInstances(
-                            agent=agentRec,
-                            instance=existing,
-                            role=role
-                        )
-            except DataError:
-                logger.warning('Unable to read agent {}'.format(agent['name']))
-
-        for altTitle in list(filter(lambda x: AltTitle.insertOrSkip(session, x, Instance, existing.id), altTitles)):
-            existing.alt_titles.append(AltTitle(title=altTitle))
-
-        for link in links:
-            updateLink = Link.updateOrInsert(session, link, Instance, existing.id)
-            if updateLink is not None:
-                existing.links.append(updateLink)
-        
-        for rightsStmt in rights:
-            updateRights = Rights.updateOrInsert(
-                session,
-                rightsStmt,
-                Instance,
-                existing.id
-            )
-            if updateRights is not None:
-                existing.rights.append(updateRights)
-        
-        if isinstance(language, str) or language is None:
-            language = [language]
-
-        for lang in language:
-            try:
-                newLang = Language.updateOrInsert(session, lang)
-                langRel = Language.lookupRelLang(session, newLang, Instance, existing)
-                if langRel is None:
-                    existing.language.append(newLang)
-            except DataError:
-                logger.warning('Unable to parse language {}'.format(lang))
-
-        return existing
-
-    @classmethod
-    def insert(cls, session, instanceData, **kwargs):
+    def insert(cls, session, instanceData):
         """Insert a new instance record"""
-        logger.info('Inserting new instance record')
+        logger.info('Inserting new instance record {}'.format(
+            instanceData['title']
+        ))
+
+        childFields = Instance._buildChildDict(instanceData)
+        childFields['items'] = childFields.pop('formats', [])
+
+        # Remove fields intended for works (These should not be found here)
+        instanceData.pop('series', None)
+        instanceData.pop('series_position', None)
+        instanceData.pop('subjects', [])
+
         instance = Instance(**instanceData)
+        session.add(instance)
 
-        identifiers = kwargs.get('identifiers', [])
-        measurements = kwargs.get('measurements', [])
-        items = kwargs.get('items', [])
-        agents = kwargs.get('agents', [])
-        altTitles = kwargs.get('alt_titles', [])
-        links = kwargs.get('links', [])
-        dates = kwargs.get('dates', [])
-        rights = kwargs.get('rights', [])
-        language = kwargs.get('language', [])
+        Instance._addIdentifiers(session, instance, childFields['identifiers'])
 
-        if agents is not None:
-            try:
-                for agent in agents:
-                    agentRec, roles = Agent.updateOrInsert(session, agent)
-                    for role in roles:
-                        AgentInstances(
-                            agent=agentRec,
-                            instance=instance,
-                            role=role
-                        )
-            except DataError:
-                logger.warning('Unable to read agent {}'.format(agent['name']))
+        Instance._addAgents(session, instance, childFields['agents'])
 
+        Instance._addAltTitles(instance, childFields['alt_titles'])
+
+        Instance._addMeasurements(session, instance, childFields['measurements'])
+
+        Instance._addLinks(instance, childFields['links'])
+
+        Instance._addDates(instance, childFields['dates'])
+
+        Instance._addLanguages(session, instance, childFields['language'])
+
+        Instance._addRights(instance, childFields['rights'])
+
+        Instance._addItems(session, instance, childFields['items'])
+
+        logger.info('Inserted {}'.format(instance))
+        return instance
+
+    @classmethod
+    def _addIdentifiers(cls, session, instance, identifiers):
         for iden in identifiers:
             try:
                 status, idenRec = Identifier.returnOrInsert(
@@ -320,56 +156,81 @@ class Instance(Core, Base):
             except DataError as err:
                 logger.warning('Received invalid identifier')
                 logger.debug(err)
+    
+    @classmethod
+    def _addAgents(cls, session, instance, agents):
+        relsCreated = []
+        for agent in agents:
+            try:
+                agentRec, roles = Agent.updateOrInsert(session, agent)
+                for role in roles:
+                    if (agentRec.name, role) in relsCreated: continue
+                    relsCreated.append((agentRec.name, role))
+                    AgentInstances(
+                        agent=agentRec,
+                        instance=instance,
+                        role=role
+                    )
+            except DataError:
+                logger.warning('Unable to read agent {}'.format(agent['name']))
+    
+    @classmethod
+    def _addAltTitles(cls, instance, altTitles):
+        if altTitles is not None:
+            # Quick conversion to set to eliminate duplicate alternate titles
+            for altTitle in list(set(altTitles)):
+                instance.alt_titles.append(AltTitle(title=altTitle))
 
+    @classmethod
+    def _addMeasurements(cls, session, instance, measurements):
         for measurement in measurements:
             measurementRec = Measurement.insert(measurement)
             instance.measurements.append(measurementRec)
-
-        for altTitle in altTitles:
-            instance.alt_titles.append(AltTitle(title=altTitle))
-
+    
+    @classmethod
+    def _addLinks(cls, instance, links):
         for link in links:
             newLink = Link(**link)
             instance.links.append(newLink)
-
+    
+    @classmethod
+    def _addDates(cls, instance, dates):
         for date in dates:
             newDate = DateField.insert(date)
             instance.dates.append(newDate)
-        
+    
+    @classmethod
+    def _addLanguages(cls, session, instance, languages):
+        if languages is not None:
+            if isinstance(languages, str):
+                languages = [languages]
+            
+            for lang in languages:
+                try:
+                    newLang = Language.updateOrInsert(session, lang)
+                    instance.language.append(newLang)
+                except DataError:
+                    logger.debug('Unable to parse language {}'.format(lang))
+                    continue
+    
+    @classmethod
+    def _addRights(cls, instance, rights):
         for rightsStmt in rights:
             rightsDates = rightsStmt.pop('dates', [])
             newRights = Rights.insert(rightsStmt, dates=rightsDates)
             instance.rights.append(newRights)
-        
-        if isinstance(language, str) or language is None:
-            language = [language]
-        
-        for lang in language:
-            try:
-                newLang = Language.updateOrInsert(session, lang)
-                instance.language.append(newLang)
-            except DataError:
-                logger.debug('Unable to parse language {}'.format(lang))
-                continue
-
-        # We need to get the ID of the instance to allow for asynchronously
-        # storing the ePub file, so instance is added and flushed here
-        # TODO evaluate if this is a good idea, or can be handled better elsewhere
-        session.add(instance)
-        session.flush()
-
+    
+    @classmethod
+    def _addItems(cls, session, instance, items):
         for item in items:
-            itemRec, op = Item.createOrStore(session, item, instance.id)
+            itemRec, op = Item.createOrStore(session, item, instance)
             if op == 'inserted':
                 instance.items.append(itemRec)
-        logger.info('Inserted {}'.format(instance))
-        return instance
-
+    
     @classmethod
     def addItemRecord(cls, session, instanceID, itemRec):
         instance = session.query(cls).get(instanceID)
         instance.items.append(itemRec)
-
 
 class AgentInstances(Core, Base):
     """Table relating agents and instances. Is instantiated as a class to

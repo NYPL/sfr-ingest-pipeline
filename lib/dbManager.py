@@ -7,6 +7,7 @@ from model.core import Base
 from model.work import Work
 from model.instance import Instance
 from model.item import Item
+from model.identifiers import Identifier
 
 from lib.queryManager import queryWork
 from lib.outputManager import OutputManager
@@ -45,8 +46,8 @@ def dbGenerateConnection():
 
 def createSession(engine):
     """Create a single database session"""
-    Session = sessionmaker(bind=engine)
-    return Session(autoflush=True)
+    Session = sessionmaker(bind=engine, autoflush=True)
+    return Session()
 
 
 def importRecord(session, record):
@@ -67,57 +68,86 @@ def importRecord(session, record):
         if 'data' in workData:
             record = workData
             workData = workData['data']
-        op, dbWork = Work.updateOrInsert(session, workData)
+        
+        primaryID = workData.pop('primary_identifier', None)
+        workUUID = Work.lookupWork(session, workData['identifiers'], primaryID)
+        if workUUID is not None:
+            logger.info('Found exsting work {}. Placing record in update stream'.format(
+                workUUID
+            ))
+            workData['primary_identifier'] = {
+                'type': 'uuid',
+                'identifier': workUUID.hex,
+                'weight': 1
+            }
+            # TODO Create stream and make configurable in env file
+            OutputManager.putKinesis(workData, 'sfr-db-update-development')
+            return 'Existing work {}'.format(workUUID)
 
-        if op == 'insert':
-            session.add(dbWork)
+        dbWork = Work.insert(session, workData)
 
-        # If this is a newly fetched record, retrieve additional data from the
-        # enhancement process. Specifically pass identifying information to
-        # a Kinesis stream that will processed by the OCLC Classify service
-        # and others
+        queryWork(session, dbWork, dbWork.uuid.hex)
 
-        # TODO Only enhance if UUID has not been enhanced in the past N days
-        if record['method'] == 'insert':
-            queryWork(session, dbWork, dbWork.uuid.hex)
-
-        dbWork.date_modified = datetime.utcnow()
-        return op, dbWork.uuid.hex
+        return dbWork.uuid.hex
 
     elif record['type'] == 'instance':
         logger.info('Ingesting instance record')
         instanceData = record['data']
 
-        dbInstance, op = Instance.updateOrInsert(session, instanceData)
+        instanceID = Identifier.getByIdentifier(Instance, session, instanceData['identifiers'])
+        if instanceID is not None:
+            logger.info('Found exsting instance {}. Placing in update stream'.format(
+                instanceID
+            ))
+            instanceData['primary_identifier'] = {
+                'type': 'row_id',
+                'identifier': instanceID,
+                'weight': 1
+            }
+            OutputManager.putKinesis(
+                instanceData,
+                'sfr-db-update-development',
+                recType='instance'
+            )
+            return 'Existing instance Row ID {}'.format(instanceID)
 
-        if op is 'inserted':
-            logger.warning('Could not find existing record for instance {}'.format(dbInstance.id))
-            logger.error('Cannot update ElasticSearch record for orphan instance {}'.format(dbInstance.id))
-        else:
-            try:
-                dbInstance.work.date_modified = datetime.utcnow()
-            except AttributeError:
-                logger.error('Updating an orphan instance {}'.format(dbInstance.id))
+        dbInstance = Instance.insert(session, instanceData)
 
-        return op, 'Instance #{}'.format(dbInstance.id)
+        dbInstance.work.date_modfied = datetime.utcnow()
+
+        return 'Instance #{}'.format(dbInstance.id)
 
     elif record['type'] == 'item':
         logger.info('Ingesting item record')
         itemData = record['data']
+        
+        itemID = Identifier.getByIdentifier(Item, session, itemData['identifiers'])
+        if itemID is not None:
+            logger.info('Found exsting item {}. Placing in update stream'.format(
+                itemID
+            ))
+            itemData['primary_identifier'] = {
+                'type': 'row_id',
+                'identifier': itemID,
+                'weight': 1
+            }
+            OutputManager.putKinesis(
+                itemData,
+                'sfr-db-update-development',
+                recType='item'
+            )
+            return 'Existing item Row ID {}'.format(itemID)
+
         instanceID = itemData.pop('instance_id', None)
 
-        dbItem, op = Item.updateOrInsert(session, itemData)
+        dbItem, op = Item.insert(session, itemData)
 
-        if op == 'inserted':
-            logger.debug('Got new item record, adding to instance')
-            # Add item to parent instance record
-            Instance.addItemRecord(session, instanceID, dbItem)
-            session.add(dbItem)
-            session.flush()
+        logger.debug('Got new item record, adding to instance')
+        Instance.addItemRecord(session, instanceID, dbItem)
         
         dbItem.instance.work.date_modified = datetime.utcnow()
 
-        return op, 'Item #{}'.format(dbItem.id)
+        return 'Item #{}'.format(dbItem.id)
 
     elif record['type'] == 'access_report':
         logger.info('Ingest Accessibility Report')

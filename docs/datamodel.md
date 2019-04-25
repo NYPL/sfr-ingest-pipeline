@@ -14,6 +14,9 @@ The data model for the SFR project is closely modeled on the FRBR framework and 
 - [Measurements](#measurements)
 - [Identifiers](#identifiers)
 - [Links](#links)
+- [Dates](#dates)
+- [Rights](#rights)
+- [Languages](#languages)
 
 ## Works <a name="works"></a>
 The Work table is the highest level representation of a document in the SFR collection. It covers the intellectual content of a work, including the title, language, and other data that pertains to the the document as an abstract intellectual entity.
@@ -23,14 +26,10 @@ The Work table is the highest level representation of a document in the SFR coll
 - title (Unicode)
 - sort_title (Unicode)
 - sub_title (Unicode)
-- language (Char(2))
-- issued (Date)
-- published (Date)
-- license (Unicode)
-- rights_statement (Unicode)
 - medium (Unicode)
 - series (Unicode)
 - series_position (Integer)
+- summary (Unicode)
 
 ### Relationships
 - Agents
@@ -41,6 +40,8 @@ The Work table is the highest level representation of a document in the SFR coll
 - Identifiers
 - Measurements
 - Links
+- Dates
+- Languages
 
 ## Alternate Titles <a name="altTitles"></a>
 Each work can have multiple titles, and some works can have many such titles. Those are stored in a related table for flexibility purposes
@@ -69,21 +70,22 @@ The instance table covers, essentially, the edition-level metadata pertaining to
 - title (Unicode)
 - sub_title (Unicode)
 - pub_place (Unicode)
-- pub_date (Date)
 - edition (Unicode)
 - edition_statement (Unicode)
 - table_of_contents (Unicode)
-- copyright_date (Date)
-- language (Char(2))
-- work_id (Integer)
+- extent (Unicode)
+- volume (Unicode)
 
 ### Relationships
-- Works
+- Work
 - Items
 - Agents
 - Links
 - Measurements
 - Identifiers
+- Dates
+- Rights
+- Languages
 
 ## Items <a name="items"></a>
 Items represent specific copies of an instance/edition. In the case of SFR this indicates a specific digital copy of an ebook. These will generally be stored locally, however it will be possible for them to be accessed at a remote URL
@@ -91,17 +93,17 @@ Items represent specific copies of an instance/edition. In the case of SFR this 
 ### Fields
 - source (Unicode)
 - content_type (Unicode)
-- modified (Datetime)
 - drm (Unicode)
-- rights_uri (Unicode)
 
 ### Relationships
-- Instances
+- Instance
 - Agents
 - Identifiers
 - Measurements
 - Links
 - Accessibility Reports
+- Dates
+- Rights
 
 ## Accessibility Reports <a name="reports"></a>
 Each item (epub) is scored on its accessibility through the Ace Reporting tool. This data is stored and used to inform users about the overall accessibility of the epub file
@@ -124,14 +126,15 @@ These are individuals, organizations or families that are involved in the creati
 - lcnaf (Unicode)
 - viaf (Unicode)
 - biography (Unicode)
-- birth_date (Date)
-- death_date (Date)
+- roles (Unicode)
 
 ### Relationships
 - Works
 - Instances
 - Items
 - Links
+- Aliases
+- Dates
 
 ## Aliases <a name="aliases"></a>
 An agent may have name variations provided by different sources (but be uniquely identified by a VIAF or LCNAF identifier), and those variations should be stored for discovery purposes
@@ -200,3 +203,44 @@ These are references to external or internal resources that can be accessed via 
 - Instances
 - Items
 - Agents
+
+## Dates <a name="dates"></a>
+Individual dates or date ranges are held in this class so that records may contain any number of any type of date references. Dates are stored both as machine-parsable date ranges and as human-readable strings.
+
+### Fields
+- display_date (Unicode)
+- date_range (DateRange)
+- date_type (Unicode)
+
+### Relationships
+- Works
+- Instances
+- Items
+- Agents
+- Rights
+
+## Rights <a name="rights"></a>
+Copyright information pertaining to the bibliographic record being described. Rights data is generally associated with Instance records, but can also be associated with items, if a specific copy of a record has more restrictive controls placed on it (A CC 4.0 license for a specific copy of a public domain work, for example). Each rights object should contain a license URI along with a human-readable rights statement and, if possible, a justification for the rights determination.
+
+### Fields
+- source (Unicode)
+- license (Unicode)
+- rights_statement (Unicode)
+- rights_reason (Unicode)
+
+### Relationships
+- Instances
+- Items
+- Dates
+
+## Languages <a name="languages"></a>
+Individual language objects, including both the full representation of the language and the ISO 639-1/2 (2 and 3 character) language codes. These objects allow for both easy display and retrieval of language data. This ensures that multiple, normalized languages can be assigned to records within the database.
+
+### Fields
+- language (Unicode)
+- iso_2 (char(2))
+- iso_3 (char(3))
+
+### Relationships
+- Work
+- Instance
