@@ -206,7 +206,7 @@ class Work(Core, Base):
     
     @classmethod
     def _addSubjects(cls, session, work, subjects):
-        for subject in subjects:
+        for subject in set(subjects):
             op, subjectRec = Subject.updateOrInsert(session, subject)
             work.subjects.append(subjectRec)
 
