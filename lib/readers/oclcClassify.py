@@ -147,7 +147,6 @@ class QueryManager():
         """Parses the received data and generates a Classify query based either
         on an identifier (preferred) or an author/title combination.
         """
-        self.cleanTitle()
         if self.searchType == 'identifier':
             self.generateIdentifierURL()
         else:
@@ -173,6 +172,8 @@ class QueryManager():
         """
         if self.author is None:
             raise DataError('Author required for title/author search')
+
+        self.cleanTitle()
 
         titleAuthorParam = 'title={}&author={}'.format(self.title, self.author)
 

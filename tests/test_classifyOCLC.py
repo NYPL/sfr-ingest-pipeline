@@ -18,10 +18,9 @@ class TestOCLCClassify(unittest.TestCase):
         self.assertEqual(testQuery.title, 'testTitle')
         self.assertEqual(testQuery.query, None)
     
-    @patch('lib.readers.oclcClassify.QueryManager.cleanTitle')
     @patch('lib.readers.oclcClassify.QueryManager.generateIdentifierURL')
     @patch('lib.readers.oclcClassify.QueryManager.generateAuthorTitleURL')
-    def test_generate_query(self, mock_title, mock_id, mock_clean):
+    def test_generate_query(self, mock_title, mock_id):
         testQuery = QueryManager(
             'test',
             'testID',
@@ -30,14 +29,12 @@ class TestOCLCClassify(unittest.TestCase):
             'testTitle'
         )
         testQuery.generateQueryURL()
-        mock_clean.assert_called_once()
         mock_title.assert_called_once()
         mock_id.assert_not_called()
     
-    @patch('lib.readers.oclcClassify.QueryManager.cleanTitle')
     @patch('lib.readers.oclcClassify.QueryManager.generateIdentifierURL')
     @patch('lib.readers.oclcClassify.QueryManager.generateAuthorTitleURL')
-    def test_generate_author_query(self, mock_title, mock_id, mock_clean):
+    def test_generate_author_query(self, mock_title, mock_id):
         testQuery = QueryManager(
             'identifier',
             'testID',
@@ -46,7 +43,6 @@ class TestOCLCClassify(unittest.TestCase):
             'testTitle'
         )
         testQuery.generateQueryURL()
-        mock_clean.assert_called_once()
         mock_id.assert_called_once()
         mock_title.assert_not_called()
     
@@ -56,8 +52,9 @@ class TestOCLCClassify(unittest.TestCase):
         testQuery.cleanTitle()
         self.assertEqual(testQuery.title, 'Hello weird title thingy')
     
+    @patch('lib.readers.oclcClassify.QueryManager.cleanTitle')
     @patch('lib.readers.oclcClassify.QueryManager.addClassifyOptions')
-    def test_author_generate(self, mock_add):
+    def test_author_generate(self, mock_add, mock_clean):
         testQuery = QueryManager(None, None, None, 'Tester', 'Test Title')
         testQuery.generateAuthorTitleURL()
 
@@ -66,6 +63,7 @@ class TestOCLCClassify(unittest.TestCase):
             'http://classify.oclc.org/classify2/Classify?title=Test Title&author=Tester'
         )
         mock_add.assert_called_once()
+        mock_clean.assert_called_once()
     
     def test_author_missing(self):
         testQuery = QueryManager(None, None, None, None, 'Sole Title')
