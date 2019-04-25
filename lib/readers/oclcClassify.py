@@ -25,8 +25,8 @@ def classifyRecord(searchType, searchFields, workUUID):
             searchType,
             searchFields.get('recID', None),
             searchFields.get('recType', None),
-            searchFields.get('title', None),
-            searchFields.get('author', None)
+            searchFields.get('author', None),
+            searchFields.get('title', None)
         )
         classifyQuery.generateQueryURL()
         logger.info('Fetching data for url: {}'.format(classifyQuery.query))
@@ -170,8 +170,8 @@ class QueryManager():
             DataError: Raised if no author is received, which can cause
             unexpectedly large results to be returned for a query.
         """
-        if self.author is None:
-            raise DataError('Author required for title/author search')
+        if self.author is None or self.title is None:
+            raise DataError('Author and title required for search')
 
         self.cleanTitle()
 
