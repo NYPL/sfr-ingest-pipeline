@@ -25,7 +25,7 @@ def classifyRecord(searchType, searchFields, workUUID):
             searchType,
             searchFields.get('recID', None),
             searchFields.get('recType', None),
-            searchFields.get('author', None),
+            searchFields.get('authors', None),
             searchFields.get('title', None)
         )
         classifyQuery.generateQueryURL()
