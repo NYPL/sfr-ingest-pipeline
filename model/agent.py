@@ -1,4 +1,5 @@
 import re
+import requests
 from dateutil.parser import parse
 from sqlalchemy import (
     Column,
@@ -54,6 +55,8 @@ class Agent(Core, Base):
         collection_class=set
     )
 
+    VIAF_API = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName='  # noqa: E501
+
     def __repr__(self):
         return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(
             self.name,
@@ -85,7 +88,13 @@ class Agent(Core, Base):
         if len(agent['name'].strip()) < 1:
             raise DataError('Received empty string for agent name')
         
-        existingAgentID = Agent.lookupAgent(session, agent)
+        existingAgentID = Agent.lookupAgent(
+            session,
+            agent,
+            aliases,
+            roles,
+            dates
+        )
         if existingAgentID is not None:
             existingAgent = session.query(cls).get(existingAgentID)
             Agent.update(
@@ -143,7 +152,7 @@ class Agent(Core, Base):
     @classmethod
     def insert(cls, agentData, **kwargs):
         """Inserts a new agent record"""
-        logger.debug('Inserting new agent record: {}'.format(agentData['name']))
+        logger.debug('Inserting new agent: {}'.format(agentData['name']))
         agent = Agent(**agentData)
 
         if agent.sort_name is None:
@@ -169,33 +178,41 @@ class Agent(Core, Base):
         return agent
 
     @classmethod
-    def lookupAgent(cls, session, agent):
-        """Queries the database for an agent record, using VIAF/LCNAF, and only
-        if they are not present, the jaro_winkler algorithm for the agents
-        name.
-
-        Jaro-Winkler calculates string distance with a weight towards the
-        characters at the start of a string, making it better suited to
-        matching Last, First names than other string comparison algorithms."""
-
+    def lookupAgent(cls, session, agent, aliases, roles, dates):
+        """Attempts to retrieve a matching record from the database for the
+        current agent. It does so in the following order of preference:
+        1) A VIAF or LCNAF identifier attached to the current record.
+        2) A VIAF or LCNAF that can be found by querying the OCLC VIAF API.
+        3) A fuzzy text match using the jaro_winkler algorithm.
+        
+        Arguments:
+            session {Session} -- A postgreSQL connection instance
+            agent {dict} -- A dict describing an agent received from an outside
+            source
+            aliases {list} -- A list of alternate agent names
+        
+        Returns:
+            [Agent] -- An ORM Agent model from postgreSQL. If not found returns
+            None.
+        """
+        
         if agent['viaf'] is not None or agent['lcnaf'] is not None:
-            logger.debug('Matching agent on VIAF/LCNAF')
-            try:
-                return session.query(cls.id)\
-                    .filter(
-                        or_(
-                            cls.viaf == agent['viaf'],
-                            cls.lcnaf == agent['lcnaf']
-                        )
-                    )\
-                    .one()
-            
-            except MultipleResultsFound:
-                logger.error('Found multiple matching agents, should only be one record per identifier')
-                raise
-            except NoResultFound:
-                pass
+            agentRec = Agent._authorityQuery(session, agent)
+        else:
+            agentRec = Agent._findViafQuery(
+                session,
+                agent,
+                aliases,
+                roles,
+                dates
+            )
+        if agentRec is None:
+            agentRec = Agent._findJaroWinklerQuery(session, agent)
 
+        return agentRec
+
+    @classmethod
+    def _findJaroWinklerQuery(cls, session, agent):
         logger.debug('Matching agent based off jaro_winkler score')
         
         escapedName = agent['name'].replace('\'', '\'\'')
@@ -208,12 +225,52 @@ class Agent(Core, Base):
                 .one()
             
         except MultipleResultsFound:
-            logger.info('Name/information is too generic to create individual record')
+            logger.info(
+                'Name/information is too generic to create individual record'
+            )
             pass
         except NoResultFound:
             pass
         
         return None
+
+    @classmethod
+    def _findViafQuery(cls, session, agent, aliases, roles, dates):
+        viafResp = requests.get('{}{}'.format(cls.VIAF_API, agent['name']))
+        responseJSON = viafResp.json()
+        logger.debug(responseJSON)
+        if 'viaf' in responseJSON:
+            if responseJSON['name'] != agent['name']:
+                aliases.append(agent['name'])
+                agent['name'] = responseJSON['name']
+                Agent._cleanName(agent, roles, dates)
+            agent['viaf'] = responseJSON['viaf']
+            agent['lcnaf'] = responseJSON['lcnaf']
+            return Agent._authorityQuery(session, responseJSON)
+        
+        return None
+        
+    @classmethod
+    def _authorityQuery(cls, session, agent):
+        logger.debug('Matching agent on VIAF/LCNAF')
+        try:
+            return session.query(cls.id)\
+                .filter(
+                    or_(
+                        cls.viaf == agent.get('viaf', None),
+                        cls.lcnaf == agent.get('lcnaf', None)
+                    )
+                )\
+                .one()
+        
+        except MultipleResultsFound as err:
+            logger.error(
+                ('Found multiple matching agents,'
+                'should only be one record per identifier')
+            )
+            raise err
+        except NoResultFound:
+            return None
 
     @classmethod
     def _cleanName(cls, agent, roles, dates):
