@@ -108,12 +108,16 @@ class TestAgent(unittest.TestCase):
             testInsert,
             aliases=['Name, Other'],
             link={'link': 'linker', 'link2': 'linker'},
-            dates=['date1', 'date2', 'date3']
+            dates=[
+                {'date_type': 'test', 'display': 'test'}, 
+                {'date_type': 'test2', 'display_date': 'test2'},    
+                {'date_type': 'test', 'display': 'test'} 
+            ]
         )
         self.assertEqual(outAgent.name, 'Name, New')
         self.assertEqual(outAgent.sort_name, 'Name, New')
         self.assertEqual(outAgent.aliases, set(['Name, Other']))
-        self.assertEqual(outAgent.dates, set(['date1', 'date2', 'date3']))
+        self.assertEqual(outAgent.dates, set(['date1', 'date2']))
 
 
     @patch('model.agent.Agent._findJaroWinklerQuery', return_value='mockAgent')
