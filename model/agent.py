@@ -69,7 +69,7 @@ class Agent(Core, Base):
     def updateOrInsert(cls, session, agent):
         """Evaluates whether a matching record exists and either updates that
         agent record or creates a new one"""
-        aliases = agent.pop('aliases', [])
+        aliases = agent.pop('aliases', set())
         roles = agent.pop('roles', [])
         link = agent.pop('link', [])
         dates = agent.pop('dates', [])
@@ -77,11 +77,9 @@ class Agent(Core, Base):
         agent.pop('birth_date', None)
         agent.pop('death_date', None)
 
-        if roles is None:
-            roles = []
-        
-        if dates is None:
-            dates = []
+        if roles is None: roles = []
+        if dates is None: dates = []
+        if aliases is None: aliases = []
 
         Agent._cleanName(agent, roles, dates)
         roles = list(set([ r.lower() for r in roles ]))
@@ -173,7 +171,8 @@ class Agent(Core, Base):
         if type(link) is list:
             agent.links = { Link(**l) for l in link }
 
-        agent.dates = { DateField.insert(d) for d in dates }
+        uniqueDates = { d['date_type']:d for d in dates }.values()
+        agent.dates = { DateField.insert(d) for d in uniqueDates }
 
         return agent
 
@@ -242,10 +241,10 @@ class Agent(Core, Base):
         if 'viaf' in responseJSON:
             if responseJSON['name'] != agent['name']:
                 aliases.append(agent['name'])
-                agent['name'] = responseJSON['name']
+                agent['name'] = responseJSON.get('name', '')
                 Agent._cleanName(agent, roles, dates)
-            agent['viaf'] = responseJSON['viaf']
-            agent['lcnaf'] = responseJSON['lcnaf']
+            agent['viaf'] = responseJSON.get('viaf', None)
+            agent['lcnaf'] = responseJSON.get('lcnaf', None)
             return Agent._authorityQuery(session, responseJSON)
         
         return None
@@ -254,13 +253,13 @@ class Agent(Core, Base):
     def _authorityQuery(cls, session, agent):
         logger.debug('Matching agent on VIAF/LCNAF')
         try:
+            orFilters = []
+            if agent.get('viaf', None):
+                orFilters.append(cls.viaf == agent.get('viaf', None))
+            if agent.get('lcnaf', None):
+                orFilters.append(cls.viaf == agent.get('lcnaf', None))
             return session.query(cls.id)\
-                .filter(
-                    or_(
-                        cls.viaf == agent.get('viaf', None),
-                        cls.lcnaf == agent.get('lcnaf', None)
-                    )
-                )\
+                .filter(or_(*orFilters))\
                 .one()
         
         except MultipleResultsFound as err:
