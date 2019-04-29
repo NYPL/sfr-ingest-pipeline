@@ -194,7 +194,7 @@ class TestAgent(unittest.TestCase):
     
     def test_authority_query_success(self):
         mock_session = MagicMock()
-        mock_session.query().filter().one.return_value = 'mockAgent'
+        mock_session.query().filter().one_or_none.return_value = 'mockAgent'
         testAgent = Agent._authorityQuery(
             mock_session,
             {
@@ -223,7 +223,7 @@ class TestAgent(unittest.TestCase):
     
     def test_authority_query_single_error(self):
         mock_session = MagicMock()
-        mock_session.query().filter().one.side_effect = NoResultFound
+        mock_session.query().filter().one_or_none.return_value = None
         testAgent = Agent._authorityQuery(
             mock_session,
             {
