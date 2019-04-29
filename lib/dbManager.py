@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -112,8 +113,20 @@ def importRecord(session, record):
         )
 
         if existing is None:
-            logger.warning('Could not locate item, skipping record')
-            raise DBError('items', 'Could not locate item in database, skipping')
+            logger.warning('Could not locate item, waiting 5 seconds for retry')
+            time.sleep(5)
+            existing = Item.lookupItem(
+                session,
+                itemData.get('identifiers', []),
+                primaryID
+            
+            )
+            if existing is None:
+                logger.error('Item still not present, raise error')
+                raise DBError(
+                    'items',
+                    'Could not locate item in database, skipping'
+                )
 
         Item.update(session, existing, itemData)
 

@@ -69,7 +69,7 @@ class Agent(Core, Base):
     def updateOrInsert(cls, session, agent):
         """Evaluates whether a matching record exists and either updates that
         agent record or creates a new one"""
-        aliases = agent.pop('aliases', set())
+        aliases = agent.pop('aliases', [])
         roles = agent.pop('roles', [])
         link = agent.pop('link', [])
         dates = agent.pop('dates', [])
@@ -252,24 +252,21 @@ class Agent(Core, Base):
     @classmethod
     def _authorityQuery(cls, session, agent):
         logger.debug('Matching agent on VIAF/LCNAF')
+        orFilters = []
+        if agent.get('viaf', None):
+            orFilters.append(cls.viaf == agent.get('viaf', None))
+        if agent.get('lcnaf', None):
+            orFilters.append(cls.viaf == agent.get('lcnaf', None))
+        authQuery = session.query(cls.id).filter(or_(*orFilters))
         try:
-            orFilters = []
-            if agent.get('viaf', None):
-                orFilters.append(cls.viaf == agent.get('viaf', None))
-            if agent.get('lcnaf', None):
-                orFilters.append(cls.viaf == agent.get('lcnaf', None))
-            return session.query(cls.id)\
-                .filter(or_(*orFilters))\
-                .one()
-        
+            return authQuery.one_or_none()
         except MultipleResultsFound as err:
-            logger.error(
-                ('Found multiple matching agents,'
-                'should only be one record per identifier')
+            logger.warning(
+                'Multiple matches for {}/{}. returning First'.format(
+                    agent.get('viaf', None), agent.get('lcnaf', None)
+                )
             )
-            raise err
-        except NoResultFound:
-            return None
+            return authQuery.first()
 
     @classmethod
     def _cleanName(cls, agent, roles, dates):
