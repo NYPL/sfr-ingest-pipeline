@@ -23,8 +23,8 @@ def classifyRecord(searchType, searchFields, workUUID):
     try:
         classifyQuery = QueryManager(
             searchType,
-            searchFields.get('recID', None),
-            searchFields.get('recType', None),
+            searchFields.get('identifier', None),
+            searchFields.get('idType', None),
             searchFields.get('authors', None),
             searchFields.get('title', None)
         )
