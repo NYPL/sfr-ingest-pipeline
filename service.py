@@ -202,9 +202,13 @@ def fileParser(fileRows, columns):
 
     for proc, pConn in processes:
         # Append results to outcomes array and ensure process exits cleanly
-        outcomes.extend(pConn.recv())
-        proc.join()
-        logger.info('Closing child Process')
+        try:
+            outcomes.extend(pConn.recv())
+            proc.join()
+            logger.info('Closing child Process')
+        except EOFError:
+            logger.warning('Unable to close the pipe connection. Closing proc')
+            proc.join()
 
     return outcomes
 
