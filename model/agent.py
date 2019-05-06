@@ -1,4 +1,5 @@
 import re
+import os
 import requests
 from dateutil.parser import parse
 from sqlalchemy import (
@@ -55,7 +56,7 @@ class Agent(Core, Base):
         collection_class=set
     )
 
-    VIAF_API = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName='  # noqa: E501
+    VIAF_API = os.environ['VIAF_API']
 
     def __repr__(self):
         return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(
@@ -122,7 +123,11 @@ class Agent(Core, Base):
         dates = kwargs.get('dates', [])
 
         for field, value in agent.items():
-            if(value is not None and value.strip() != ''):
+            if(
+                value is not None and
+                 value.strip() != '' and 
+                 value != getattr(existing, field) 
+            ):
                 setattr(existing, field, value)        
 
         if aliases is not None:
@@ -197,7 +202,7 @@ class Agent(Core, Base):
         
         if agent['viaf'] is not None or agent['lcnaf'] is not None:
             agentRec = Agent._authorityQuery(session, agent)
-        else:
+        elif len(agent['name']) > 4:
             agentRec = Agent._findViafQuery(
                 session,
                 agent,
@@ -205,6 +210,8 @@ class Agent(Core, Base):
                 roles,
                 dates
             )
+        else:
+            agentRec = None
         if agentRec is None:
             agentRec = Agent._findJaroWinklerQuery(session, agent)
 

@@ -121,15 +121,10 @@ class DateField(Core, Base):
     @classmethod
     def update(cls, existing, dateInst):
         """Update fields on existing date"""
-        for field, value in dateInst.items():
-            if(
-                value is not None
-                and value.strip() != ''
-                and field != 'date_range'
-            ):
-                setattr(existing, field, value)
-
-        existing.date_range = DateField.parseDate(dateInst['date_range'])
+        newRange = DateField.parseDate(dateInst['date_range'])
+        if newRange != existing.date_range:
+            existing.date_range = newRange
+            existing.display_date = dateInst['display_date']
 
     @classmethod
     def insert(cls, dateData):
