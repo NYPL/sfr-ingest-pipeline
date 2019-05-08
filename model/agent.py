@@ -202,7 +202,7 @@ class Agent(Core, Base):
         
         if agent['viaf'] is not None or agent['lcnaf'] is not None:
             agentRec = Agent._authorityQuery(session, agent)
-        elif len(agent['name'] > 4):
+        elif len(agent['name']) > 4:
             agentRec = Agent._findViafQuery(
                 session,
                 agent,
