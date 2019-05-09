@@ -54,9 +54,9 @@ def indexRecords():
     session = MANAGER.createSession()
 
     logger.info('Loading recently updated records')
-    retrieveRecords(session, es)
+    es.generateRecords(session)
     
-    logger.info('Importing processed batch into ElasticSearch')
+    logger.info('Importing final batch into ElasticSearch')
     try:
         es.processBatch()
     except ESError as err:

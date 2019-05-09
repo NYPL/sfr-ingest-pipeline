@@ -29,6 +29,8 @@ from model.elasticDocs import (
     Rights
 )
 
+from lib.dbManager import retrieveRecords
+
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import ESError
 
@@ -71,7 +73,7 @@ class ESConnection():
                 self.index
             ))
 
-    def processBatch(self):
+    def generateRecords(self, session):
         """Process the current batch of updating records. This utilizes the
         elasticsearch-py bulk helper to import records in chunks of the
         provided size. If a record in the batch errors that is reported and
@@ -79,19 +81,17 @@ class ESConnection():
         being imported.
         """
         try:
-            bulk(self.client, self.batch, chunk_size=50)
+            bulk(self.client, self.process(session), chunk_size=500)
         except BulkIndexError as err:
             logger.info('One or more records in the chunk failed to import')
             logger.debug(err)
             raise ESError('Not all records processed smoothly, check logs')
 
-    def process(self, work):
-        self.batch.append(work.to_dict(True))
-        if len(self.batch) >= 100:
-            logger.info('Indexing batch of {} work records'.format(len(self.batch)))
-            self.processBatch()
-            # Empty batch array for next set of records to be indexed
-            self.batch = []
+    def process(self, session):
+        for work in retrieveRecords(session):
+            esWork = ESDoc(work)
+            esWork.indexWork()
+            yield esWork.work.to_dict(True)
 
 class ESDoc():
     def __init__(self, work):

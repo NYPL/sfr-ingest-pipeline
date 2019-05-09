@@ -3,15 +3,13 @@ from datetime import datetime, timedelta
 
 from sfrCore import Work
 
-from lib.esManager import ESDoc
-
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError
 
 logger = createLog('db_manager')
 
 
-def retrieveRecords(session, es):
+def retrieveRecords(session):
     """Retrieve all recently updated works in the SFR database and generate
     elasticsearch-dsl ORM objects.
     """
@@ -24,7 +22,4 @@ def retrieveRecords(session, es):
     
     logger.info('Retrieved {} works for indexing'.format(len(works)))
 
-    for w in works:
-        esWork = ESDoc(w)
-        esWork.indexWork()
-        es.process(esWork.work)
+    for w in works: yield w
