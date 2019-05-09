@@ -8,7 +8,7 @@ from helpers.errorHelpers import ESError
 
 os.environ['ES_INDEX'] = 'test'
 
-from lib.esManager import ESConnection
+from lib.esManager import ESConnection, ESDoc
 from helpers.errorHelpers import ESError
 
 @patch.dict('os.environ', {'ES_HOST': 'test', 'ES_PORT': '9200', 'ES_TIMEOUT': '60'})
@@ -78,24 +78,41 @@ class TestESManager(unittest.TestCase):
         with self.assertRaises(ESError):
             inst.processBatch()
     
-    @patch('lib.esManager.ESConnection')
     @patch('lib.esManager.Work')
     @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_record_index(self, mock_instance, mock_work, mock_elastic):
+    def test_record_batch_add(self, mock_work, mock_elastic):
         inst = ESConnection()
         mock_work.title = 'Text Record'
         mock_work.uuid = '000000-0000-0000-0000-000000000000'
 
-        mock_work.loadDates.return_value = {'test': '2019-01-01'}
+        mock_work.to_dict.return_value = {'title': 'Text Record'}
 
-        inst.indexRecord(mock_work)
+        inst.process(mock_work)
         self.assertEqual(len(inst.batch), 1)
-        self.assertEqual(inst.work.title, 'Text Record')
+        self.assertEqual(inst.batch[0]['title'], 'Text Record')
     
-    @patch('lib.esManager.ESConnection')
+    @patch('lib.esManager.ESConnection.processBatch')
     @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_add_identifier(self, mock_instance, mock_elastic):
-        inst = ESConnection()
+    def test_record_batch_add_process(self, mock_batch, mock_elastic):
+        conn = ESConnection()
+        conn.batch = [ TestDict(work=i) for i in range(99) ]
+        conn.process(TestDict(work=100))
+        mock_batch.assert_called_once()
+        self.assertEqual(len(conn.batch), 0)
+    
+    @patch('lib.esManager.ESDoc.createWork', return_value='testWork')
+    def test_init_esdoc(self, mock_create):
+        newDoc = ESDoc('newWork')
+        self.assertEqual(newDoc.dbRec, 'newWork')
+        self.assertEqual(newDoc.work, 'testWork')
+    
+    @patch('lib.esManager.Work', return_value={'title': 'test', 'uuid': '000'})
+    def test_create_es_work(self, mock_work):
+        testDoc = ESDoc(TestDict(uuid='000'))
+        newWork = testDoc.createWork()
+        self.assertEqual(newWork, {'title': 'test', 'uuid': '000'})
+
+    def test_add_identifier(self):
         testID = TestDict(**{
             'type': None,
             'generic': [
@@ -105,50 +122,40 @@ class TestESManager(unittest.TestCase):
             ]
         })
 
-        idRec = inst.addIdentifier(testID)
+        idRec = ESDoc.addIdentifier(testID)
         self.assertEqual(idRec.id_type, 'generic')
         self.assertEqual(idRec.identifier, 'hello')
     
-    @patch('lib.esManager.ESConnection')
-    @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_add_link(self, mock_instance, mock_elastic):
-        inst = ESConnection()
+    def test_add_link(self):
         testLink = TestDict(**{
             'url': 'test/url',
             'media_type': 'test',
-            'md5': 'hash_value'
+            'flags': '{\"local\": false}'
         })
 
-        linkRec = inst.addLink(testLink)
+        linkRec = ESDoc.addLink(testLink)
         self.assertEqual(linkRec.url, 'test/url')
         self.assertEqual(linkRec.media_type, 'test')
-        self.assertEqual(linkRec.md5, 'hash_value')
-        self.assertEqual(linkRec.rel_type, None)
+        self.assertEqual(linkRec.local, False)
     
-    @patch('lib.esManager.ESConnection')
-    @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_add_measure(self, mock_instance, mock_elastic):
-        inst = ESConnection()
+    def test_add_measure(self):
         testMeasure = TestDict(**{
             'quantity': 'test',
             'value': 1,
         })
 
-        measureRec = inst.addMeasurement(testMeasure)
+        measureRec = ESDoc.addMeasurement(testMeasure)
         self.assertEqual(measureRec.quantity, 'test')
         self.assertEqual(measureRec.value, 1)
     
-    @patch('lib.esManager.ESConnection')
-    @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_add_language(self, mock_instance, mock_elastic):
-        inst = ESConnection()
+    def test_add_language(self):
         testLang = TestDict(**{
             'language': 'test',
             'iso_2': 'te',
             'iso_3': 'tes'
         })
 
-        langRec = inst.addLanguage(testLang)
+        langRec = ESDoc.addLanguage(testLang)
         self.assertEqual(langRec.language, 'test')
         self.assertEqual(langRec.iso_3, 'tes')
 
@@ -162,3 +169,6 @@ class TestDict(dict):
     
     def __dir__(self):
         return self.fields
+    
+    def to_dict(self, bool):
+        return vars(self)

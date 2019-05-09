@@ -218,4 +218,4 @@ class Work(BaseDoc):
 
 
     class Index:
-        name = os.environ['ES_INDEX']
+        name = os.environ.get('ES_INDEX', None)

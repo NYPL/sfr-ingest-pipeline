@@ -38,7 +38,6 @@ class ESConnection():
     def __init__(self):
         self.index = os.environ['ES_INDEX']
         self.client = None
-        self.work = None
         self.tries = 0
         self.batch = []
 
@@ -80,35 +79,46 @@ class ESConnection():
         being imported.
         """
         try:
-            bulk(
-                self.client,
-                (work.to_dict(True) for work in self.batch),
-                chunk_size=50
-            )
+            bulk(self.client, self.batch, chunk_size=50)
         except BulkIndexError as err:
             logger.info('One or more records in the chunk failed to import')
             logger.debug(err)
             raise ESError('Not all records processed smoothly, check logs')
 
-    def indexRecord(self, dbRec):
+    def process(self, work):
+        self.batch.append(work.to_dict(True))
+        if len(self.batch) >= 100:
+            logger.info('Indexing batch of {} work records'.format(len(self.batch)))
+            self.processBatch()
+            # Empty batch array for next set of records to be indexed
+            self.batch = []
+
+class ESDoc():
+    def __init__(self, work):
+        self.dbRec = work
+        self.work = self.createWork()
+    
+    def createWork(self):
+        logger.debug('Creating ES record for {}'.format(self.dbRec))
+        
+        workData = {
+            field: getattr(self.dbRec, field, None) for field in Work.getFields()
+        }
+
+        return Work(meta={'id': self.dbRec.uuid}, **workData)
+
+    def indexWork(self):
         """Build an ElasticSearch object from the provided postgresql ORM
         object. This builds a single object from the related tables of the 
         db object that can be indexed and searched in ElasticSearch.
         """
-        logger.debug('Creating ES record for {}'.format(dbRec))
-        
-        workData = {
-            field: getattr(dbRec, field, None) for field in Work.getFields()
-        }
 
-        self.work = Work(meta={'id': dbRec.uuid}, **workData)
-        
-        for dateType, date in ESConnection._loadDates(dbRec, ['issued', 'created']).items():
-            ESConnection._insertDate(self.work, date, dateType)
+        for dateType, date in ESDoc._loadDates(self.dbRec, ['issued', 'created']).items():
+            ESDoc._insertDate(self.work, date, dateType)
         
         self.work.alt_titles = [
             altTitle.title
-            for altTitle in dbRec.alt_titles
+            for altTitle in self.dbRec.alt_titles
         ]
 
         self.work.subjects = [
@@ -117,16 +127,16 @@ class ESConnection():
                 uri=subject.uri,
                 subject=subject.subject
             )
-            for subject in dbRec.subjects
+            for subject in self.dbRec.subjects
         ]
         self.work.agents = [
-            ESConnection.addAgent(self.work, agentWork)
-            for agentWork in list(dbRec.agent_works)
+            ESDoc.addAgent(self.work, agentWork)
+            for agentWork in list(self.dbRec.agent_works)
         ]
 
         self.work.identifiers = [
-            ESConnection.addIdentifier(identifier)
-            for identifier in dbRec.identifiers
+            ESDoc.addIdentifier(identifier)
+            for identifier in self.dbRec.identifiers
         ]
 
         self.work.measurements = [
@@ -136,30 +146,21 @@ class ESConnection():
                 weight = measure.weight,
                 taken_at = measure.taken_at
             ) 
-            for measure in dbRec.measurements
+            for measure in self.dbRec.measurements
         ]
 
-        self.work.links = [ESConnection.addLink(link) for link in dbRec.links]
+        self.work.links = [ESDoc.addLink(link) for link in self.dbRec.links]
 
         self.work.language = [
-            ESConnection.addLanguage(lang)
-            for lang in dbRec.language
+            ESDoc.addLanguage(lang)
+            for lang in self.dbRec.language
         ]
 
         self.work.instances = [
-            ESConnection.addInstance(instance)
-            for instance in dbRec.instances
+            ESDoc.addInstance(instance)
+            for instance in self.dbRec.instances
         ]
-        logger.debug('{} instances retrieved for {}'.format(len(self.work.instances), self.work.uuid))
-        self._process()
-
-    def _process(self):
-        self.batch.append(self.work)
-        if len(self.batch) >= 100:
-            logger.info('Indexing batch of {} work records'.format(len(self.batch)))
-            self.processBatch()
-            # Empty batch array for next set of records to be indexed
-            self.batch = []
+        logger.debug('{} instances retrieved for {}'.format(len(self.dbRec.instances), self.work.uuid))
 
     @staticmethod
     def addIdentifier(identifier):
@@ -213,8 +214,8 @@ class ESConnection():
         newRights = Rights(**rightsData)
 
         dateTypes = ['copyright_date', 'determination_date']
-        for dateType, date in ESConnection._loadDates(rights, dateTypes).items():
-            ESConnection._insertDate(newRights, date, dateType)
+        for dateType, date in ESDoc._loadDates(rights, dateTypes).items():
+            ESDoc._insertDate(newRights, date, dateType)
         
         return newRights
     
@@ -239,8 +240,8 @@ class ESConnection():
             for alias in agent.aliases:
                 esAgent.aliases.append(alias.alias)
 
-            for dateType, date in ESConnection._loadDates(agent, ['birth_date', 'death_date']).items():
-                ESConnection._insertDate(esAgent, date, dateType)
+            for dateType, date in ESDoc._loadDates(agent, ['birth_date', 'death_date']).items():
+                ESDoc._insertDate(esAgent, date, dateType)
 
             esAgent.roles = [agentRel.role]
 
@@ -254,16 +255,16 @@ class ESConnection():
         }
         esInstance = Instance(**instanceData)
 
-        for dateType, date in ESConnection._loadDates(instance, ['pub_date']).items():
-            ESConnection._insertDate(esInstance, date, dateType)
+        for dateType, date in ESDoc._loadDates(instance, ['pub_date']).items():
+            ESDoc._insertDate(esInstance, date, dateType)
         
         #esInstance.identifiers = [
-        #    ESConnection.addIdentifier(identifier)
+        #    ESDoc.addIdentifier(identifier)
         #    for identifier in instance.identifiers
         #]
 
         esInstance.agents = [
-            ESConnection.addAgent(esInstance, agentInst)
+            ESDoc.addAgent(esInstance, agentInst)
             for agentInst in instance.agent_instances
         ]
 
@@ -272,27 +273,27 @@ class ESConnection():
         # prove to be useful in the future
 
         #esInstance.links = [
-        #    ESConnection.addLink(link)
+        #    ESDoc.addLink(link)
         #    for link in instance.links
         #]
 
         #esInstance.measurements = [
-        #    ESConnection.addMeasurement(measure)
+        #    ESDoc.addMeasurement(measure)
         #    for measure in instance.measurements
         #]
 
         esInstance.items = [
-            ESConnection.addItem(item) 
+            ESDoc.addItem(item) 
             for item in instance.items
         ]
 
         esInstance.rights = [
-            ESConnection.addRights(rights)
+            ESDoc.addRights(rights)
             for rights in instance.rights
         ]
 
         esInstance.language = [
-            ESConnection.addLanguage(lang)
+            ESDoc.addLanguage(lang)
             for lang in instance.language
         ]
         
@@ -306,17 +307,17 @@ class ESConnection():
         esItem = Item(**itemData)
 
         esItem.identifiers = [
-            ESConnection.addIdentifier(identifier)
+            ESDoc.addIdentifier(identifier)
             for identifier in item.identifiers
         ]
         
         #esItem.agents = [
-        #    ESConnection.addAgent(esItem, agentItem)
+        #    ESDoc.addAgent(esItem, agentItem)
         #    for agentItem in item.agent_items
         #]
         
         esItem.links = [
-            ESConnection.addLink(link)
+            ESDoc.addLink(link)
             for link in item.links
         ]
 
@@ -327,17 +328,17 @@ class ESConnection():
         # are being temporarily removed
 
         #esItem.measurements = [
-        #    ESConnection.addMeasurement(measurement)
+        #    ESDoc.addMeasurement(measurement)
         #    for measurement in item.measurements
         #]
         
         #esItem.reports = [
-        #    ESConnection.addReport(report)
+        #    ESDoc.addReport(report)
         #    for report in item.access_reports
         #]
 
         #esItem.rights = [
-        #    ESConnection.addRights(rights)
+        #    ESDoc.addRights(rights)
         #    for rights in item.rights
         #]
 
@@ -352,7 +353,7 @@ class ESConnection():
         esReport = AccessReport(**reportData)
 
         esReport.measurements = [
-            ESConnection.addMeasurement(measure)
+            ESDoc.addMeasurement(measure)
             for measure in report.measurements
         ]
         

@@ -2,4 +2,3 @@ coverage
 flake8
 python-lambda
 pyyaml
-git+https://github.com/NYPL/sfr-db-core.git@master#egg=sfrCore

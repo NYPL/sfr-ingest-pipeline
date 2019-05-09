@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 
 from sfrCore import Work
 
+from lib.esManager import ESDoc
+
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError
 
@@ -23,4 +25,6 @@ def retrieveRecords(session, es):
     logger.info('Retrieved {} works for indexing'.format(len(works)))
 
     for w in works:
-        es.indexRecord(w)
+        esWork = ESDoc(w)
+        esWork.indexWork()
+        es.process(esWork.work)

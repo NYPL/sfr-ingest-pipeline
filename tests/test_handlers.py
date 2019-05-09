@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch, call, MagicMock
 import os
 
-from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
+from helpers.errorHelpers import ESError
 
 os.environ['DB_USER'] = 'test'
 os.environ['DB_PASS'] = 'test'
@@ -14,7 +14,7 @@ os.environ['ES_INDEX'] = 'test'
 # This method is invoked outside of the main handler method as this allows
 # us to re-use db connections across Lambda invocations, but it requires a
 # little testing weirdness, e.g. we need to mock it on import to prevent errors
-with patch('lib.dbManager.dbGenerateConnection') as mock_db:
+with patch('service.SessionManager') as mock_db:
     from service import handler, indexRecords
 
 
@@ -29,13 +29,20 @@ class TestHandler(unittest.TestCase):
         mock_index.assert_called_once()
         self.assertTrue(resp)
 
-    mock_es = MagicMock()
-    mock_sesh = MagicMock()
-    @patch('service.ESConnection', return_value=mock_es)
-    @patch('service.createSession', return_value=mock_sesh)
     @patch('service.retrieveRecords')
-    def test_parse_records_success(self, mock_retrieve, mock_session, mock_conn):
-        indexRecords()
-        mock_session.assert_called_once()
-        mock_retrieve.assert_called_once()
-        TestHandler.mock_es.processBatch.assert_called_once()
+    def test_parse_records_success(self, mock_retrieve):
+
+        mock_es = MagicMock()
+        with patch('service.ESConnection', return_value=mock_es) as mock_conn:
+            indexRecords()
+            mock_retrieve.assert_called_once()
+            mock_es.processBatch.assert_called_once()
+    
+    @patch('service.retrieveRecords')
+    def test_parse_record_failure(self, mock_retrieve):
+        mock_es = MagicMock()
+        mock_es.processBatch.side_effect = ESError('Test Error')
+        with patch('service.ESConnection', return_value=mock_es) as mock_conn:
+            indexRecords()
+            mock_retrieve.assert_called_once()
+            self.assertRaises(ESError)
