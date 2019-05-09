@@ -1,5 +1,7 @@
 import os
 import time
+import json
+from multiprocessing import Queue
 from elasticsearch.helpers import bulk, BulkIndexError
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import (
@@ -95,18 +97,20 @@ class ESConnection():
         """
         logger.debug('Creating ES record for {}'.format(dbRec))
         
-        self.work = Work(meta={'id': dbRec.uuid})
+        workData = {
+            field: getattr(dbRec, field, None) for field in Work.getFields()
+        }
 
-        for field in dir(dbRec):
-            setattr(self.work, field, getattr(dbRec, field, None))
+        self.work = Work(meta={'id': dbRec.uuid}, **workData)
         
-        for dateType, date in dbRec.loadDates(['issued', 'created']).items():
+        for dateType, date in ESConnection._loadDates(dbRec, ['issued', 'created']).items():
             ESConnection._insertDate(self.work, date, dateType)
         
         self.work.alt_titles = [
             altTitle.title
             for altTitle in dbRec.alt_titles
         ]
+
         self.work.subjects = [
             Subject(
                 authority=subject.authority,
@@ -116,13 +120,15 @@ class ESConnection():
             for subject in dbRec.subjects
         ]
         self.work.agents = [
-            ESConnection.addAgent(self.work, agent)
-            for agent in dbRec.agents
+            ESConnection.addAgent(self.work, agentWork)
+            for agentWork in list(dbRec.agent_works)
         ]
+
         self.work.identifiers = [
             ESConnection.addIdentifier(identifier)
             for identifier in dbRec.identifiers
         ]
+
         self.work.measurements = [
             Measurement(
                 quantity=measure.quantity,
@@ -132,16 +138,19 @@ class ESConnection():
             ) 
             for measure in dbRec.measurements
         ]
+
         self.work.links = [ESConnection.addLink(link) for link in dbRec.links]
+
         self.work.language = [
             ESConnection.addLanguage(lang)
             for lang in dbRec.language
         ]
+
         self.work.instances = [
             ESConnection.addInstance(instance)
             for instance in dbRec.instances
         ]
-        
+        logger.debug('{} instances retrieved for {}'.format(len(self.work.instances), self.work.uuid))
         self._process()
 
     def _process(self):
@@ -167,35 +176,44 @@ class ESConnection():
     
     @staticmethod
     def addLink(link):
-        newLink = Link()
-        for field in dir(link):
-            setattr(newLink, field, getattr(link, field, None))
+        linkData = {
+            field: getattr(link, field, None) for field in Link.getFields()
+        }
+        newLink = Link(**linkData)
 
+        linkFlags = json.loads(getattr(link, 'flags', {}))
+        for flag, value in linkFlags.items():
+            setattr(newLink, flag, value)
+        
         return newLink
+
 
     @staticmethod
     def addMeasurement(measurement):
-        newMeasure = Measurement()
-        for field in dir(measurement):
-            setattr(newMeasure, field, getattr(measurement, field, None))
-        
-        return newMeasure
-    
+        measureData = {
+            field: getattr(measurement, field, None) 
+            for field in Measurement.getFields()
+        }
+
+        return Measurement(**measureData)
+
     @staticmethod
     def addLanguage(language):
-        esLang = Language()
-        for field in dir(language):
-            setattr(esLang, field, getattr(language, field, None))
+        languageData = {
+            field: getattr(language, field, None)
+            for field in Language.getFields()
+        }
+        return Language(**languageData)
 
-        return esLang
-    
     @staticmethod
     def addRights(rights):
-        newRights = Rights()
-        for field in dir(rights):
-            setattr(newRights, field, getattr(rights, field, None))
-        
-        for dateType, date in rights.loadDates(['copyright_date']).items():
+        rightsData = {
+            field: getattr(rights, field, None) for field in Rights.getFields()
+        }
+        newRights = Rights(**rightsData)
+
+        dateTypes = ['copyright_date', 'determination_date']
+        for dateType, date in ESConnection._loadDates(rights, dateTypes).items():
             ESConnection._insertDate(newRights, date, dateType)
         
         return newRights
@@ -210,55 +228,69 @@ class ESConnection():
             existing = match[0]
             existing.roles.append(agentRel.role)
         else:
-            esAgent = Agent()
             agent = agentRel.agent
-            for field in dir(agent):
-                setattr(esAgent, field, getattr(agent, field, None))
-            
+            agentData = {
+                field: getattr(agent, field, None) 
+                for field in Agent.getFields()
+            }
+            esAgent = Agent(**agentData)
+
             esAgent.aliases = []
             for alias in agent.aliases:
                 esAgent.aliases.append(alias.alias)
-            
-            for dateType, date in agent.loadDates(['birth_date', 'death_date']).items():
+
+            for dateType, date in ESConnection._loadDates(agent, ['birth_date', 'death_date']).items():
                 ESConnection._insertDate(esAgent, date, dateType)
 
             esAgent.roles = [agentRel.role]
-            
+
             return esAgent
     
     @staticmethod
     def addInstance(instance):
-        esInstance = Instance()
-        for field in dir(instance):
-            setattr(esInstance, field, getattr(instance, field, None))
-        
-        for dateType, date in instance.loadDates(['pub_date']).items():
+        instanceData = {
+            field: getattr(instance, field, None)
+            for field in Instance.getFields()
+        }
+        esInstance = Instance(**instanceData)
+
+        for dateType, date in ESConnection._loadDates(instance, ['pub_date']).items():
             ESConnection._insertDate(esInstance, date, dateType)
         
-        esInstance.identifiers = [
-            ESConnection.addIdentifier(identifier)
-            for identifier in instance.identifiers
-        ]
+        #esInstance.identifiers = [
+        #    ESConnection.addIdentifier(identifier)
+        #    for identifier in instance.identifiers
+        #]
+
         esInstance.agents = [
-            ESConnection.addAgent(esInstance, agent)
-            for agent in instance.agents
+            ESConnection.addAgent(esInstance, agentInst)
+            for agentInst in instance.agent_instances
         ]
-        esInstance.links = [
-            ESConnection.addLink(link)
-            for link in instance.links
-        ]
-        esInstance.measurements = [
-            ESConnection.addMeasurement(measure)
-            for measure in instance.measurements
-        ]
+
+        # NOTE: The two relationships are commented out as they are not
+        # currently used in the front-end application. But this data may
+        # prove to be useful in the future
+
+        #esInstance.links = [
+        #    ESConnection.addLink(link)
+        #    for link in instance.links
+        #]
+
+        #esInstance.measurements = [
+        #    ESConnection.addMeasurement(measure)
+        #    for measure in instance.measurements
+        #]
+
         esInstance.items = [
             ESConnection.addItem(item) 
             for item in instance.items
         ]
+
         esInstance.rights = [
             ESConnection.addRights(rights)
             for rights in instance.rights
         ]
+
         esInstance.language = [
             ESConnection.addLanguage(lang)
             for lang in instance.language
@@ -268,44 +300,57 @@ class ESConnection():
     
     @staticmethod
     def addItem(item):
-        esItem = Item()
+        itemData = {
+            field: getattr(item, field, None) for field in Item.getFields()
+        }
+        esItem = Item(**itemData)
 
-        for field in dir(item):
-            setattr(esItem, field, getattr(item, field, None))
         esItem.identifiers = [
             ESConnection.addIdentifier(identifier)
             for identifier in item.identifiers
         ]
-        esItem.agents = [
-            ESConnection.addAgent(esItem, agent)
-            for agent in item.agents
-        ]
+        
+        #esItem.agents = [
+        #    ESConnection.addAgent(esItem, agentItem)
+        #    for agentItem in item.agent_items
+        #]
+        
         esItem.links = [
             ESConnection.addLink(link)
             for link in item.links
         ]
-        esItem.measurements = [
-            ESConnection.addMeasurement(measurement)
-            for measurement in item.measurements
-        ]
-        esItem.reports = [
-            ESConnection.addReport(report)
-            for report in item.access_reports
-        ]
-        esItem.rights = [
-            ESConnection.addRights(rights)
-            for rights in item.rights
-        ]
+
+        for link in esItem.links:
+            link.setLabel(esItem.source, esItem.identifiers[0].identifier)
+        
+        # NOTE: Similar to Instances above, these sections are not in use and
+        # are being temporarily removed
+
+        #esItem.measurements = [
+        #    ESConnection.addMeasurement(measurement)
+        #    for measurement in item.measurements
+        #]
+        
+        #esItem.reports = [
+        #    ESConnection.addReport(report)
+        #    for report in item.access_reports
+        #]
+
+        #esItem.rights = [
+        #    ESConnection.addRights(rights)
+        #    for rights in item.rights
+        #]
 
         return esItem
     
     @staticmethod
     def addReport(report):
-        esReport = AccessReport()
+        reportData = {
+            field: getattr(report, field, None)
+            for field in AccessReport.getFields()
+        }
+        esReport = AccessReport(**reportData)
 
-        for field in dir(report):
-            setattr(esReport, field, getattr(report, field, None))
-        
         esReport.measurements = [
             ESConnection.addMeasurement(measure)
             for measure in report.measurements
@@ -313,6 +358,17 @@ class ESConnection():
         
         return esReport.to_dict(True)
     
+    @staticmethod
+    def _loadDates(record, fields):
+        retDates = {}
+        for date in record.dates:
+            if date.date_type in fields:
+                retDates[date.date_type] = {
+                    'range': date.date_range,
+                    'display': date.display_date
+                }
+        return retDates
+
     @staticmethod
     def _insertDate(record, date, dateType):
         if date['range'] is None:
