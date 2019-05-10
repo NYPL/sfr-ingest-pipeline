@@ -4,7 +4,8 @@ import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
-from lib.dbManager import dbGenerateConnection, importRecord, createSession
+from sfrCore import SessionManager
+from lib.dbManager import importRecord
 
 """Logger can be passed name of current module
 Can also be instantiated on a class/method basis using dot notation
@@ -17,7 +18,8 @@ that are executed before the main handler block, meaning that we can run
 migrations and generate a db connection for multiple invocations, at least
 until AWS decides to regenerate the container
 """
-engine = dbGenerateConnection()
+MANAGER = SessionManager()
+MANAGER.generateEngine()
 
 
 def handler(event, context):
@@ -49,24 +51,22 @@ def parseRecords(records):
     logger.debug('Parsing Messages')
 
     logger.debug('Creating Session')
-    session = createSession(engine)
+    session = MANAGER.createSession()
 
     try:
-        parseResults = [parseRecord(r, session) for r in records]
+        parseResults = [ parseRecord(r) for r in records ]
         logger.debug('Parsed {} records. Committing results'.format(
             str(len(parseResults))
         ))
-        session.commit()
-        session.close()
+        MANAGER.closeConnection()
         return parseResults
     except (NoRecordsReceived, DataError, DBError) as err:
         logger.error('Could not process records in current invocation')
         logger.debug(err)
-        session.commit()
-        session.close()
+        MANAGER.closeConnection()
 
 
-def parseRecord(encodedRec, session):
+def parseRecord(encodedRec):
     """Handles each individual record by parsing JSON from the base64 encoded
     string recieved from the Kinesis stream, creating a database session and
     inserting/updating the database to reflect this new data source. It will
@@ -85,9 +85,9 @@ def parseRecord(encodedRec, session):
             else:
                 logger.error('Received error from pipeline')
                 logger.debug(record)
-                raise DataError('Recevied non-200 status code')
+                raise DataError('Received non-200 status code')
     except json.decoder.JSONDecodeError as jsonErr:
-        logger.error('Invalid JSON block recieved')
+        logger.error('Invalid JSON block received')
         logger.error(jsonErr)
         raise DataError('Invalid JSON block')
     except UnicodeDecodeError as b64Err:
@@ -96,15 +96,15 @@ def parseRecord(encodedRec, session):
         raise DataError('Error in base64 encoding of record')
 
     try:
-        session.begin_nested() # Start transaction
-        record = importRecord(session, record)
-        session.commit()
+        MANAGER.startSession() # Start transaction
+        record = importRecord(MANAGER.session, record)
+        MANAGER.commitChanges()
         return record
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
-        session.rollback() # Rollback current record only
+        MANAGER.session.rollback() # Rollback current record only
         logger.error('Failed to store record')
         logger.debug(err)
         logger.debug(traceback.format_exc())
