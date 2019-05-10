@@ -212,22 +212,18 @@ class Work(Core, Base):
 
     @classmethod
     def _addMeasurements(cls, session, work, measurements):
-        for measurement in measurements:
-            measurementRec = Measurement.insert(measurement)
-            work.measurements.append(measurementRec)
-    
+        work.measurements.extend(
+            [ Measurement.insert(m) for m in measurements ]
+        )
+
     @classmethod
     def _addLinks(cls, work, links):
-        for link in links:
-            newLink = Link(**link)
-            work.links.append(newLink)
-    
+        work.links.extend([ Link(**l) for l in links ])
+        
     @classmethod
     def _addDates(cls, work, dates):
-        for date in dates:
-            newDate = DateField.insert(date)
-            work.dates.append(newDate)
-    
+        work.dates.extend([ DateField.insert(d) for d in dates ])
+        
     @classmethod
     def _addLanguages(cls, session, work, languages):
         if languages is not None:
