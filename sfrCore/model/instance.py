@@ -166,6 +166,11 @@ class Instance(Core, Base):
         return existingID
     
     @classmethod
+    def addItemRecord(cls, session, instanceID, itemRec):
+        instance = session.query(cls).get(instanceID)
+        instance.items.append(itemRec)
+
+    @classmethod
     def createNew(cls, session, instanceData):
         newInstance = cls(session=session)
         newInstance.createTmpRelations(instanceData)
