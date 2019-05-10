@@ -18,8 +18,8 @@ def retrieveRecords(session):
     )
     
     fetchPeriod = datetime.utcnow() - timedelta(seconds=int(os.environ['INDEX_PERIOD']))
-    works = session.query(Work).filter(Work.date_modified >= fetchPeriod).all()
-    
-    logger.info('Retrieved {} works for indexing'.format(len(works)))
-
-    for w in works: yield w
+    for workID in session.query(Work.id)\
+        .yield_per(100)\
+        .filter(Work.date_modified >= fetchPeriod)\
+        .all():
+        yield workID

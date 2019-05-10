@@ -1,8 +1,7 @@
 import os
 import time
 import json
-from multiprocessing import Queue
-from elasticsearch.helpers import bulk, BulkIndexError
+from elasticsearch.helpers import bulk, BulkIndexError, streaming_bulk
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import (
     ConnectionError,
@@ -14,6 +13,8 @@ from elasticsearch_dsl.wrappers import Range
 
 
 from sqlalchemy.orm import configure_mappers
+
+from sfrCore import Work as DBWork
 
 from model.elasticDocs import (
     Language,
@@ -72,7 +73,7 @@ class ESConnection():
             logger.info('ElasticSearch index {} already exists'.format(
                 self.index
             ))
-
+    
     def generateRecords(self, session):
         """Process the current batch of updating records. This utilizes the
         elasticsearch-py bulk helper to import records in chunks of the
@@ -80,27 +81,40 @@ class ESConnection():
         logged but it does not prevent the other records in the batch from
         being imported.
         """
+        success, failure = 0, 0
+        errors = []
         try:
-            bulk(self.client, self.process(session), chunk_size=500)
+            for status, work in streaming_bulk(self.client, self.process(session)):
+                if not status:
+                    errors.append(work)
+                    failure += 1
+                else:
+                    success += 1
+            
+            logger.info('Success {} | Failure: {}'.format(success, failure))
         except BulkIndexError as err:
             logger.info('One or more records in the chunk failed to import')
             logger.debug(err)
             raise ESError('Not all records processed smoothly, check logs')
 
+
     def process(self, session):
-        for work in retrieveRecords(session):
-            esWork = ESDoc(work)
+        for workID in retrieveRecords(session):
+            esWork = ESDoc(workID, session)
             esWork.indexWork()
             yield esWork.work.to_dict(True)
 
 class ESDoc():
-    def __init__(self, work):
-        self.dbRec = work
+    def __init__(self, workID, session):
+        self.workID = workID[0]
+        self.session = session
+        self.dbRec = None
         self.work = self.createWork()
     
     def createWork(self):
+        self.dbRec = self.session.query(DBWork).get(self.workID)
         logger.debug('Creating ES record for {}'.format(self.dbRec))
-        
+
         workData = {
             field: getattr(self.dbRec, field, None) for field in Work.getFields()
         }

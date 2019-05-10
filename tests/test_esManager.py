@@ -1,6 +1,6 @@
 import unittest
 import os
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
 from elasticsearch.exceptions import ConnectionError, TransportError, ConflictError
 from elasticsearch.helpers import BulkIndexError
 
@@ -58,58 +58,61 @@ class TestESManager(unittest.TestCase):
         self.assertIsInstance(inst.client, MagicMock)
         mock_work.init.assert_not_called()
     
-    @patch('lib.esManager.bulk')
-    @patch('lib.esManager.ESConnection')
+    @patch('lib.esManager.streaming_bulk', return_value=iter([(True, 1)]))
+    @patch('lib.esManager.ESConnection.process', side_effect=[1])
     @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_process_batch(self, mock_elastic, mock_instance, mock_bulk):
-
+    def test_generate_success(self, mock_elastic, mock_process, mock_stream):
         inst = ESConnection()
-        inst.batch = [{'test': 'test'}]
-        inst.processBatch()
-        mock_bulk.assert_called_once()
+        inst.generateRecords('session')
+        mock_stream.assert_has_calls([call(TestESManager.client_mock, 1)])
     
-    @patch('lib.esManager.bulk', side_effect=BulkIndexError)
-    @patch('lib.esManager.ESConnection')
+    @patch('lib.esManager.streaming_bulk', return_value=iter([(False, 1)]))
+    @patch('lib.esManager.ESConnection.process', side_effect=[1])
     @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_batch_err(self, mock_elastic, mock_instance, mock_bulk):
-
+    def test_generate_failure(self, mock_elastic, mock_process, mock_stream):
         inst = ESConnection()
-        inst.batch = [{'test': 'test'}]
-        with self.assertRaises(ESError):
-            inst.processBatch()
+        inst.generateRecords('session')
+        mock_stream.assert_has_calls([call(TestESManager.client_mock, 1)])
     
-    @patch('lib.esManager.Work')
+    @patch('lib.esManager.streaming_bulk', side_effect=BulkIndexError)
+    @patch('lib.esManager.ESConnection.process', side_effect=[1])
     @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_record_batch_add(self, mock_work, mock_elastic):
+    def test_generate_error(self, mock_elastic, mock_process, mock_stream):
         inst = ESConnection()
-        mock_work.title = 'Text Record'
-        mock_work.uuid = '000000-0000-0000-0000-000000000000'
+        try:
+            inst.generateRecords('session')
+        except ESError:
+            pass
+        self.assertRaises(ESError)
 
-        mock_work.to_dict.return_value = {'title': 'Text Record'}
-
-        inst.process(mock_work)
-        self.assertEqual(len(inst.batch), 1)
-        self.assertEqual(inst.batch[0]['title'], 'Text Record')
-    
-    @patch('lib.esManager.ESConnection.processBatch')
+    @patch('lib.esManager.retrieveRecords')
+    @patch('lib.esManager.ESDoc.indexWork')
     @patch('lib.esManager.Elasticsearch', return_value=client_mock)
-    def test_record_batch_add_process(self, mock_batch, mock_elastic):
-        conn = ESConnection()
-        conn.batch = [ TestDict(work=i) for i in range(99) ]
-        conn.process(TestDict(work=100))
-        mock_batch.assert_called_once()
-        self.assertEqual(len(conn.batch), 0)
+    def test_process(self, mock_elastic, mock_index, mock_retrieve):
+        mock_retrieve.return_value = ['work1', 'work2', 'work3']
+        with patch('lib.esManager.ESDoc.createWork') as mock_create:
+            mock_dict = MagicMock()
+            mock_dict.to_dict.side_effect = ['work1', 'work2', 'work3']
+            mock_create.return_value = mock_dict
+            inst = ESConnection()
+            res = list(inst.process('session'))
+            self.assertEqual(res, ['work1', 'work2', 'work3'])
     
     @patch('lib.esManager.ESDoc.createWork', return_value='testWork')
     def test_init_esdoc(self, mock_create):
-        newDoc = ESDoc('newWork')
-        self.assertEqual(newDoc.dbRec, 'newWork')
+        newDoc = ESDoc(('work1',), 'session')
+        self.assertEqual(newDoc.workID, 'work1')
+        self.assertEqual(newDoc.session, 'session')
+        self.assertEqual(newDoc.dbRec, None)
         self.assertEqual(newDoc.work, 'testWork')
     
     @patch('lib.esManager.Work', return_value={'title': 'test', 'uuid': '000'})
     def test_create_es_work(self, mock_work):
-        testDoc = ESDoc(TestDict(uuid='000'))
+        mock_session = MagicMock()
+        mock_session.query.return_value.get.return_value = TestDict(uuid=0)
+        testDoc = ESDoc(('1',), mock_session)
         newWork = testDoc.createWork()
+        self.assertEqual(testDoc.dbRec.uuid, 0)
         self.assertEqual(newWork, {'title': 'test', 'uuid': '000'})
 
     def test_add_identifier(self):

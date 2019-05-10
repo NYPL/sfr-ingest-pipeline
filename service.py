@@ -5,7 +5,6 @@ from sfrCore import SessionManager
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError, ESError
 from helpers.logHelpers import createLog
-from lib.dbManager import retrieveRecords
 from lib.esManager import ESConnection
 
 """Logger can be passed name of current module
@@ -55,12 +54,6 @@ def indexRecords():
 
     logger.info('Loading recently updated records')
     es.generateRecords(session)
-    
-    logger.info('Importing final batch into ElasticSearch')
-    try:
-        es.processBatch()
-    except ESError as err:
-        logger.debug('Batch processing Error')
 
     logger.info('Close postgresql session')
     MANAGER.closeConnection()

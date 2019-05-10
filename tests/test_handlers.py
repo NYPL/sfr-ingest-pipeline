@@ -29,20 +29,8 @@ class TestHandler(unittest.TestCase):
         mock_index.assert_called_once()
         self.assertTrue(resp)
 
-    @patch('service.retrieveRecords')
-    def test_parse_records_success(self, mock_retrieve):
-
+    def test_parse_records_success(self):
         mock_es = MagicMock()
         with patch('service.ESConnection', return_value=mock_es) as mock_conn:
             indexRecords()
-            mock_retrieve.assert_called_once()
-            mock_es.processBatch.assert_called_once()
-    
-    @patch('service.retrieveRecords')
-    def test_parse_record_failure(self, mock_retrieve):
-        mock_es = MagicMock()
-        mock_es.processBatch.side_effect = ESError('Test Error')
-        with patch('service.ESConnection', return_value=mock_es) as mock_conn:
-            indexRecords()
-            mock_retrieve.assert_called_once()
-            self.assertRaises(ESError)
+            mock_es.generateRecords.assert_called_once()
