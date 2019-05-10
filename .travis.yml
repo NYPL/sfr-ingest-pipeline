@@ -6,6 +6,7 @@ python:
 install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
+  - pip install -r dev-requirements.txt
 script: make test
 #
 # The travis configuration beloy will deploy this lambda to the function defined
