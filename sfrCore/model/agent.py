@@ -14,12 +14,11 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.link import AGENT_LINKS, Link
-from sfrCore.model.date import AGENT_DATES, DateField
+from .core import Base, Core
+from .link import AGENT_LINKS, Link
+from .date import AGENT_DATES, DateField
 
-from sfrCore.helpers.logger import createLog
-from sfrCore.helpers.errors import DataError
+from ..helpers import createLog, DataError
 
 logger = createLog('agentModel')
 
@@ -61,9 +60,6 @@ class Agent(Core, Base):
 
     def __init__(self, session=None):
         self.session = session
-
-        # Add temporary attributes (will be removed if record is inserted)
-        self.addTmpAttrs()
 
     def __repr__(self):
         return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(
@@ -121,6 +117,8 @@ class Agent(Core, Base):
 
         agentRec.removeTmpRelations()
 
+        self.cleanData()
+
         return agentRec, roles
 
     def update(self, session, agentData):
@@ -163,6 +161,9 @@ class Agent(Core, Base):
         
         roles = self.tmp_roles
         self.removeTmpRelations()
+
+        self.cleanData()
+
         return roles
 
     def insertData(self, agentData):
@@ -216,6 +217,19 @@ class Agent(Core, Base):
             agentRec = self.findJaroWinklerQuery()
 
         return agentRec
+
+    def cleanData(self):
+        """Parses common errors from metadata fields associated with Agent
+        records, these are generally stray punctuation marks or other
+        artifacts from the import process.
+        """
+        cleanName = cleanAgentName = agent.name\
+                .strip(' ,;:(')\
+                .replace('\r', ' ').replace('\n', ' ').replace('\'\'', '\'')\
+                .strip()
+        
+        self.name = cleanName
+        self.sort_name = cleanName
 
     def addLifespan(self, dateType, lifespanDate):
         if lifespanDate:

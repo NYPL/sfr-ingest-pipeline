@@ -11,11 +11,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, selectinload
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from sfrCore.helpers.logger import createLog
-from sfrCore.helpers.errors import DBError, DataError
+from .core import Base, Core
+from .equivalent import Equivalent
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.equivalent import Equivalent
+from ..helpers import createLog, DBError, DataError
 
 logger = createLog('identifiers')
 
@@ -342,16 +341,22 @@ class Identifier(Base):
 
     @classmethod
     def _getTopMatchAndSetEquivalencies(cls, session, matches, table, identifiers):
-        topMatch = matches.pop(0)[0]
+        topMatch = matches.pop(0)
         try:
-            if topMatch <= matches[0][1]:
+            if topMatch[1] <= matches[0][1]:
                 logger.warning('Could not find distinct match for record')
                 logger.debug(matches)
-                Identifier._setEquivalencies(session, topMatch, matches, table, identifiers)
+                Identifier._setEquivalencies(
+                    session,
+                    topMatch[0],
+                    matches,
+                    table,
+                    identifiers
+                )
         except IndexError:
             pass
         logger.debug('Found Match to record {}'.format(topMatch))
-        return topMatch
+        return topMatch[0]
     
     @classmethod
     def _setEquivalencies(cls, session, topMatch, matches, table, identifiers):
@@ -408,6 +413,6 @@ class Identifier(Base):
             None: 9
         }
         trueIdentifiers = list(
-            filter(lambda x: x not in['lcc', 'ddc'], identifiers)
+            filter(lambda x: x['type'] not in['lcc', 'ddc'], identifiers)
         )
         return sorted(trueIdentifiers, key=lambda x:idWeight[x['type']])

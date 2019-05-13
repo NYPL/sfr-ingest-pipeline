@@ -15,10 +15,9 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
 
-from sfrCore.model.core import Base, Core
+from .core import Base, Core
 
-from sfrCore.helpers.errors import DBError
-from sfrCore.helpers.logger import createLog
+from ..helpers import createLog, DBError
 
 logger = createLog('dateModel')
 
@@ -59,7 +58,7 @@ RIGHTS_DATES = Table(
 
 class DateField(Core, Base):
     """An abstract class that represents a date value, associated with any
-    entity or record in the SFR data sfrCore.model. This class contains a set of fields
+    entity or record in the SFR data model. This class contains a set of fields
     that store both human-readable and parsable date range values. While an
     ISO-8601 value is recommended for the human-readable component this
     is not required

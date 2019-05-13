@@ -6,7 +6,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import relationship
 
-from sfrCore.model.core import Base, Core
+from .core import Base, Core
 
 
 class RawData(Core, Base):

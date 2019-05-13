@@ -10,10 +10,9 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import MultipleResultsFound
 
-from sfrCore.model.core import Base, Core
+from .core import Base, Core
 
-from sfrCore.helpers.logger import createLog
-from sfrCore.helpers.errors import DBError, DataError
+from ..helpers import createLog, DBError, DataError
 
 logger = createLog('measurements')
 

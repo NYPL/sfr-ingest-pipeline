@@ -1,4 +1,4 @@
-from sfrCore.model import (
+from .model import (
     Agent,
     AltTitle,
     DateField,
@@ -15,6 +15,6 @@ from sfrCore.model import (
     Work
 )
 
-from sfrCore.lib import SessionManager
+from .lib import SessionManager
 
-from sfrCore.helpers import createLog, DBError, DataError
+from .helpers import createLog, DBError, DataError

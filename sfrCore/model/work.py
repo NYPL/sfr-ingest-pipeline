@@ -14,22 +14,21 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.exc import NoResultFound
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.subject import SUBJECT_WORKS
-from sfrCore.model.identifiers import WORK_IDENTIFIERS, Identifier
-from sfrCore.model.altTitle import AltTitle, WORK_ALTS
-from sfrCore.model.rawData import RawData
-from sfrCore.model.measurement import WORK_MEASUREMENTS, Measurement
-from sfrCore.model.link import WORK_LINKS, Link
-from sfrCore.model.date import DateField
-from sfrCore.model.instance import Instance
-from sfrCore.model.agent import Agent
-from sfrCore.model.subject import Subject
-from sfrCore.model.rights import Rights, WORK_RIGHTS
-from sfrCore.model.language import Language
+from .core import Base, Core
+from .subject import SUBJECT_WORKS
+from .identifiers import WORK_IDENTIFIERS, Identifier
+from .altTitle import AltTitle, WORK_ALTS
+from .rawData import RawData
+from .measurement import WORK_MEASUREMENTS, Measurement
+from .link import WORK_LINKS, Link
+from .date import DateField
+from .instance import Instance
+from .agent import Agent
+from .subject import Subject
+from .rights import Rights, WORK_RIGHTS
+from .language import Language
 
-from sfrCore.helpers.errors import DBError, DataError
-from sfrCore.helpers.logger import createLog
+from ..helpers import createLog, DBError, DataError
 
 logger = createLog('workModel')
 
@@ -170,12 +169,17 @@ class Work(Core, Base):
         self.addDates()
         self.addLanguages()
 
+        epubsToLoad = getattr(self, 'epubsToLoad', [])
+        delattr(self, 'epubsToLoad')
         delattr(self, 'session')
         self.removeTmpRelations()
+
+        return epubsToLoad
     
-    def update(self, workData):
+    def update(self, workData, session=None):
         """Update an existing work record"""
         logger.info('Updating existing work record {}'.format(self.id))
+        if not self.session: self.session = session
 
         childFields = self.createTmpRelations(workData)
 
@@ -199,8 +203,12 @@ class Work(Core, Base):
         self.updateDates()
         self.updateLanguages()
         
+        epubsToLoad = getattr(self, 'epubsToLoad', [])
+        delattr(self, 'epubsToLoad')
         delattr(self, 'session')
         self.removeTmpRelations()
+
+        return epubsToLoad
     
     def addImportJson(self):
         logger.debug('Adding JSON block of current import data')
