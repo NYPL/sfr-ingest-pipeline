@@ -131,28 +131,53 @@ class DateField(Core, Base):
     
     def update(self, dateData):
         """Update fields on existing date"""
-        newRange = DateField.parseDate(dateData['date_range'])
-        if newRange != self.date_range:
-            self.date_range = newRange
-            self.display_date = dateData['display_date']
+        DateField.cleanDateData(dateData)
+        self.setDateRange(dateData['date_range'])
+        self.display_date = dateData['display_date']
 
     @classmethod
     def insert(cls, dateData):
         """Insert a new date row"""
         newDate = DateField()
+        DateField.cleanDateData(dateData)
         for field, value in dateData.items():
             if field != 'date_range': setattr(newDate, field, value)
             else: newDate.setDateRange(dateData['date_range'])
         return newDate
+
+    @classmethod
+    def cleanDateData(cls, dateData):
+        bracketMatch = re.search(r'\[([\d\-\?]+)\]', dateData['date_range'])
+        if bracketMatch: dateData['date_range'] = bracketMatch.group(1)
+        if '?' in dateData['date_range']:
+            DateField.parseUncertainty(dateData)
+        dateData['date_range'] = dateData['date_range'].strip(' ©.')
+        dateData['display_date'] = dateData['display_date'].strip(' .[]')
+    
+    @classmethod
+    def parseUncertainty(cls, dateData):
+        rawDate = re.search(r'\d+', dateData['date_range']).group(0)
+        if len(rawDate) == 2:
+            dateData['date_range'] = '{}00-{}99'.format(rawDate, rawDate)
+        elif len(rawDate) == 3:
+            dateData['date_range'] = '{}0-{}9'.format(rawDate, rawDate)
+        elif len(rawDate) == 4:
+            dateInt = int(rawDate)
+            dateData['date_range'] = '{}-{}'.format(
+                str(dateInt - 1),
+                str(dateInt + 1)
+            )
 
     def setDateRange(self, dateObj):
         logger.info('Parsing date string {} into date range'.format(dateObj))
         try:
             if type(dateObj) is list:
                 logger.debug('Received start/end dates, treat as bounds')
+                startYear = parse(dateObj[0]).year
+                endYear = parse(dateObj[1]).year
                 self.date_range = '[{}, {})'.format(
-                    parse(dateObj[0]).date(),
-                    parse(dateObj[1]).date()
+                    date(startYear, 1, 1),
+                    date(endYear, 12, 31)
                 )
             elif re.match(r'^[0-9]{4}$', dateObj):
                 logger.debug('Received year value, parsing into full year')
@@ -160,6 +185,16 @@ class DateField(Core, Base):
                 self.date_range =  '[{}, {})'.format(
                     date(year, 1, 1),
                     date(year, 12, 31)
+                )
+            elif re.match(r'^[0-9]{4}-[0-9]{4}$', dateObj):
+                dateYears = dateObj.split('-')
+                startYear = parse(dateYears[0]).year
+                endYear = parse(dateYears[1]).year
+                if endYear < startYear:
+                    raise ValueError
+                self.date_range = '[{}, {})'.format(
+                    date(startYear, 1, 1),
+                    date(endYear, 12, 31)
                 )
             elif re.match(r'^[0-9]{4}-[0-9]{2}$', dateObj):
                 logger.debug('Received year-month, parsing into month range')
