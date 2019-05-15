@@ -105,21 +105,21 @@ class Item(Core, Base):
 
     def createTmpRelations(self, itemData):
         for relType in Item.RELS:
-            tmpRel = '{}_tmp'.format(relType)
+            tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, itemData.pop(relType, []))
             if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
     
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
-        for rel in Item.RELS: delattr(self, '{}_tmp'.format(rel))
+        for rel in Item.RELS: delattr(self, 'tmp_{}'.format(rel))
     
     @classmethod
     def createOrStore(cls, session, item, instance):
         links = deque(item.pop('links', []))
         item['links'] = []
         deferredLoad = False
-        instance.deferred_epubs = []
+        instance.epubsToLoad = []
         while len(links) > 0:
             link = links.popleft()
             url = link['url']
@@ -164,7 +164,7 @@ class Item(Core, Base):
         putItem['links'] = [link]
         epubPayload = {
             'url': link['url'],
-            'id': instanceID,
+            'id': instance.id,
             'updated': item['modified'],
             'data': putItem
         }
