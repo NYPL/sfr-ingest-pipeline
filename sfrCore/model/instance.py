@@ -112,14 +112,14 @@ class Instance(Core, Base):
     
     def createTmpRelations(self, instanceData):
         for relType in Instance.RELS:
-            tmpRel = '{}_tmp'.format(relType)
+            tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, instanceData.pop(relType, []))
             if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
     
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
-        for rel in Instance.RELS: delattr(self, '{}_tmp'.format(rel))
+        for rel in Instance.RELS: delattr(self, 'tmp_{}'.format(rel))
 
     @classmethod
     def updateOrInsert(cls, session, instanceData, work=None):
@@ -129,7 +129,7 @@ class Instance(Core, Base):
         # Check for a matching instance by identifiers (and volume if present)
         existingID = Instance.lookup(
             session,
-            instanceData['identifiers'],
+            instanceData.get('identifiers', []),
             instanceData.get('volume', None)
         )
         
@@ -158,10 +158,9 @@ class Instance(Core, Base):
         if existingID is not None and newVolume is not None:
             logger.debug('Checking to see if volume records match')
             existingVol = session.query(Instance.volume)\
-                .filter(Instance.id == existingID)\
-                .one_or_none()
+                .filter(Instance.id == existingID).one()
             if existingVol[0] != newVolume:
-                logger.debug('Found matching volume {}'.format(existingVol[0]))
+                logger.debug('No matching volume, new instance')
                 existingID = None
 
         return existingID
@@ -186,10 +185,10 @@ class Instance(Core, Base):
         for key, value in instanceData.items(): setattr(self, key, value)
 
         # Drop fields that should be targeted for works
-        self.pop('series', None)
-        self.pop('series_position', None)
-        self.pop('subjects', [])
-        
+        if getattr(self, 'series', None): delattr(self, 'series')
+        if getattr(self, 'series_position', None): delattr(self, 'series_position')
+        if getattr(self, 'subjects', None): delattr(self, 'subjects')
+
         self.cleanData()
 
         self.addAgents()
@@ -323,7 +322,7 @@ class Instance(Core, Base):
             # Check if the provided record contains an epub that can be stored
             # locally. If it does, defer insert to epub creation process
             newItem = Item.createOrStore(self.session, item, self)
-            if newItem: self.items.add(Item.updateOrInsert(self.session, item))
+            if newItem: self.items.add(newItem)
         
         epubsToLoad = getattr(self, 'epubsToLoad', [])
         delattr(self, 'epubsToLoad')
