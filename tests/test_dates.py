@@ -125,7 +125,7 @@ class TestDates(unittest.TestCase):
     def test_parse_years_reversed(self):
         testDate = DateField()
         testDate.setDateRange('2010-2006')
-        self.assertEqual(testDate.date_range, '[2006-01-01, 2010-12-31)')
+        self.assertEqual(testDate.date_range, None)
 
     def test_parse_month(self):
         testDate = DateField()
