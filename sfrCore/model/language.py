@@ -11,10 +11,9 @@ from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
 import pycountry
 
-from sfrCore.model.core import Base, Core
+from .core import Base, Core
 
-from sfrCore.helpers.errors import DBError, DataError
-from sfrCore.helpers.logger import createLog
+from ..helpers import createLog, DBError, DataError
 
 logger = createLog('languageModel')
 

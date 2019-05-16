@@ -1,1 +1,1 @@
-from sfrCore.lib.sessionManager import SessionManager
+from .sessionManager import SessionManager

@@ -9,11 +9,10 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.date import DateField, RIGHTS_DATES
+from .core import Base, Core
+from .date import DateField, RIGHTS_DATES
 
-from sfrCore.helpers.errors import DBError
-from sfrCore.helpers.logger import createLog
+from ..helpers import createLog, DBError
 
 logger = createLog('rightsModel')
 

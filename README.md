@@ -1,6 +1,6 @@
 # SFR Database Core Layer
 
-This package contains the scaffolding and ORM for the SFR database sfrCore.model. Included in this is the core `model`, defined as a SQLAlchemy ORM, db migrations managed by Alembic and a `SessionManager` class that handles record update operations. It is packaged as a Layer for the AWS Lambda service.
+This package contains the scaffolding and ORM for the SFR database model. Included in this is the core `model`, defined as a SQLAlchemy ORM, db migrations managed by Alembic and a `SessionManager` class that handles record update operations. It is packaged as a Layer for the AWS Lambda service.
 
 This allows various Lambda functions of the SFR ingest pipeline to share a unified database model and greatly simplify the process of updating and migrating the database.
 

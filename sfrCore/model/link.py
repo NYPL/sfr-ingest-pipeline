@@ -9,7 +9,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSON
 
-from sfrCore.model.core import Base, Core
+from .core import Base, Core
 
 WORK_LINKS = Table(
     'work_links',
