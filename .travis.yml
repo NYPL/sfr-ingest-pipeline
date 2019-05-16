@@ -2,7 +2,6 @@ language: python
 dist: xenial
 python:
   - '3.6'
-  - '3.7'
 
 services:
   - docker
@@ -13,7 +12,7 @@ install:
 script: python -m unittest
 
 after_success:
-  - docker build -t sfr_core_layer --build-arg accesskey="$AWS_ACCESS_KEY_ID" --build-arg secretkey="$AWS_SECRET_ACCESS_KEY" --build-arg region=us-east-1
+  - docker build -t sfr_core_layer --build-arg accesskey="$AWS_ACCESS_KEY_ID" --build-arg secretkey="$AWS_SECRET_ACCESS_KEY" --build-arg region=us-east-1 sfrCore
 deploy:
   - provider: script
     skip_cleanup: true
