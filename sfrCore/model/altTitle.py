@@ -8,7 +8,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import NoResultFound
 
-from sfrCore.model.core import Base, Core
+from .core import Base, Core
 
 WORK_ALTS = Table(
     'work_alt_titles',

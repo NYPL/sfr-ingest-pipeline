@@ -13,26 +13,25 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.measurement import INSTANCE_MEASUREMENTS, Measurement
-from sfrCore.model.identifiers import INSTANCE_IDENTIFIERS, Identifier
-from sfrCore.model.link import INSTANCE_LINKS, Link
-from sfrCore.model.date import INSTANCE_DATES, DateField
-from sfrCore.model.item import Item
-from sfrCore.model.agent import Agent
-from sfrCore.model.altTitle import INSTANCE_ALTS, AltTitle
-from sfrCore.model.rights import Rights, INSTANCE_RIGHTS
-from sfrCore.model.language import Language
+from .core import Base, Core
+from .measurement import INSTANCE_MEASUREMENTS, Measurement
+from .identifiers import INSTANCE_IDENTIFIERS, Identifier
+from .link import INSTANCE_LINKS, Link
+from .date import INSTANCE_DATES, DateField
+from .item import Item
+from .agent import Agent
+from .altTitle import INSTANCE_ALTS, AltTitle
+from .rights import Rights, INSTANCE_RIGHTS
+from .language import Language
 
-from sfrCore.helpers.logger import createLog
-from sfrCore.helpers.errors import DataError
+from ..helpers import createLog, DataError
 
 logger = createLog('instances')
 
 
 class Instance(Core, Base):
     """Instances describe specific versions (e.g. editions) of a work in the
-    FRBR sfrCore.model. Each of these instance can have multiple items and be
+    FRBR model. Each of these instance can have multiple items and be
     associated with various agents, measurements, links and identifiers."""
     __tablename__ = 'instances'
     id = Column(Integer, primary_key=True)
@@ -113,14 +112,14 @@ class Instance(Core, Base):
     
     def createTmpRelations(self, instanceData):
         for relType in Instance.RELS:
-            tmpRel = '{}_tmp'.format(relType)
+            tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, instanceData.pop(relType, []))
             if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
     
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
-        for rel in Instance.RELS: delattr(self, '{}_tmp'.format(rel))
+        for rel in Instance.RELS: delattr(self, 'tmp_{}'.format(rel))
 
     @classmethod
     def updateOrInsert(cls, session, instanceData, work=None):
@@ -130,7 +129,7 @@ class Instance(Core, Base):
         # Check for a matching instance by identifiers (and volume if present)
         existingID = Instance.lookup(
             session,
-            instanceData['identifiers'],
+            instanceData.get('identifiers', []),
             instanceData.get('volume', None)
         )
         
@@ -139,11 +138,13 @@ class Instance(Core, Base):
 
             if existing.work is None and work is not None: existing.work = work
             
-            existing.update(session, instanceData)
+            epubsToLoad = existing.update(session, instanceData)
             outInstance = existing
         else:
-            outInstance = Instance.createNew(session, instanceData)
+            outInstance, epubsToLoad = Instance.createNew(session, instanceData)
         
+        if work is not None: work.epubsToLoad = epubsToLoad
+
         return outInstance
 
     @classmethod
@@ -157,22 +158,26 @@ class Instance(Core, Base):
         if existingID is not None and newVolume is not None:
             logger.debug('Checking to see if volume records match')
             existingVol = session.query(Instance.volume)\
-                .filter(Instance.id == existingID)\
-                .one_or_none()
+                .filter(Instance.id == existingID).one()
             if existingVol[0] != newVolume:
-                logger.debug('Found matching volume {}'.format(existingVol[0]))
+                logger.debug('No matching volume, new instance')
                 existingID = None
 
         return existingID
     
     @classmethod
+    def addItemRecord(cls, session, instanceID, itemRec):
+        instance = session.query(cls).get(instanceID)
+        instance.items.append(itemRec)
+
+    @classmethod
     def createNew(cls, session, instanceData):
         newInstance = cls(session=session)
         newInstance.createTmpRelations(instanceData)
-        newInstance.insertData(instanceData)
+        epubsToLoad = newInstance.insertData(instanceData)
         newInstance.removeTmpRelations()
         delattr(newInstance, 'session')
-        return newInstance
+        return newInstance, epubsToLoad
     
     def insertData(self, instanceData):
         """Insert a new instance record"""
@@ -180,10 +185,12 @@ class Instance(Core, Base):
         for key, value in instanceData.items(): setattr(self, key, value)
 
         # Drop fields that should be targeted for works
-        self.pop('series', None)
-        self.pop('series_position', None)
-        self.pop('subjects', [])
-        
+        if getattr(self, 'series', None): delattr(self, 'series')
+        if getattr(self, 'series_position', None): delattr(self, 'series_position')
+        if getattr(self, 'subjects', None): delattr(self, 'subjects')
+
+        self.cleanData()
+
         self.addAgents()
         self.addIdentifiers()
         self.addAltTitles()
@@ -192,9 +199,11 @@ class Instance(Core, Base):
         self.addDates()
         self.addRights()
         self.insertLanguages(new=True)
-        self.insertItems(new=True)
+        epubsToLoad = self.insertItems()
 
         logger.info('Inserted {}'.format(self))
+
+        return epubsToLoad
 
     def update(self, session, instanceData):
         """Update an existing instance"""
@@ -214,10 +223,12 @@ class Instance(Core, Base):
             if(value is not None):
                 setattr(self, field, value)
 
+        self.cleanData()
+
         self.updateAgents()
         self.updateIdentifiers()
         self.insertLanguages()
-        self.insertItems()
+        epubsToLoad = self.insertItems()
         self.updateAltTitles()
         self.updateMeasurements()
         self.updateDates()
@@ -226,11 +237,20 @@ class Instance(Core, Base):
         
         delattr(self, 'session')
         self.removeTmpRelations()
+
+        return epubsToLoad
     
     def setWorkFields(self, series, position, subjects):
         if series: self.work.series = series
         if position: self.work.series_position = position
         if len(subjects): self.work.importSubjects(self.session, subjects)
+
+    def cleanData(self):
+        """Cleans common data errors from fields before inserting or updating
+        records. Most commonly this is publication place and other data that
+        frequently retains MARC formatting and punctuation.
+        """
+        if self.pub_place: self.pub_place = self.pub_place.strip(' :;,')
 
     def addAgents(self):
         for agent in self.tmp_agents: self.addAgent(agent)
@@ -287,7 +307,7 @@ class Instance(Core, Base):
         languages = self.tmp_language
         if languages is not None:
             if isinstance(languages, str): languages = [languages]
-            for lang in self.newData.tmp_language: self.updateLanguage(lang)
+            for lang in languages: self.insertLanguage(lang)
     
     def insertLanguage(self, lang):
         try:
@@ -301,7 +321,12 @@ class Instance(Core, Base):
         for item in self.tmp_formats:
             # Check if the provided record contains an epub that can be stored
             # locally. If it does, defer insert to epub creation process
-            self.items.add(Item.updateOrInsert(self.session, item))
+            newItem = Item.createOrStore(self.session, item, self)
+            if newItem: self.items.add(newItem)
+        
+        epubsToLoad = getattr(self, 'epubsToLoad', [])
+        delattr(self, 'epubsToLoad')
+        return epubsToLoad
     
     def addAltTitles(self):
         self.alt_titles = { AltTitle(title=a) for a in self.tmp_alt_titles }

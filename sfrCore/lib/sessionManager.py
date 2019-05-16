@@ -2,8 +2,8 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from sfrCore.model.core import Base
-from sfrCore.helpers.logger import createLog
+from ..model.core import Base
+from ..helpers import createLog
 
 class SessionManager():
     def __init__(self, user=None, pswd=None, host=None, port=None, db=None):

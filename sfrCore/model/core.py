@@ -3,7 +3,7 @@ from sqlalchemy import Column, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
-from sfrCore.helpers.logger import createLog
+from ..helpers import createLog
 
 Base = declarative_base()
 

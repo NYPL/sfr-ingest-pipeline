@@ -14,12 +14,11 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.link import AGENT_LINKS, Link
-from sfrCore.model.date import AGENT_DATES, DateField
+from .core import Base, Core
+from .link import AGENT_LINKS, Link
+from .date import AGENT_DATES, DateField
 
-from sfrCore.helpers.logger import createLog
-from sfrCore.helpers.errors import DataError
+from ..helpers import createLog, DataError
 
 logger = createLog('agentModel')
 
@@ -62,9 +61,6 @@ class Agent(Core, Base):
     def __init__(self, session=None):
         self.session = session
 
-        # Add temporary attributes (will be removed if record is inserted)
-        self.addTmpAttrs()
-
     def __repr__(self):
         return '<Agent(name={}, sort_name={}, lcnaf={}, viaf={})>'.format(
             self.name,
@@ -78,14 +74,14 @@ class Agent(Core, Base):
 
     def createTmpRelations(self, agentData):
         for relType in Agent.RELS:
-            tmpRel = '{}_tmp'.format(relType)
+            tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, agentData.pop(relType, []))
             if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
     
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
-        for rel in Agent.RELS: delattr(self, '{}_tmp'.format(rel))
+        for rel in Agent.RELS: delattr(self, 'tmp_{}'.format(rel))
 
     @classmethod
     def updateOrInsert(cls, session, agentData):
@@ -109,7 +105,7 @@ class Agent(Core, Base):
         agentRec.createTmpRelations(agentData)
         
         for dateType in ['birth_date', 'death_date']:
-            agentRec.addLifespan(dateType, agentRec.pop(dateType, None))
+            agentRec.addLifespan(dateType, agentData.pop(dateType, None))
 
         agentRec.insertData(agentData)
         agentRec.cleanName()
@@ -130,10 +126,12 @@ class Agent(Core, Base):
         for field, value in agentData.items():
             if(
                 value is not None and
-                value.strip() != ''and
+                value.strip() != '' and
                 value != getattr(self, field)
             ):
                 setattr(self, field, value)        
+
+        self.cleanName()
 
         if self.tmp_aliases is not None:
             aliasRecs = {
@@ -163,6 +161,7 @@ class Agent(Core, Base):
         
         roles = self.tmp_roles
         self.removeTmpRelations()
+
         return roles
 
     def insertData(self, agentData):
@@ -181,7 +180,7 @@ class Agent(Core, Base):
         if type(self.tmp_link) is dict:
             self.tmp_link = [self.tmp_link]
 
-        if type(link) is list:
+        if type(self.tmp_link) is list:
             self.links = { Link(**l) for l in self.tmp_link }
 
         self.dates = { 
@@ -189,7 +188,7 @@ class Agent(Core, Base):
             for d in { d['date_type']:d for d in self.tmp_dates }.values()
         }
 
-    def lookup(self, agentData):
+    def lookup(self):
         """Attempts to retrieve a matching record from the database for the
         current agent. It does so in the following order of preference:
         1) A VIAF or LCNAF identifier attached to the current record.
@@ -253,7 +252,7 @@ class Agent(Core, Base):
         logger.debug(responseJSON)
         if 'viaf' in responseJSON:
             if responseJSON['name'] != self.name:
-                aliases.append(self.name)
+                self.aliases.add(Alias(alias=self.name))
                 self.name = responseJSON.get('name', '')
                 self.cleanName()
             self.viaf = responseJSON.get('viaf', None)
@@ -280,9 +279,15 @@ class Agent(Core, Base):
 
     def cleanName(self):
         """Parse agent name to normalize and remove/assign roles/dates"""
-        # Escape single quotes for postgres
         tmpName = self.name
-        tmpName = tmpName.replace('\'', '\'\'')
+        # Escape single quotes for postgres and other string cleaning methods
+        tmpName = tmpName.strip(' ,;:')\
+                .replace('\'', '\'\'')\
+                .replace('\r', ' ')\
+                .replace('\n', ' ')\
+                .replace('\'\'', '\'')\
+                .strip()
+            
         if re.match(r'^\[.+\]$', tmpName):
             tmpName = tmpName.strip('[]')
 
@@ -293,7 +298,7 @@ class Agent(Core, Base):
             try:
                 birthDate = lifeGroup.group(1)
                 if birthDate is not None:
-                    self.dates_tmp.append({
+                    self.tmp_dates.append({
                         'display_date': birthDate,
                         'date_range': birthDate,
                         'date_type': 'birth_date'
@@ -304,7 +309,7 @@ class Agent(Core, Base):
             try:
                 deathDate = lifeGroup.group(2)
                 if deathDate is not None:
-                    self.dates_tmp.add({
+                    self.tmp_dates.append({
                         'display_date': deathDate,
                         'date_range': deathDate,
                         'date_type': 'death_date'
@@ -318,10 +323,10 @@ class Agent(Core, Base):
             tmpName = tmpName.replace(roleGroup.group(0), '')
             tmpRoles = roleGroup.group(1).split(';')
             cleanRoles = [r.lower().strip() for r in tmpRoles]
-            self.roles_tmp.extend(cleanRoles)
+            self.tmp_roles.extend(cleanRoles)
         
         # Strip punctuation from end of name string
-        self.name = tmpName.strip('.,;:|[]" ')
+        self.name = tmpName.rstrip('.,;:|[]" ')
         self.sort_name = self.name
 
 
