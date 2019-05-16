@@ -108,7 +108,7 @@ class WorkTest(unittest.TestCase):
         mock_inst = MagicMock()
         mock_inst.name = 'testInstance'
         
-        mock_create.return_value = mock_inst
+        mock_create.side_effect = [(mock_inst, []), (mock_inst, [])]
 
         testWork.addInstances()
         self.assertEqual(list(testWork.instances)[0].name, 'testInstance')
