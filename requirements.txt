@@ -1,4 +1,3 @@
 babelfish
 elasticsearch
 elasticsearch_dsl
-git+https://github.com/NYPL/sfr-db-core.git@master#egg=sfrCore
