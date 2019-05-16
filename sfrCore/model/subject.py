@@ -47,7 +47,7 @@ class Subject(Core, Base):
     )
 
     def __repr__(self):
-        return '<Subject(subject={}, uri={}, authority={})'.format(
+        return '<Subject(subject={}, uri={}, authority={})>'.format(
             self.subject,
             self.uri,
             self.authority

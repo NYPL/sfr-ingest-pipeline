@@ -119,7 +119,7 @@ class Measurement(Core, Base):
 
     def update(self, measure):
         for field in ['value', 'weight', 'taken_at']:
-            if measure[field] is not None: setattr(self, field, measure[field])
+            if measure.get(field, None) is not None: setattr(self, field, measure[field])
 
     @classmethod
     def lookupMeasure(cls, session, measure, model, recordID):
