@@ -1,6 +1,2 @@
-psycopg2-binary
-pycountry
 pyyaml
 redis
-requests
-SQLAlchemy
