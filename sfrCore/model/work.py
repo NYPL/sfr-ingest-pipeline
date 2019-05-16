@@ -240,10 +240,12 @@ class Work(Core, Base):
 
     def addInstances(self):
         logger.info('Adding instances to work')
-        self.instances = { 
-            Instance.createNew(self.session, i) for i in self.tmp_instances
-        }
-    
+        self.epubsToLoad = []
+        for inst in self.tmp_instances:
+            newInstance, newEpubs = Instance.createNew(self.session, i)
+            self.instances.add(newInstance)
+            self.epubsToLoad.extend(newEpubs)
+
     def updateInstances(self):
         logger.info('Upserting instances for work')
         for instance in self.tmp_instances: self.updateInstance(instance)
