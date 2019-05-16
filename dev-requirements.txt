@@ -2,4 +2,4 @@ alembic
 coverage
 flake8
 python-lambda
-git+https://github.com/NYPL/sfr-db-core.git@master#egg=sfrCore
+git+https://github.com/NYPL/sfr-db-core.git@development#egg=sfrCore

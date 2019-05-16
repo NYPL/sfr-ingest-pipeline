@@ -6,7 +6,7 @@ python:
 install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
-before_script: touch config/development.yaml
+before_script: mkdir config && touch config/development.yaml
 script: make test
 #
 # The travis configuration beloy will deploy this lambda to the function defined
