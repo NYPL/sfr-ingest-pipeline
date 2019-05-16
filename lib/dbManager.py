@@ -6,6 +6,8 @@ from sqlalchemy.orm import sessionmaker
 
 from sfrCore import Work, Instance, Item, Identifier
 
+from lib.outputManager import OutputManager
+
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError
 
@@ -41,9 +43,16 @@ def importRecord(session, record):
             primaryID
         )
 
-        Work.update(session, existingWork, workData)
+        epubsToLoad = existingWork.update(workData, session=session)
 
         existingWork.date_modified = datetime.utcnow()
+
+        for deferredEpub in epubsToLoad: 
+            OutputManager.putKinesis(
+                epubPayload,
+                os.environ['EPUB_STREAM'],
+                recType='item'
+            )
         
         return 'Work {}'.format(existingWork.uuid.hex)
 
@@ -62,7 +71,14 @@ def importRecord(session, record):
 
         existing = session.query(Instance).get(existingID)
 
-        Instance.update(session, existing, instanceData)
+        epubsToLoad = existing.update(session, instanceData)
+
+        for deferredEpub in epubsToLoad: 
+            OutputManager.putKinesis(
+                epubPayload,
+                os.environ['EPUB_STREAM'],
+                recType='item'
+            )
         
         return 'Instance #{}'.format(existing.id)
 
