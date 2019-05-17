@@ -441,9 +441,84 @@
           }
         }
       }
+    },
+    "/v0.1/research-now/viaf-lookup": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "Looks up agent names in the OCLC VIAF API",
+        "description": "Queries the OCLC VIAF API for agent records, including a controlled version of the agent's name along with VIAF and LCNAF IDs. These responses are cached in a Redis cluster for faster responses to known agents.",
+        "parameters": [
+          {
+            "name": "queryName",
+            "in": "query",
+            "description": "Name of agent to query in VIAF API. Can be an individual or organization.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing a response in the body parameter, in a serialized JSON string.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "404": {
+            "description": "A message stating that a matching VIAF record could not be found.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "500": {
+            "description": "Indicates that an error was encountered in VIAF API, Redis cluster, or other upstream service.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "502": {
+            "description": "An internal server error, either in the Lambda function or the API Gateway integration",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "504": {
+            "description": "A malformed response was received from the Lambda function.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
+    "VIAFResultResponse": {
+      "type": "object",
+      "properties": {
+        "statusCode": {
+          "type": "integer"
+        },
+        "header": {
+          "$ref": "#/definitions/VIAFHeader"
+        },
+        "body": {
+          "type": "string"
+        },
+        "isBase64Encoded": {
+          "type": "boolean"
+        }
+      }
+    },
+    "VIAFHeader": {
+      "type": "object",
+      "properties": {
+        "req-time": {
+          "type": "number"
+        }
+      }
+    },
     "ResultResponse": {
       "type": "object",
       "properties": {
@@ -522,12 +597,6 @@
             "$ref": "#/definitions/SortBlock"
           }
         },
-        "aggregations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AggregationBlock"
-          }
-        },
         "per_page": {
           "description": "Results to return per page. Defaults to 10",
           "example": 10,
@@ -579,12 +648,6 @@
             "$ref": "#/definitions/SortBlock"
           }
         },
-        "aggregations": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/AggregationBlock"
-          }
-        },
         "per_page": {
           "description": "Results to return per page. Defaults to 10",
           "example": 10,
@@ -594,22 +657,6 @@
           "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
           "example": 0,
           "type": "integer"
-        }
-      }
-    },
-    "AggregationBlock": {
-      "title": "Aggregation",
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "example": "terms",
-          "description": "Type of aggregation to run, most frequently 'terms'"
-        },
-        "field": {
-          "type": "string",
-          "example": "entities.name.keyword",
-          "description": "Field to run aggregation on"
         }
       }
     },
@@ -641,7 +688,7 @@
         },
         "value": {
           "type": "string",
-          "example": "it",
+          "example": "English",
           "description": "Value on which to filter. Can be a string (for term filters), or an object such as {'gte': 2000} for years"
         }
       }
