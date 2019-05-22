@@ -3,3 +3,8 @@ config/local.json
 package-lock.json
 node_modules
 dist
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
