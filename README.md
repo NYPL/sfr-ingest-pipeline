@@ -50,6 +50,16 @@ The `search` endpoint supports both `GET` and `POST` requests with the same basi
 - `field` the field(s) you would like to search. Currently supported are `keyword`, `title`, `author` and `subject`.
 - `query` the string you would like to search. The query field supports boolean search construction as well as quotation marks for exact term matching.
 
+### Search Fields
+
+The following search field options are supported:
+
+- `keyword`: The default search field that queries all fields associated with a work record. NOTE: this does not include authors or subjects.
+- `author`: A full text search against author names. This search is restricted by agents' `roles` as they pertain to works and instances. For example this will return a work if an agent has a "contributor" relationship but not if they have a "publisher" relationship. These roles are filtered by a blacklist maintained in the `lib/search.js` file.
+- `viaf`: An utility endpoint that returns works associated with an agent identified by a VIAF ID.
+- `lcnaf`: An utility endpoint that returns works associated with a LCNAF ID.
+- `subject`: Queries the full set of subjects associated with a work.
+
 ## Paging
 
 ElasticSearch supports two distinct paging strategies, both of which are supported by this API. A standard `from/size` option allows for the retrieval of arbitrary pages in the index and a `search_after` option that allows for retrieval of adjacent records from a current result set. It should be noted that ElasticSearch, by default, restricts `from/size` to the first 10,000 records of a result set. This is circumvented internally by manipulating the result object.
@@ -71,11 +81,16 @@ Basic sorting is implemented to support the requirements of the next/previous pa
 
 ## Filtering
 
-TKTKTK
+Filtering is supported on a set of pre-defined fields. At present the following filters are supported:
 
-## Aggregations
+- `language`: Filters results to return only works matching the provided language
 
-TKTKTK
+## Aggregations/Facets
+
+Aggregations provide the ability to narrow searches from a results page by providing options that can be browsed and selected. Aggregations blocks are returned by default with all search results and can be used to pass additional parameters
+to a `filter` which can return a smaller result set. At present the following aggregation blocks are returned:
+
+- `languages`: An array of languages with their frequency in the current, full, result set, sorted in descending order of frequency.
 
 ## Single Record
 
