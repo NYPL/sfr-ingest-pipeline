@@ -30,18 +30,17 @@ class Loaders():
         records for an already executed query. The root is the same, this
         merely applies different parameters to the url.
         """
-        sinceStr = 'from={}'.format(self.load_since.strftime('%Y-%m-%d'))
         if resumptionToken is None:
             logger.debug('Loading initial batch of DOAB records')
-            reqStr = 'metadataPrefix=marcxml'
+            sinceStr = 'from={}'.format(self.load_since.strftime('%Y-%m-%d'))
+            reqStr = '{}&metadataPrefix=marcxml'.format(sinceStr)
         else:
             logger.debug('Loading batch {} of DOAB records'.format(
                 resumptionToken
             ))
             reqStr = 'resumptionToken={}'.format(resumptionToken)
-        doabRes = requests.get('{}&{}&{}'.format(
+        doabRes = requests.get('{}&{}'.format(
             self.doab_root,
-            sinceStr,
             reqStr
         ))
         if doabRes.status_code != 200:
