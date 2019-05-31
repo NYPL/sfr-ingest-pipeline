@@ -54,10 +54,11 @@ describe('v2 simple search tests', () => {
     testSearch.query = {
       build: sinon.stub(),
     }
-
+    const editionRangeStub = sinon.stub(Search, 'formatResponseEditionRange')
     const resp = await testSearch.execSearch()
     expect(resp.took).to.equal(0)
     expect(resp.hits.hits.length).to.equal(1)
+    editionRangeStub.restore()
   })
 
   it('should create facet object for response', (done) => {
@@ -99,6 +100,87 @@ describe('v2 simple search tests', () => {
     expect(testBody).to.have.property('aggs')
     expect(testBody.aggs).to.have.property('language')
     expect(testBody.aggs.language).to.have.property('nested')
+    done()
+  })
+
+  it('should return a year from an array of editions', (done) => {
+    const stubGetRange = sinon.stub(Search, 'getEditionRangeValue')
+    stubGetRange.onFirstCall().returns('1900')
+    stubGetRange.onSecondCall().returns('2000')
+    const testResp = {
+      took: 0,
+      timed_out: false,
+      hits: {
+        total: 1,
+        max_score: 1,
+        hits: [
+          {
+            _index: 'sfr_test',
+            _type: 'test',
+            _id: 1,
+            _score: 1,
+          },
+        ],
+      },
+    }
+    Search.formatResponseEditionRange(testResp)
+    expect(testResp.hits.hits[0].edition_range).to.equal('1900 - 2000')
+    stubGetRange.restore()
+    done()
+  })
+
+  it('should get a year for a provided set of editions', (done) => {
+    const stubCompare = sinon.stub(Search, 'startEndCompare')
+    const testHit = {
+      _source: {
+        instances: [
+          {
+            pub_date: {
+              gte: '2019-01-01',
+              lte: '2020-12-31',
+            },
+          }, {
+            pub_date: null,
+          },
+        ],
+      },
+    }
+
+    const testStart = Search.getEditionRangeValue(testHit, 'gte', 1)
+    const testEnd = Search.getEditionRangeValue(testHit, 'lte', -1)
+    expect(testStart).to.equal(2019)
+    expect(testEnd).to.equal(2020)
+    stubCompare.restore()
+    done()
+  })
+
+  it('should return ???? if no pub date found', (done) => {
+    const stubCompare = sinon.stub(Search, 'startEndCompare')
+    const testHit = {
+      _source: {
+        instances: [
+          {
+            pub_date: null,
+          },
+        ],
+      },
+    }
+
+    const testStart = Search.getEditionRangeValue(testHit, 'gte', 1)
+    const testEnd = Search.getEditionRangeValue(testHit, 'lte', -1)
+    expect(testStart).to.equal('????')
+    expect(testEnd).to.equal('????')
+    stubCompare.restore()
+    done()
+  })
+
+  it('should generate a comparison function for sorting', (done) => {
+    const compareFunction = Search.startEndCompare('gte', 1)
+    expect(compareFunction).to.be.instanceOf(Function)
+    const edition1 = { pub_date: { gte: '1999-01-01', lte: null } }
+    const edition2 = { pub_date: { gte: '2000-01-01', lte: null } }
+    const order = compareFunction(edition1, edition2)
+    expect(order).to.equal(-1)
     done()
   })
 })
