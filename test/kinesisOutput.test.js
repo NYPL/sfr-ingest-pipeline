@@ -23,7 +23,7 @@ describe('Kinesis Output [kinesisOutput.js]', () => {
         'gutenbergID': '0000',
         'data': {
           'title': 'Hello',
-          'altTitle': 'Test Data',
+          'alt_titles': 'Test Data',
           'entities': [],
           'subjects': []
         },
@@ -44,7 +44,7 @@ describe('Kinesis Output [kinesisOutput.js]', () => {
         'gutenbergID': '0000',
         'data': {
           'title': 'Failure',
-          'altTitle': 'Test Fail Data',
+          'alt_titles': 'Test Fail Data',
           'entities': [],
           'subjects': []
         },

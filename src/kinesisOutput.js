@@ -22,7 +22,6 @@ exports.resultHandler = (handleResp) => {
       PartitionKey: process.env.AWS_KINESIS_STREAMID,
       StreamName: process.env.AWS_KINESIS_STREAMNAME
     }
-
     let kinesisOut = kinesis.putRecord(outParams).promise()
     kinesisOut.then((data) => {
       logger.notice('Wrote Result to Kinesis stream')

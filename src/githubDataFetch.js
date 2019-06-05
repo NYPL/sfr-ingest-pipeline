@@ -46,12 +46,12 @@ const authLink = setContext((_, { headers }) => {
 // that) it should not make an impact (this is responding to a lambda, not users)
 const apolloOpts = {
   watchQuery: {
-    fetchPolicy: 'network-only',
+    fetchPolicy: 'no-cache',
     errorPolicy: 'ignore'
   },
   query: {
-    fetchPolicy: 'network-only',
-    errorPolicy: 'ignore'
+    fetchPolicy: 'no-cache',
+    errorPolicy: 'all'
   }
 }
 
@@ -74,17 +74,20 @@ exports.getRepos = () => {
                 organization(login:\"GITenberg\") {
                   repositories(orderBy:{direction:DESC, field:PUSHED_AT}, first:${first}) {
                   nodes {
-                    id, name, resourcePath, url, updatedAt, pushedAt
+                    id, name, resourcePath, url, pushedAt
                   }
                 }
               }
             }
           `
     }).then(data => {
+
+      // If data is null, the GraphQL request errored out and should return false
+      if (data['data'] == 'null') resolve(false)
+
       let repoList = data['data']['organization']['repositories']['nodes']
-      console.log(repoList)
       repoList.forEach((repo) => {
-        let updatedAt = moment(repo['updatedAt'])
+        let updatedAt = moment(repo['pushedAt'])
         if (updatedAt.isBefore(fetchBoundary)) return
         let name = repo['name']
 
@@ -92,7 +95,10 @@ exports.getRepos = () => {
         if (!idnoMatch) return
 
         let idno = idnoMatch[0]
-        repoIDs.push([name, idno])
+
+        let url = repo['url']
+
+        repoIDs.push([name, idno, url])
       })
       resolve(repoIDs)
     })
@@ -106,6 +112,7 @@ exports.getRDF = (repo, lcRels) => {
   return new Promise((resolve, reject) => {
     let repoName = repo[0]
     let gutID = repo[1]
+    let repoURI = repo[2]
     let rdfPath = 'master:pg' + gutID + '.rdf'
     client.query({
       query: gql`
@@ -119,11 +126,13 @@ exports.getRDF = (repo, lcRels) => {
             }
           `
     }).then(data => {
-      RDFParser.parseRDF(data, lcRels, (err, rdfData) => {
+      RDFParser.parseRDF(data, gutID, repoURI, lcRels, (err, rdfData) => {
         if (err) {
           resolve({
             'recordID': gutID,
             'source': 'gutenberg',
+            'type': 'work',
+            'method': 'insert',
             'data': err,
             'status': 500,
             'message': 'Could not parse Gutenberg Metadata'
@@ -132,6 +141,8 @@ exports.getRDF = (repo, lcRels) => {
           resolve({
             'recordID': gutID,
             'source': 'gutenberg',
+            'type': 'work',
+            'method': 'insert',
             'data': rdfData,
             'status': 200,
             'message': 'Retrieved Gutenberg Metadata'
@@ -142,6 +153,8 @@ exports.getRDF = (repo, lcRels) => {
       resolve({
         'recordID': gutID,
         'source': 'gutenberg',
+        'type': 'work',
+        'method': 'insert',
         'data': err,
         'status': 500,
         'message': 'Error in parsing Gutenberg Record'

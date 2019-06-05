@@ -7,7 +7,6 @@ import Lambda from '../index.js'
 import GitFetch from '../src/githubDataFetch.js'
 import Kinesis from '../src/kinesisOutput.js'
 import Helpers from '../src/fetchHelpers'
-import event from '../event.json'
 chai.should()
 chai.use(sinonChai)
 chai.use(chaiAsPromised)
@@ -16,6 +15,10 @@ const expect = chai.expect
 describe('Handlers [index.js]', () => {
   describe('exports.handler', () => {
     let fetchStub, rdfStub, kinesisPut, getLCRels
+
+    const event = JSON.stringify({
+      source: 'local.test'
+    })
 
     beforeEach(() => {
       fetchStub = sinon.stub(Lambda, 'retrieveRepos')
@@ -48,13 +51,12 @@ describe('Handlers [index.js]', () => {
       expect(errArg.message).to.equal('Github API request returned too many 5XX errors')
     })
 
-    it('should fail if the repository data it fetched is empty', async () => {
+    it('should return 204 if the repository data it fetched is empty', async () => {
       fetchStub.returns([])
       let callback = sinon.spy()
       await Lambda.handler(event, null, callback)
-      const errArg = callback.firstCall.args[0]
-      expect(errArg).to.be.instanceof(Error)
-      expect(errArg.message).to.equal('No updates made in the fetch period to GITenberg')
+      const msg = callback.firstCall.args[1]
+      expect(msg).to.equal('No updated records found')
     })
   })
 

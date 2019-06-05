@@ -4,6 +4,7 @@ import chaiAsPromised from 'chai-as-promised'
 import sinon from 'sinon'
 import sinonChai from 'sinon-chai'
 import RDFParser from '../src/parseRDF.js'
+import { Format } from '../src/sfrMetadataModel.js'
 
 chai.should()
 chai.use(sinonChai)
@@ -142,7 +143,7 @@ describe('RDF Parser [parseRDF.js]', () => {
     it('should return data object with successful parse', () => {
       let gutStub = sinon.stub(RDFParser, 'loadGutenbergRecord')
       gutStub.returns(jsonData)
-      RDFParser.parseRDF(testData, testLC, (err, data) => {
+      RDFParser.parseRDF(testData, 1, 'https://gutenberg.org/1', testLC, (err, data) => {
         expect(data).to.not.equal(null)
         expect(data['title']).to.equal('Michel and Angele [A Ladder of Swords], Volume 1.')
       })
@@ -202,7 +203,7 @@ describe('RDF Parser [parseRDF.js]', () => {
           }
         }
       }
-      RDFParser.parseRDF(badXML, testLC, (err, data) => {
+      RDFParser.parseRDF(badXML, 1, 'https://gutenberg.org/1', testLC, (err, data) => {
         expect(err).to.not.equal(null)
       })
       gutStub.restore()
@@ -213,11 +214,11 @@ describe('RDF Parser [parseRDF.js]', () => {
     it('should return a valid JSON object', () => {
       let formatStub = sinon.stub(RDFParser, 'getFormats')
       let subjectStub = sinon.stub(RDFParser, 'getSubjects')
-      let entityStub = sinon.stub(RDFParser, 'getEntities')
+      let entityStub = sinon.stub(RDFParser, 'getAgents')
       let fieldStub = sinon.stub(RDFParser, 'getRecordField')
       let attribStub = sinon.stub(RDFParser, 'getFieldAttrib')
 
-      formatStub.returns(jsonData['formats'])
+      formatStub.returns([new Format('test', 'test', 'test'), new Format('test', 'test', 'test')])
 
       subjectStub.returns(jsonData['subjects'])
 
@@ -229,8 +230,9 @@ describe('RDF Parser [parseRDF.js]', () => {
 
       let parsedData = RDFParser.loadGutenbergRecord(jsonInput, testLC)
       expect(parsedData['title']).to.equal('Test Value')
-      expect(parsedData['formats']).to.have.lengthOf(2)
-      expect(parsedData['entities'][0]['name']).to.equal('Parker, Gilbert')
+      expect(parsedData['instances']).to.have.lengthOf(1)
+      expect(parsedData['instances'][0]['formats']).to.have.lengthOf(2)
+      expect(parsedData['agents'][0]['name']).to.equal('Parker, Gilbert')
 
       formatStub.restore()
       subjectStub.restore()
@@ -240,11 +242,11 @@ describe('RDF Parser [parseRDF.js]', () => {
     })
   })
 
-  describe('exports.getEntities()', () => {
-    let entStub = sinon.stub(RDFParser, 'getEntity')
+  describe('exports.getAgents()', () => {
+    let entStub = sinon.stub(RDFParser, 'getAgent')
     it('should return single entity for creator', () => {
       entStub.returns(jsonData['entities'][0])
-      let creator = RDFParser.getEntities(jsonInput['pgterms:ebook'][0], testLC)
+      let creator = RDFParser.getAgents(jsonInput['pgterms:ebook'][0], testLC)
       expect(creator).to.have.lengthOf(1)
       expect(creator[0]['role']).to.equal('author')
       expect(creator[0]['name']).to.equal('Parker, Gilbert')
@@ -254,7 +256,7 @@ describe('RDF Parser [parseRDF.js]', () => {
     it('should return empty array if no creator is found', () => {
       let jsonNoCreator = Object.assign({}, jsonInput['pgterms:ebook'][0])
       delete jsonNoCreator['dcterms:creator']
-      let noCreator = RDFParser.getEntities(jsonNoCreator, testLC)
+      let noCreator = RDFParser.getAgents(jsonNoCreator, testLC)
       expect(noCreator).to.have.lengthOf(0)
     })
 
@@ -262,59 +264,35 @@ describe('RDF Parser [parseRDF.js]', () => {
       let jsonAutCreator = Object.assign({}, jsonInput['pgterms:ebook'][0])
       jsonAutCreator['marcrel:aut'] = jsonAutCreator['dcterms:creator']
       delete jsonAutCreator['dcterms:creator']
-      let autCreator = RDFParser.getEntities(jsonAutCreator, testLC)
+      let autCreator = RDFParser.getAgents(jsonAutCreator, testLC)
       expect(autCreator).to.have.lengthOf(1)
-      expect(autCreator[0]['role']).to.equal('author')
+      expect(autCreator[0]['roles'][0]).to.equal('author')
       expect(autCreator[0]['name']).to.equal('Parker, Gilbert')
     })
   })
 
-  describe('exports.getEntity()', () => {
-    let recStub, attribStub
-    beforeEach(() => {
-      recStub = sinon.stub(RDFParser, 'getRecordField')
-      attribStub = sinon.stub(RDFParser, 'getFieldAttrib')
-      recStub.returns('Sample Value')
-      attribStub.returns('Sample Attrib')
-    })
-
-    afterEach(() => {
-      recStub.restore()
-      attribStub.restore()
-    })
-
+  describe('exports.getAgent()', () => {
     it('should return entity object', () => {
       let ent = jsonInput['pgterms:ebook'][0]['dcterms:creator'][0]['pgterms:agent'][0]
-      let entity = RDFParser.getEntity(ent, 'author')
-      expect(entity).to.include({ 'name': 'Sample Value', 'role': 'author' })
+      let entity = RDFParser.getAgent(ent, 'author')
+      expect(entity).to.include({ 'name': 'Parker, Gilbert'})
+      expect(entity['roles'][0]).to.equal('author')
     })
 
     it('should include a webpage if it exists', () => {
       let ent = jsonInput['pgterms:ebook'][0]['dcterms:creator'][0]['pgterms:agent'][0]
-      let entity = RDFParser.getEntity(ent, 'author')
-      expect(entity).to.include({ 'webpage': 'Sample Attrib' })
+      let entity = RDFParser.getAgent(ent, 'author')
+      expect(entity['link']).to.include({'url': 'http://en.wikipedia.org/wiki/Gilbert_Parker' })
     })
   })
 
   describe('exports.getSubjects()', () => {
-    let recStub, attribStub
-    beforeEach(() => {
-      recStub = sinon.stub(RDFParser, 'getRecordField')
-      attribStub = sinon.stub(RDFParser, 'getFieldAttrib')
-      recStub.returns('Sample Value')
-      attribStub.returns('http://lc.gov/LCC')
-    })
-
-    afterEach(() => {
-      recStub.restore()
-      attribStub.restore()
-    })
     it('should return an array of subjects', () => {
       let subjects = jsonInput['pgterms:ebook'][0]['dcterms:subject']
       let subjReturn = RDFParser.getSubjects(subjects)
       expect(subjReturn).to.have.lengthOf(1)
-      expect(subjReturn[0]['term']).to.equal('Sample Value')
-      expect(subjReturn[0]['authority']).to.equal('LCC')
+      expect(subjReturn[0].subject).to.equal('PS')
+      expect(subjReturn[0].authority).to.equal('LCC')
     })
   })
 
@@ -323,7 +301,7 @@ describe('RDF Parser [parseRDF.js]', () => {
     beforeEach(() => {
       recStub = sinon.stub(RDFParser, 'getRecordField')
       attribStub = sinon.stub(RDFParser, 'getFieldAttrib')
-      recStub.returns('Sample Value')
+      recStub.returns('Test Value')
       attribStub.returns('something.epub')
     })
 
@@ -332,10 +310,11 @@ describe('RDF Parser [parseRDF.js]', () => {
       attribStub.restore()
     })
     it('should return an array of formats', () => {
-      let formats = jsonInput['pgterms:ebook'][0]['dcterms:hasFormat']
-      let formReturn = RDFParser.getFormats(formats)
+      const formats = jsonInput['pgterms:ebook'][0]['dcterms:hasFormat']
+      const formReturn = RDFParser.getFormats(formats)
       expect(formReturn).to.have.lengthOf(2)
-      expect(formReturn[0]['url']).to.equal('something.epub')
+      expect(formReturn[0].links[0].url).to.equal('something.epub')
+      expect(formReturn[0].links[0].flags.images).to.be.true
     })
   })
 

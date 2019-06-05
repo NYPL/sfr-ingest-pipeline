@@ -34,7 +34,7 @@ describe('GitHub Data [githubDataFetch.js]', () => {
                 'name': 'Gutenberg_Test',
                 'resourcePath': '/github/gitenberg',
                 'url': 'https://gutenberg.org/nan',
-                'updatedAt': moment().format(),
+                'pushedAt': moment().format(),
                 '__typename': 'Repository'
               }],
               '__typename': 'Repositories'
@@ -63,7 +63,7 @@ describe('GitHub Data [githubDataFetch.js]', () => {
                 'name': 'Test_Repo_0000',
                 'resourcePath': '/github/rel/path',
                 'url': 'https://gutenberg.org/0000',
-                'updatedAt': moment().format(),
+                'pushedAt': moment().format(),
                 '__typename': 'Repository'
               }],
               '__typename': 'Repositories'
@@ -98,7 +98,7 @@ describe('GitHub Data [githubDataFetch.js]', () => {
     it('should return data block parsed from RDF', async () => {
       let parseStub = sinon.stub(RDFParser, 'parseRDF').yields(null, {
         'title': 'Hello',
-        'altTitle': 'Test Data',
+        'alt_titles': 'Test Data',
         'entities': [],
         'subjects': []
       })
