@@ -109,11 +109,11 @@ export class Format {
 
 
 export class Link {
-  constructor(url, mediaType, relType){
+  constructor(url, mediaType, flags){
     this.url = url
     this.media_type = mediaType
     this.content = null
-    this.rel_type = relType
+    this.flags = flags
     this.thumbnail = null
   }
 }

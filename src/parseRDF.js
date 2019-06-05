@@ -182,7 +182,8 @@ exports.getAgent = (agent, role) => {
   // If a webpage exists, create a Link object for that page
   if ('pgterms:webpage' in agent) {
     let pageLink = exports.getFieldAttrib(agent['pgterms:webpage'][0], 'rdf:resource')
-    entRec['link'] = new Link(pageLink, 'text/html', 'description')
+    const bioFlags = {local: false, download: false, ebook: false}
+    entRec['link'] = new Link(pageLink, 'text/html', bioFlags)
   }
 
   let newAgent = new Agent(entRec['name'], [entRec['role']], entRec['aliases'], entRec['link'])
@@ -231,8 +232,9 @@ exports.getFormats = (formats, license, gutenbergID) => {
     let url = exports.getFieldAttrib(fileFormat, 'rdf:about')
 
     if (url.includes('.epub')) {
-
-      let epubLink = new Link(url, 'epub', 'ebook')
+      const epubImages = !url.includes('noimages')
+      const epubFlags = { local: false, download: true, ebook: true, images: epubImages }
+      const epubLink = new Link(url, 'application/epub+zip', epubFlags)
       let epub = {}
 
       fileFields.map(field => {
