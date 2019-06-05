@@ -221,27 +221,24 @@ exports.getSubjects = (subjects) => {
 }
 
 exports.getFormats = (formats, license, gutenbergID) => {
-  let epubs = []
+  const epubs = []
 
   if (!formats) return epubs
 
   formats.map(format => {
-
-    let fileFormat = format['pgterms:file'][0]
-
-    let url = exports.getFieldAttrib(fileFormat, 'rdf:about')
-
+    const fileFormat = format['pgterms:file'][0]
+    const url = exports.getFieldAttrib(fileFormat, 'rdf:about')
     if (url.includes('.epub')) {
       const epubImages = !url.includes('noimages')
       const epubFlags = { local: false, download: true, ebook: true, images: epubImages }
       const epubLink = new Link(url, 'application/epub+zip', epubFlags)
-      let epub = {}
+      const epub = {}
 
       fileFields.map(field => {
         epub[field[1]] = exports.getRecordField(fileFormat, field[0])
       })
 
-      let sfrFormat = new Format('application/epub+zip', epubLink, epub['modified'])
+      const sfrFormat = new Format('application/epub+zip', epubLink, epub['modified'])
       sfrFormat.addMeasurement('bytes', epub['size'], 1, moment().format(), gutenbergID)
 
       sfrFormat.source = 'gutenberg'

@@ -310,10 +310,11 @@ describe('RDF Parser [parseRDF.js]', () => {
       attribStub.restore()
     })
     it('should return an array of formats', () => {
-      let formats = jsonInput['pgterms:ebook'][0]['dcterms:hasFormat']
-      let formReturn = RDFParser.getFormats(formats)
+      const formats = jsonInput['pgterms:ebook'][0]['dcterms:hasFormat']
+      const formReturn = RDFParser.getFormats(formats)
       expect(formReturn).to.have.lengthOf(2)
-      expect(formReturn[0]['link']['url']).to.equal('something.epub')
+      expect(formReturn[0].links[0].url).to.equal('something.epub')
+      expect(formReturn[0].links[0].flags.images).to.be.true
     })
   })
 
