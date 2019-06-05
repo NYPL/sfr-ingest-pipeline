@@ -3,6 +3,7 @@ const chai = require('chai')
 const sinon = require('sinon')
 const sinonChai = require('sinon-chai')
 const bodybuilder = require('bodybuilder')
+const logger = require('../lib/logger')
 
 chai.should()
 chai.use(sinonChai)
@@ -181,6 +182,35 @@ describe('v2 simple search tests', () => {
     const edition2 = { pub_date: { gte: '2000-01-01', lte: null } }
     const order = compareFunction(edition1, edition2)
     expect(order).to.equal(-1)
+    done()
+  })
+
+  it('should add gte/lte date filter on publication dates', (done) => {
+    const testApp = sinon.mock()
+    testApp.logger = logger
+    const testParams = { filters: [{ field: 'years', value: { start: 1900, end: 2000 } }] }
+    const testSearch = new Search(testApp, testParams)
+    testSearch.query = bodybuilder()
+    testSearch.addFilters()
+    testBody = testSearch.query.build()
+    expect(testBody).to.have.property('query')
+    expect(testBody.query.nested.query.range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
+    expect(testBody.query.nested.query.range['instances.pub_date'].lte.getTime()).to.equal(new Date('2000-12-31T12:00:00.000+00:00').getTime())
+    done()
+  })
+
+  it('should add gte date filter on publication dates if only start is provided', (done) => {
+    const testApp = sinon.mock()
+    testApp.logger = logger
+    const testParams = { filters: [{ field: 'years', value: { start: 1900 } }] }
+    const testSearch = new Search(testApp, testParams)
+    testSearch.query = bodybuilder()
+    testSearch.addFilters()
+    testBody = testSearch.query.build()
+    expect(testBody).to.have.property('query')
+    expect(testBody.query.nested.query.range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
+    // eslint-disable-next-line no-unused-expressions
+    expect(testBody.query.nested.query.range['instances.pub_date'].lte).to.be.undefined
     done()
   })
 })
