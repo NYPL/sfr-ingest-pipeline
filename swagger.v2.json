@@ -666,8 +666,9 @@
       "properties": {
         "field": {
           "type": "string",
-          "example": "title.keyword",
-          "description": "An ElasticSearch field to sort results by"
+          "example": "title",
+          "description": "An ElasticSearch field to sort results by",
+          "enum": ["title"]
         },
         "dir": {
           "type": "string",
