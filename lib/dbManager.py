@@ -1,13 +1,7 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
-from model.core import Base
-from model.work import Work
-from model.instance import Instance
-from model.item import Item
-from model.identifiers import Identifier
+from sfrCore import Work, Instance, Item, Identifier
 
 from lib.queryManager import queryWork
 from lib.outputManager import OutputManager
@@ -15,39 +9,6 @@ from lib.outputManager import OutputManager
 from helpers.logHelpers import createLog
 
 logger = createLog('db_manager')
-
-# Load environemnt variables for database connection
-USERNAME = os.environ['DB_USER']
-PASSWORD = os.environ['DB_PASS']
-HOST = os.environ['DB_HOST']
-PORT = os.environ['DB_PORT']
-DATABASE = os.environ['DB_NAME']
-
-
-def dbGenerateConnection():
-    """Helper function that generates sqlAlchemy engine from database details
-    provided in configuration files and loaded as environment variables"""
-    engine = create_engine(
-        'postgresql://{}:{}@{}:{}/{}'.format(
-            USERNAME,
-            PASSWORD,
-            HOST,
-            PORT,
-            DATABASE
-        )
-    )
-
-    # If the database does not exist yet, create database from the local model
-    if not engine.dialect.has_table(engine, 'works'):
-        Base.metadata.create_all(engine)
-
-    return engine
-
-
-def createSession(engine):
-    """Create a single database session"""
-    Session = sessionmaker(bind=engine, autoflush=True)
-    return Session()
 
 
 def importRecord(session, record):
@@ -83,10 +44,16 @@ def importRecord(session, record):
             # TODO Create stream and make configurable in env file
             OutputManager.putKinesis(workData, 'sfr-db-update-development')
             return 'Existing work {}'.format(workUUID)
-
-        dbWork = Work.insert(session, workData)
+        dbWork = Work(session=session)
+        epubsToLoad = dbWork.insert(workData)
 
         queryWork(session, dbWork, dbWork.uuid.hex)
+        for deferredEpub in epubsToLoad: 
+            OutputManager.putKinesis(
+                deferredEpub,
+                os.environ['EPUB_STREAM'],
+                recType='item'
+            )
 
         return dbWork.uuid.hex
 
@@ -111,9 +78,16 @@ def importRecord(session, record):
             )
             return 'Existing instance Row ID {}'.format(instanceID)
 
-        dbInstance = Instance.insert(session, instanceData)
+        dbInstance, epubsToLoad = Instance.createNew(session, instanceData)
 
         dbInstance.work.date_modfied = datetime.utcnow()
+
+        for deferredEpub in epubsToLoad: 
+            OutputManager.putKinesis(
+                deferredEpub,
+                os.environ['EPUB_STREAM'],
+                recType='item'
+            )
 
         return 'Instance #{}'.format(dbInstance.id)
 
@@ -140,7 +114,7 @@ def importRecord(session, record):
 
         instanceID = itemData.pop('instance_id', None)
 
-        dbItem, op = Item.insert(session, itemData)
+        dbItem = Item.createItem(session, itemData)
 
         logger.debug('Got new item record, adding to instance')
         Instance.addItemRecord(session, instanceID, dbItem)

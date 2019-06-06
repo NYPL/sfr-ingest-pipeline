@@ -1,7 +1,7 @@
 import os
 
-from model.work import Work
-from model.identifiers import (
+from sfrCore import Work
+from sfrCore.model.identifiers import (
     OCLC,
     OWI,
     LCCN,
