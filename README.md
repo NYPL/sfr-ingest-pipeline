@@ -1,10 +1,15 @@
 # SFR Database Manager
+
+[![Build Status](https://travis-ci.com/NYPL/sfr-db-manager.svg?branch=development)](https://travis-ci.com/NYPL/sfr-db-manager)
+[![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-db-manager.svg)](https://badge.fury.io/gh/nypl%2Fsfr-db-manager)
+
 This is a Lambda function that manages writing new records to the ResearchNow/SFR postgres database instance. Any records where an existing match is found are deferred to the sfr-db-updater function, which implements additional logic for finding matches and merging records. This function is designed to quickly ingest new insert requests and start the data enrichment and ePub storage components of the data pipeline.
 
 This repository also contains the "source of truth" for the database model and migrations are defined in the `alembic` directory of this repository.
 
 ## Version
-v0.0.2
+
+v0.1.0
 
 ## Deployment
 This function (and other similar functions) rely on the `psycopg2-binary` library which requires a set of staticly linked libraries to be deployed on Linux. The Amazon AMI for Lambda functions does not automatically include these libraries and as a result cannot be deployed from non-Amazon linux environments. To properly deploy this and other functions, do so from either an EC2 instance created with the Amazon Linux image, or from a Docker container created in a similar fashion.
