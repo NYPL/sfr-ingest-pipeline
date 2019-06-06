@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "v2.2",
+    "version": "v0.2.3",
     "title": "ResearchNow Search API",
     "description": "REST API for Elasticsearch index for the ResearchNow Project"
   },
@@ -685,12 +685,14 @@
         "field": {
           "type": "string",
           "example": "language",
+          "enum": ["language", "years"],
           "description": "Field on which to match results by (effectively exact-match search)"
         },
         "value": {
-          "type": "string",
+          "type": "object",
+          "$ref": "#/definitions/FilterObject",
           "example": "English",
-          "description": "Value on which to filter. Can be a string (for term filters), or an object such as {'gte': 2000} for years"
+          "description": "Value on which to filter. Can be a string (for term filters), or an object such as {gte: 1900, lte: 2000} for years"
         }
       }
     },
@@ -709,6 +711,7 @@
           "description": "Query value"
         }
       }
-    }
+    },
+    "FilterObject": {}
   }
 }
