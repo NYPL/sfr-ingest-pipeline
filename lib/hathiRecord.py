@@ -429,14 +429,24 @@ class HathiRecord():
         self.item.addClassItem('links', Link, **{
             'url': 'https://babel.hathitrust.org/cgi/pt?id={}'.format(self.ingest['htid']),
             'media_type': 'text/html',
-            'rel_type': 'external_view'
+            'flags': {
+                'local': False,
+                'download': False,
+                'images': True,
+                'ebook': True
+            }
         })
 
         # The link to the direct PDF download
         self.item.addClassItem('links', Link, **{
             'url': 'https://babel.hathitrust.org/cgi/imgsrv/download/pdf?id={}'.format(self.ingest['htid']),
             'media_type': 'application/pdf',
-            'rel_type': 'pdf_download'
+            'flags': {
+                'local': False,
+                'download': True,
+                'images': True,
+                'ebook': True
+            }
         })
 
         logger.debug('Storing repository {} as agent'.format(self.ingest['source']))
