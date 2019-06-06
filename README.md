@@ -2,7 +2,7 @@
 # SFR HathiTrust Data Parser
 
 [![Build Status](https://travis-ci.com/NYPL/sfr-hathitrust-reader.svg?branch=development)](https://travis-ci.com/NYPL/sfr-hathitrust-reader)
-![GitHub release](https://img.shields.io/github/release/NYPL/sfr-hathitrust-reader.svg)
+![GitHub tag (latest SemVer)](https://img.shields.io/github/tag/nypl/sfr-hathitrust-reader.svg)
 
 A function for parsing HathiTrust item records into a SFR-compliant data model. This reads data from spreadsheets made available through the [Hathifiles Page](https://www.hathitrust.org/hathifiles). Each file contains the previous days updates, which are put into the SFR data ingest Kinesis stream, for processing into the database and search index.
 
