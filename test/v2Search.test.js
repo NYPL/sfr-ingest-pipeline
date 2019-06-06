@@ -211,6 +211,8 @@ describe('v2 simple search tests', () => {
     expect(testBody.query.nested.query.range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
     // eslint-disable-next-line no-unused-expressions
     expect(testBody.query.nested.query.range['instances.pub_date'].lte).to.be.undefined
+    done()
+  })
 
   it('should a title.keyword sort for a title sort option', (done) => {
     const testApp = sinon.mock()
