@@ -14,6 +14,7 @@ from lib.dataModel import (
 )
 
 from helpers.logHelpers import createLog
+from helpers.errorHelpers import DataError
 
 logger = createLog('hathiRecord')
 
@@ -87,6 +88,14 @@ class HathiRecord():
             'license': 'https://creativecommons.org/licenses/by/3.0/',
             'statement': 'Creative Commons Attribution License, 3.0 Unported'
         },
+        'cc-by-nc-3.0': {
+            'license': 'https://creativecommons.org/licenses/by-nc-sa/3.0/',
+            'statement': 'Creative Commons Attribution, Non-Commercial, 3.0 Unported'
+        },
+        'cc-by-nc-sa-3.0': {
+            'license': 'https://creativecommons.org/licenses/by-nc-sa/3.0/',
+            'statement': 'Creative Commons Attribution, Non-Commercial, Share Alike License, 3.0 Unported'
+        },
         'cc-by-nd-3.0': {
             'license': 'https://creativecommons.org/licenses/by-nd/3.0/',
             'statement': 'Creative Commons Attribution, No Derivatives License, 3.0 Unported'
@@ -155,17 +164,20 @@ class HathiRecord():
         'aub': 'American University of Beirut',
         'bc': 'Boston College',
         'columbia': 'Columbia University',
+        'coo': 'Cornell University',
         'cornell': 'Cornell University',
         'duke': 'Duke University',
         'emory': 'Emory University',
         'flbog': 'State University System of Florida',
         'getty': 'Getty Research Institute',
+        'google': 'Google',
         'harvard': 'Harvard University',
         'hathitrust': 'HathiTrust',
         'illinois': 'University of Illinois at Urbana-Champaign',
         'iu': 'Indiana University',
         'loc': 'Library of Congress',
         'mcgill': 'McGill University',
+        'miami': 'University of Miami',
         'missouri': 'University of Missouri-Columbia',
         'msu': 'Michigan State University',
         'ncsu': 'North Carolina State University',
@@ -179,6 +191,7 @@ class HathiRecord():
         'tamu': 'Texas A&M',
         'tufts': 'Tufts University',
         'ualberta': 'University of Alberta',
+        'uc': 'University of California',
         'uchicago': 'University of Chicago',
         'ucm': 'University of California, Merced',
         'uconn': 'University of Connecticut',
@@ -203,56 +216,58 @@ class HathiRecord():
 
     # List of organizations that have digitized materials in HathiTrust
     digCodes = {
-        'google': 'Google',
-        'lit-dlps-dc': 'Library IT, Digital Library Production Service, Digital Conversion',
-        'ump': 'University of Michigan Press',
-        'ia': 'Internet Archive',
-        'yale': 'Yale University',
-        'mdl': 'Minnesota Digital Library',
-        'mhs': 'Minnesota Historical Society',
-        'usup': 'Utah State University Press',
-        'ucm': 'Universidad Complutense de Madrid',
-        'purd': 'Purdue University',
-        'getty': 'Getty Research Institute',
-        'um-dc-mp': 'University of Michigan, Duderstadt Center, Millennium Project',
-        'uiuc': 'University of Illinois at Urbana-Champaign',
-        'illinois': 'University of Illinois at Urbana-Champaign',
-        'brooklynmuseum': 'Brooklyn Museum',
-        'uf': 'State University of Florida',
-        'tamu': 'Texas A&M',
-        'udel': 'University of Delaware',
-        'private': 'Private Donor',
-        'umich': 'University of Michigan',
-        'clark': 'Clark Art Institute',
-        'ku': 'Knowledge Unlatched',
-        'mcgill': 'McGill University',
+        'aub': 'American University of Beirut',
         'bc': 'Boston College',
-        'nnc': 'Columbia University',
-        'geu': 'Emory University',
-        'yale2': 'Yale University',
-        'mou': 'University of Missouri-Columbia',
-        'chtanc': 'National Central Library of Taiwan',
         'bentley-umich': 'Bentley Historical Library, University of Michigan',
+        'berkeley': 'University of California, Berkeley',
+        'borndigital': None,
+        'brooklynmuseum': 'Brooklyn Museum',
+        'chtanc': 'National Central Library of Taiwan',
+        'clark': 'Clark Art Institute',
         'clements-umich': 'William L. Clements Library, University of Michigan',
-        'wau': 'University of Washington',
+        'coo': 'Cornell University',
         'cornell': 'Cornell University',
         'cornell-ms': 'Cornell University/Microsoft',
-        'umd': 'University of Maryland',
         'frick': 'The Frick Collection',
-        'northwestern': 'Northwestern University',
-        'umn': 'University of Minnesota',
-        'berkeley': 'University of California, Berkeley',
-        'ucmerced': 'University of California, Merced',
-        'nd': 'University of Notre Dame',
-        'princeton': 'Princeton University',
-        'uq': 'The University of Queensland',
-        'ucla': 'University of California, Los Angeles',
-        'osu': 'The Ohio State University',
-        'upenn': 'University of Pennsylvania',
-        'aub': 'American University of Beirut',
-        'ucsd': 'University of California, San Diego',
+        'getty': 'Getty Research Institute',
+        'geu': 'Emory University',
+        'google': 'Google',
         'harvard': 'Harvard University',
-        'borndigital': None,
+        'ia': 'Internet Archive',
+        'illinois': 'University of Illinois at Urbana-Champaign',
+        'ku': 'Knowledge Unlatched',
+        'lit-dlps-dc': 'Library IT, Digital Library Production Service, Digital Conversion',
+        'mcgill': 'McGill University',
+        'mdl': 'Minnesota Digital Library',
+        'mhs': 'Minnesota Historical Society',
+        'mou': 'University of Missouri-Columbia',
+        'nd': 'University of Notre Dame',
+        'nnc': 'Columbia University',
+        'northwestern': 'Northwestern University',
+        'osu': 'The Ohio State University',
+        'princeton': 'Princeton University',
+        'private': 'Private Donor',
+        'purd': 'Purdue University',
+        'tamu': 'Texas A&M',
+        'uc': 'University of California',
+        'ucla': 'University of California, Los Angeles',
+        'ucm': 'Universidad Complutense de Madrid',
+        'ucmerced': 'University of California, Merced',
+        'ucsd': 'University of California, San Diego',
+        'udel': 'University of Delaware',
+        'uf': 'State University of Florida',
+        'uiuc': 'University of Illinois at Urbana-Champaign',
+        'umd': 'University of Maryland',
+        'umich': 'University of Michigan',
+        'umn': 'University of Minnesota',
+        'ump': 'University of Michigan Press',
+        'um-dc-mp': 'University of Michigan, Duderstadt Center, Millennium Project',
+        'upenn': 'University of Pennsylvania',
+        'uq': 'The University of Queensland',
+        'usup': 'Utah State University Press',
+        'wau': 'University of Washington',
+        'yale': 'Yale University',
+        'yale2': 'Yale University'
     }
 
     identifierFields = [
@@ -290,6 +305,15 @@ class HathiRecord():
         logger.debug('Generating work record for bib record {}'.format(
             self.ingest['bib_key']
         ))
+
+        # If we don't have a valid rights code, this means that the row has
+        # been improperly formatted (generally fields out of order/misplaced)
+        # Raise a warning but continue if this is found to be true
+        if self.ingest['rights_statement'] not in HathiRecord.rightsReasons:
+            raise DataError('{} is malformed (columns missing or incorrect'.format(
+                self.ingest['htid']
+            ))
+
         self.buildWork()
 
         logger.debug('Generating instance record for hathi record {}'.format(
@@ -313,7 +337,7 @@ class HathiRecord():
     def buildWork(self):
         """Construct the SFR Work object from the Hathi data"""
         self.work.title = self.ingest['title']
-        self.work.series = self.ingest['description']
+        
         logger.info('Creating work record for {}'.format(self.work.title))
         # The primary identifier for this work is a HathiTrust bib reference
         self.work.primary_identifier = Identifier(
@@ -330,7 +354,7 @@ class HathiRecord():
             self.parseIdentifiers(self.work, idType, key)
 
         # All government documents should be in the public_domain.
-        self.parseGovDoc(self.ingest['gov_doc'])
+        self.parseGovDoc(self.ingest['gov_doc'], self.ingest['htid'])
 
         # The copyright date assigned to the work by HathiTrust
         self.work.addClassItem('dates', Date, **{
@@ -342,7 +366,11 @@ class HathiRecord():
             self.ingest['copyright_date']
         ))
 
-        self.parseAuthor(self.ingest['author'])
+        try:
+            self.parseAuthor(self.ingest['author'])
+        except KeyError:
+            logger.warning('No author associated with record {}'.format(self.work))
+            
 
     def buildInstance(self, countryCodes):
         """Constrict an instance record from the Hathi data provided. As
@@ -355,6 +383,7 @@ class HathiRecord():
         """
         self.instance.title = self.ingest['title']
         self.instance.language = self.ingest['language']
+        self.instance.volume = self.ingest['description']
 
         logger.info('Creating instance record for work {}'.format(self.work))
 
@@ -602,7 +631,7 @@ class HathiRecord():
             'roles': ['publisher']
         })
 
-    def parseGovDoc(self, govDocStatus):
+    def parseGovDoc(self, govDocStatus, sourceID):
         if str(govDocStatus).lower() in ['1', 't']:
             govDocStatus = True
         else:
@@ -611,6 +640,7 @@ class HathiRecord():
             'quantity': 'government_document',
             'value': int(govDocStatus),
             'weight': 1,
-            'taken_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            'taken_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+            'source_id': sourceID
         })
         logger.debug('Storing gov_doc status to {}'.format(str(govDocStatus)))

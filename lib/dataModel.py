@@ -85,6 +85,7 @@ class InstanceRecord(DataObject):
         self.pub_place = None
         self.edition = None
         self.edition_statement = None
+        self.volume = None
         self.table_of_contents = None
         self.agents = []
         self.identifiers = []
@@ -200,12 +201,13 @@ class Subject(DataObject):
 
 
 class Measurement(DataObject):
-    def __init__(self, quantity=None, value=None, weight=None, takenAt=None):
+    def __init__(self, quantity=None, value=None, weight=None, takenAt=None, sourceID=None):
         super()
         self.quantity = quantity
         self.value = value
         self.weight = weight
         self.taken_at = takenAt
+        self.source_id = sourceID
 
     def __repr__(self):
         return '<Measurement(quantity={}, value={})>'.format(

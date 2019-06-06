@@ -1,7 +1,7 @@
 import unittest
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock, call
 
-from service import handler, loadLocalCSV, fetchHathiCSV, fileParser, rowParser
+from service import handler, loadLocalCSV, fetchHathiCSV, fileParser, rowParser, processChunk, generateChunks
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 
 
@@ -32,15 +32,16 @@ class TestHandler(unittest.TestCase):
         mock_parser.assert_called_once()
         self.assertTrue(resp)
 
-    @patch('service.fetchHathiCSV', return_value=None)
-    def test_handler_empty(self, mock_fetch):
+    @patch('service.fetchHathiCSV', return_value=['row1', 'row2'])
+    @patch('service.fileParser', return_value=True)
+    def test_handler_empty(self, mock_file, mock_fetch):
         testRec = {
             'source': 'Kinesis',
             'Records': [{'some': 'record'}]
         }
         resp = handler(testRec, None)
         mock_fetch.assert_called_once()
-        self.assertEqual(resp[0][0], 'empty')
+        self.assertTrue(resp)
 
     def test_local_csv_success(self):
         mOpen = mock_open(read_data='row1\nrow2\n')
@@ -60,29 +61,75 @@ class TestHandler(unittest.TestCase):
             mCSV.assert_called_once_with('localFile', newline='')
             self.assertEqual(rows[0][0], 'row1')
 
+    
     def test_local_csv_missing(self):
         with self.assertRaises(ProcessingError):
             loadLocalCSV('localFile')
 
-    def test_fetch_hathi(self):
-        # Placeholder test until method is implemented
-        self.assertIsNone(fetchHathiCSV())
+    @patch.dict('os.environ', {'HATHI_DATAFILES': 'datafile_url'})
+    @patch('service.gzip.open')
+    def test_fetch_hathi(self, mock_gzip):
+        mock_tsv = mock_open()
+        with patch('service.requests') as mock_request:
+            with patch('service.open', mock_tsv, create=True):
+                mock_resp = MagicMock()
+                mock_resp.status_code = 200
+                mock_resp.json.return_value = [{
+                    'created': '2019-01-01T12:00:00-0',
+                    'url': 'hathitrust.org/test/file.txt.gz',
+                    'full': False
+                }]
+                mock_resp.content = 'test_content'
+                mock_request.get.return_value = mock_resp
+
+                fetchHathiCSV()
+
+                mock_request.get.assert_has_calls([
+                    call('datafile_url'),
+                    call().json(),
+                    call('hathitrust.org/test/file.txt.gz')
+                ])
+                mock_gzip.assert_called_once()
+                
+
 
     @patch('service.loadCountryCodes', return_value={})
-    def test_file_parser(self, mock_codes):
+    @patch('service.Process')
+    @patch('service.Pipe')
+    def test_file_parser(self, mock_pipe, mock_process, mock_codes):
+        testRows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+        mock_parent = MagicMock()
+        mock_parent.recv.return_value = ['success', 'success']
+        mock_child = MagicMock()
+        mock_pipe.return_value = (mock_parent, mock_child)
+        res = fileParser(testRows, ['test'])
+        self.assertEqual(len(res), 8)
+        self.assertEqual(res[7], 'success')
+
+    def test_chunk_parser(self):
         returnValues = [
             ('success', 'htid1'),
             ProcessingError('TestError', 'sampe'),
             ('success', 'htid2')
         ]
+
+        mock_conn = MagicMock()
+
         with patch('service.rowParser', side_effect=returnValues) as mock_row:
-            outcomes = fileParser([['row1'], ['row2'], ['row3']], ['htid'])
+            processChunk(
+                [['row1'], ['row2'], ['row3']],
+                ['htid'],
+                {},
+                mock_conn
+            )
             mock_row.assert_any_call(['row3'], ['htid'], {})
             mock_row.assert_any_call(['row2'], ['htid'], {})
             mock_row.assert_any_call(['row1'], ['htid'], {})
-
-        self.assertEqual(outcomes[0][0], 'success')
-        self.assertEqual(outcomes[1][0], 'failure')
+    
+    def test_yield_chunks(self):
+        testRows = ['row1', 'row2', 'row3', 'row4', 'row5', 'row6']
+        for chunk in generateChunks(testRows, 2):
+            self.assertEqual(len(chunk), 2)
 
     @patch.dict('os.environ', {'OUTPUT_STREAM': 'test-stream'})
     @patch('service.HathiRecord')

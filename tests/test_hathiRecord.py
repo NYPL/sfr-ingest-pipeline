@@ -61,7 +61,8 @@ class TestHathi(unittest.TestCase):
             'gov_doc': 'f',
             'author': 'Author, Test',
             'copyright_date': '2019',
-            'rights': 'test_rights'
+            'rights': 'test_rights',
+            'rights_statement': 'bib'
         }
         workTest = HathiRecord(testRow)
 
@@ -98,7 +99,8 @@ class TestHathi(unittest.TestCase):
             'language': 'en',
             'copyright_date': '2019',
             'publisher_pub_date': 'New York [2019]',
-            'pub_place': 'nyu'
+            'pub_place': 'nyu',
+            'description': 'testing'
         }
         instanceTest = HathiRecord(testInstanceRow)
         instanceTest.parseIdentifiers = MagicMock()
@@ -211,10 +213,10 @@ class TestHathi(unittest.TestCase):
 
     def test_parse_gov_doc(self):
         govRec = HathiRecord({})
-        govRec.parseGovDoc('t')
+        govRec.parseGovDoc('t', 1)
         self.assertEqual(govRec.work.measurements[0].value, 1)
 
     def test_parse_non_gov_doc(self):
         govRec = HathiRecord({})
-        govRec.parseGovDoc(0)
+        govRec.parseGovDoc(0, 1)
         self.assertEqual(govRec.work.measurements[0].value, 0)
