@@ -211,6 +211,44 @@ describe('v2 simple search tests', () => {
     expect(testBody.query.nested.query.range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
     // eslint-disable-next-line no-unused-expressions
     expect(testBody.query.nested.query.range['instances.pub_date'].lte).to.be.undefined
+
+  it('should a title.keyword sort for a title sort option', (done) => {
+    const testApp = sinon.mock()
+    const testParams = { sort: [{ field: 'title' }] }
+    const testSearch = new Search(testApp, testParams)
+    testSearch.query = bodybuilder()
+    testSearch.addSort()
+    testBody = testSearch.query.build()
+    expect(testBody).to.have.property('sort')
+    expect(testBody.sort[0]).to.have.property('title.keyword')
+    expect(testBody.sort[0]['title.keyword'].order).to.equal('ASC')
+    expect(testBody.sort[1]).to.have.property('uuid')
+    done()
+  })
+
+  it('should add a field sort for an arbitrary sort option', (done) => {
+    const testApp = sinon.mock()
+    const testParams = { sort: [{ field: 'testing', dir: 'DESC' }] }
+    const testSearch = new Search(testApp, testParams)
+    testSearch.query = bodybuilder()
+    testSearch.addSort()
+    testBody = testSearch.query.build()
+    expect(testBody).to.have.property('sort')
+    expect(testBody.sort[0]).to.have.property('testing')
+    expect(testBody.sort[0].testing.order).to.equal('DESC')
+    expect(testBody.sort[1]).to.have.property('uuid')
+    done()
+  })
+
+  it('sort should default to _score and uuid', (done) => {
+    const testApp = sinon.mock()
+    const testSearch = new Search(testApp, {})
+    testSearch.query = bodybuilder()
+    testSearch.addSort()
+    testBody = testSearch.query.build()
+    expect(testBody).to.have.property('sort')
+    expect(testBody.sort[0]).to.have.property('_score')
+    expect(testBody.sort[1]).to.have.property('uuid')
     done()
   })
 })
