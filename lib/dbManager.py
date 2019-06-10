@@ -24,8 +24,7 @@ def importRecord(session, record):
     - agents
     - subjects
     - access_reports"""
-    print(record)
-    return record
+    
     if 'type' not in record:
         record['type'] = 'work'
 
