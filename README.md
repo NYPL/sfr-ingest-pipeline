@@ -1,8 +1,11 @@
 # SFR Database Updater
+
+[![Build Status](https://travis-ci.com/NYPL/sfr-db-updater.svg?token=Fv4twsPZbkerqgdJB89v&branch=development)](https://travis-ci.com/NYPL/sfr-db-updater)
+
 This is a Lambda function that manages updating exsting records within postgres. This manages updates to records that currently *exist* within the database and which should be updated or overwritten in any way. These messages are received either from the sfr-db-manager or from Lambda functions further along in the ingest pipeline.
 
 ## Version
-v0.0.1
+v0.1.0
 
 ## Deployment
 This function should be deployed through an instance of Amazon's AMI, as that layer is necessary to properly compile several dependencies for the Lambda environment. This can be done either via an EC2 isntance deployed with the AMI or via a Docker container created via Amazon's Linux image.
