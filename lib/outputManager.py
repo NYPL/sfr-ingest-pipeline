@@ -20,7 +20,7 @@ class OutputManager():
     SQS_CLIENT = createAWSClient('sqs')
     AWS_REDIS = createAWSClient('elasticache')
     REDIS_CLIENT = redis.Redis(
-        host='sfr-filter-query.rtovuw.0001.use1.cache.amazonaws.com',
+        host=os.environ['REDIS_HOST'],
         port=6379,
         socket_timeout=5
     )

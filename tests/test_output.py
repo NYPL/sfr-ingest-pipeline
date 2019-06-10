@@ -6,29 +6,26 @@ from collections import namedtuple
 from lib.outputManager import OutputManager
 
 
+@patch.dict('os.environ', {'REDIS_HOST': 'redis_url'})
 class OutputTest(unittest.TestCase):
 
     def test_connection_creation(self):
         pass
     
-    def test_redis_current(self):
-        OutputManager.REDIS_CLIENT.set(
-            'test/value',
-            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
-        )
+    @patch('redis.StrictRedis.get', return_value=(datetime.now().strftime('%Y-%m-%dT%H:%M:%S').encode('utf-8')))
+    @patch('redis.StrictRedis.set')
+    def test_redis_current(self, mock_set, mock_get):
         res = OutputManager.checkRecentQueries('test/value')
-        self.assertEqual(res, True)
+        self.assertTrue(res)
     
-    def test_redis_missing(self):
-        OutputManager.REDIS_CLIENT.delete('test/value')
+    @patch('redis.StrictRedis.get', return_value=None)
+    @patch('redis.StrictRedis.set')
+    def test_redis_missing(self, mock_set, mock_get):
         res = OutputManager.checkRecentQueries('test/value')
         self.assertEqual(res, False)
     
-    def test_redis_old(self):
-        oldDate = datetime.utcnow() - timedelta(days=2)
-        OutputManager.REDIS_CLIENT.set(
-            'test/value',
-            oldDate.strftime('%Y-%m-%dT%H:%M:%S')
-        )
+    @patch('redis.StrictRedis.get', return_value=('2000-01-01T00:00:00'.encode('utf-8')))
+    @patch('redis.StrictRedis.set')
+    def test_redis_old(self, mock_set, mock_get):
         res = OutputManager.checkRecentQueries('test/value')
         self.assertEqual(res, False)
