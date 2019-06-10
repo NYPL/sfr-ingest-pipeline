@@ -4,49 +4,14 @@ import time
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from model.core import Base
-from model.work import Work
-from model.instance import Instance
-from model.item import Item
-from model.identifiers import Identifier
+from sfrCore import Work, Instance, Item, Identifier
+
+from lib.outputManager import OutputManager
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import DBError
 
 logger = createLog('db_manager')
-
-# Load environemnt variables for database connection
-USERNAME = os.environ['DB_USER']
-PASSWORD = os.environ['DB_PASS']
-HOST = os.environ['DB_HOST']
-PORT = os.environ['DB_PORT']
-DATABASE = os.environ['DB_NAME']
-
-
-def dbGenerateConnection():
-    """Helper function that generates sqlAlchemy engine from database details
-    provided in configuration files and loaded as environment variables"""
-    engine = create_engine(
-        'postgresql://{}:{}@{}:{}/{}'.format(
-            USERNAME,
-            PASSWORD,
-            HOST,
-            PORT,
-            DATABASE
-        )
-    )
-
-    # If the database does not exist yet, create database from the local model
-    if not engine.dialect.has_table(engine, 'works'):
-        Base.metadata.create_all(engine)
-
-    return engine
-
-
-def createSession(engine):
-    """Create a single database session"""
-    Session = sessionmaker(bind=engine)
-    return Session(autoflush=True)
 
 
 def importRecord(session, record):
@@ -59,6 +24,7 @@ def importRecord(session, record):
     - agents
     - subjects
     - access_reports"""
+    
     if 'type' not in record:
         record['type'] = 'work'
 
@@ -76,9 +42,16 @@ def importRecord(session, record):
             primaryID
         )
 
-        Work.update(session, existingWork, workData)
+        epubsToLoad = existingWork.update(workData, session=session)
 
         existingWork.date_modified = datetime.utcnow()
+
+        for deferredEpub in epubsToLoad: 
+            OutputManager.putKinesis(
+                epubPayload,
+                os.environ['EPUB_STREAM'],
+                recType='item'
+            )
         
         return 'Work {}'.format(existingWork.uuid.hex)
 
@@ -97,7 +70,14 @@ def importRecord(session, record):
 
         existing = session.query(Instance).get(existingID)
 
-        Instance.update(session, existing, instanceData)
+        epubsToLoad = existing.update(session, instanceData)
+
+        for deferredEpub in epubsToLoad: 
+            OutputManager.putKinesis(
+                epubPayload,
+                os.environ['EPUB_STREAM'],
+                recType='item'
+            )
         
         return 'Instance #{}'.format(existing.id)
 
