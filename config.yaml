@@ -3,7 +3,7 @@ region: us-east-1
 function_name: sfr-es-manager-development
 handler: service.handler
 description: Updates ElasticSearch documents to reflect the current state of the database
-runtime: python3.6
+runtime: python3.7
 role: lambda_basic_execution
 
 # if access key and secret are left blank, boto will use the credentials

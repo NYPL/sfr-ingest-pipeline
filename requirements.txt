@@ -1,9 +1,3 @@
 babelfish
-coverage
 elasticsearch
 elasticsearch_dsl
-flake8
-psycopg2-binary
-python-lambda
-pyyaml
-SQLAlchemy

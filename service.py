@@ -1,11 +1,11 @@
 import json
 import traceback
 
+from sfrCore import SessionManager
+
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError, ESError
 from helpers.logHelpers import createLog
-from lib.dbManager import dbGenerateConnection, retrieveRecords, createSession
 from lib.esManager import ESConnection
-from model.rights import Rights
 
 """Logger can be passed name of current module
 Can also be instantiated on a class/method basis using dot notation
@@ -18,7 +18,8 @@ that are executed before the main handler block, meaning that we can run
 migrations and generate a db connection for multiple invocations, at least
 until AWS decides to regenerate the container
 """
-engine = dbGenerateConnection()
+MANAGER = SessionManager()
+MANAGER.generateEngine()
 
 
 def handler(event, context):
@@ -49,16 +50,10 @@ def indexRecords():
     es = ESConnection()
 
     logger.info('Creating postgresql session')
-    session = createSession(engine)
+    session = MANAGER.createSession()
 
     logger.info('Loading recently updated records')
-    retrieveRecords(session, es)
-    
-    logger.info('Importing processed batch into ElasticSearch')
-    try:
-        es.processBatch()
-    except ESError as err:
-        logger.debug('Batch processing Error')
+    es.generateRecords(session)
 
     logger.info('Close postgresql session')
-    session.close()
+    MANAGER.closeConnection()

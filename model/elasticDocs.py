@@ -12,7 +12,8 @@ from elasticsearch_dsl import (
     HalfFloat,
     Date,
     DateRange,
-    Date
+    Date,
+    Boolean
 )
 
 
@@ -42,12 +43,20 @@ class Rights(BaseInner):
     determination_date = DateRange()
     determination_date_display = Keyword(index=False)
 
+    @classmethod
+    def getFields(cls):
+        return ['source', 'license', 'rights_statement', 'rights_reason']    
+
 
 class Measurement(BaseInner):
     quantity = Keyword()
     value = Float()
     weight = HalfFloat()
     taken_at = Date()
+
+    @classmethod
+    def getFields(cls):
+        return ['quantity', 'value', 'weight', 'taken_at']
 
 
 class AccessReport(BaseInner):
@@ -56,6 +65,10 @@ class AccessReport(BaseInner):
 
     measurements = Nested(Measurement)
 
+    @classmethod
+    def getFields(cls):
+        return ['ace_version', 'score']
+
 
 class Subject(BaseInner):
     authority = Keyword()
@@ -63,12 +76,31 @@ class Subject(BaseInner):
     subject = Text(fields={'keyword': Keyword()})
     weight = HalfFloat()
 
+    @classmethod
+    def getFields(cls):
+        return ['uri', 'authority', 'subject']
+
 
 class Link(BaseInner):
     url = Keyword(index=False)
     media_type = Keyword()
-    rel_type = Keyword()
+    label = Text()
+    local = Boolean()
+    download = Boolean()
+    images = Boolean()
+    ebook = Boolean()
     thumbnail = Keyword(index=False)
+
+    @classmethod
+    def getFields(cls):
+        return ['url', 'media_type', 'thumbnail']
+    
+    def setLabel(self, source, identifier=None):
+        labelAddts = [source]
+        if identifier: labelAddts.append(identifier)
+        if self.ebook: labelAddts.append('eBook')
+        if self.images: labelAddts.append('images')
+        self.label = ' - '.join(labelAddts)
 
 
 class Agent(BaseInner):
@@ -86,6 +118,10 @@ class Agent(BaseInner):
 
     links = Nested(Link)
 
+    @classmethod
+    def getFields(cls):
+        return ['name', 'sort_name', 'lcnaf', 'viaf', 'biography']
+
 
 class Identifier(BaseInner):
     id_type = Keyword()
@@ -97,14 +133,9 @@ class Language(BaseInner):
     iso_2 = Keyword()
     iso_3 = Keyword()
 
-
-class Rights(BaseInner):
-    source = Keyword()
-    license = Keyword()
-    rights_statement = Text(fields={'keyword': Keyword()})
-    rights_reason = Text(fields={'keyword': Keyword()})
-    copyright_date = DateRange()
-    copyright_date_display = Keyword(index=False)
+    @classmethod
+    def getFields(cls):
+        return ['language', 'iso_2', 'iso_3']
 
 
 class Item(BaseInner):
@@ -119,6 +150,10 @@ class Item(BaseInner):
     links = Nested(Link)
     access_reports = Nested(AccessReport)
     rights = Nested(Rights)
+
+    @classmethod
+    def getFields(cls):
+        return ['source', 'content_type', 'modified', 'drm']
 
 
 class Instance(BaseInner):
@@ -141,6 +176,14 @@ class Instance(BaseInner):
     links = Nested(Link)
     language = Nested(Language)
     rights = Nested(Rights)
+
+    @classmethod
+    def getFields(cls):
+        return [
+            'title', 'sub_title', 'pub_place', 'edition',
+            'edition_statement', 'table_of_contents', 'langauge', 'extent',
+            'volume'
+        ]
 
 
 class Work(BaseDoc):
@@ -166,5 +209,13 @@ class Work(BaseDoc):
     language = Nested(Language)
     rights = Nested(Rights)
 
+    @classmethod
+    def getFields(cls):
+        return [
+            'uuid', 'title', 'sort_title', 'sub_title', 'language', 'medium',
+            'series', 'series_position', 'date_modified', 'date_updated'
+        ]
+
+
     class Index:
-        name = os.environ['ES_INDEX']
+        name = os.environ.get('ES_INDEX', None)
