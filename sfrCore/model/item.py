@@ -227,7 +227,7 @@ class Item(Core, Base):
         """Update an existing item record"""
 
         self.session = session
-        self.createTmpRelations()
+        self.createTmpRelations(itemData)
 
         for field, value in itemData.items():
             if(value is not None and value.strip() != ''):
