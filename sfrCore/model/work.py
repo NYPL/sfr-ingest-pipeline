@@ -281,7 +281,7 @@ class Work(Core, Base):
     
     def updateAgent(self, agent):
         try:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
+            agentRec, roles = Agent.updateOrInsert(self.session, agent)
             if roles is None: roles = ['author']
             for role in roles:
                 if AgentWorks.roleExists(
