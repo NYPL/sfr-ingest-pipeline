@@ -261,7 +261,7 @@ class Work(Core, Base):
 
     def addAgents(self):
         logger.info('Adding agents to work')
-        for a in self.tmp_agents: Work.addAgent(a)
+        for a in self.tmp_agents: self.addAgent(a)
 
     def addAgent(self, agent):
         try:
