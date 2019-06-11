@@ -349,7 +349,7 @@ class Work(Core, Base):
                 self.tmp_language = [self.tmp_language]
             
             self.language = {
-                self.addLanguage(self.session, l) for l in self.tmp_language
+                self.addLanguage(l) for l in self.tmp_language
             }
     
     def addLanguage(self, language):
