@@ -59,7 +59,7 @@ def importRecord(session, record):
         logger.info('Ingesting instance record')
         instanceData = record['data']
 
-        existingID = Instance.lookupInstance(
+        existingID = Instance.lookup(
             session,
             instanceData.get('identifiers', []),
             instanceData.get('volume', None)    
@@ -86,7 +86,7 @@ def importRecord(session, record):
         instanceID = itemData.pop('instance_id', None)
         primaryID = itemData.pop('primary_identifier', None)
         logger.debug('Ingesting Item #{}'.format(primaryID['identifier']))
-        existing = Item.lookupItem(
+        existing = Item.lookup(
             session,
             itemData.get('identifiers', []),
             primaryID
@@ -95,7 +95,7 @@ def importRecord(session, record):
         if existing is None:
             logger.warning('Could not locate item, waiting 5 seconds for retry')
             time.sleep(5)
-            existing = Item.lookupItem(
+            existing = Item.lookup(
                 session,
                 itemData.get('identifiers', []),
                 primaryID
