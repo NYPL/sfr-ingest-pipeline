@@ -198,7 +198,7 @@ class Instance(Core, Base):
         self.addLinks()
         self.addDates()
         self.addRights()
-        self.insertLanguages(new=True)
+        self.insertLanguages()
         epubsToLoad = self.insertItems()
 
         logger.info('Inserted {}'.format(self))
