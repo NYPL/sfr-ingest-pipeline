@@ -179,7 +179,7 @@ class Work(Core, Base):
     def update(self, workData, session=None):
         """Update an existing work record"""
         logger.info('Updating existing work record {}'.format(self.id))
-        if not self.session: self.session = session
+        if not getattr(self, 'session', None): self.session = session
 
         self.createTmpRelations(workData)
 
