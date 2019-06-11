@@ -92,7 +92,9 @@ class Link(Core, Base):
     def update(self, linkData):
         """Update fields on existing link"""
         for field, value in linkData.items():
-            if(value is not None and value.strip() != ''):
+            if field == 'flags':
+                setattr(self, field, value)
+            elif(value is not None and value.strip() != ''):
                 setattr(self, field, value)
 
     @classmethod

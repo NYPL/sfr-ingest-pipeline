@@ -166,7 +166,7 @@ class Agent(Core, Base):
 
     def insertData(self, agentData):
         """Inserts a new agent record"""
-        logger.debug('Inserting new agent: {}'.format(self.name))
+        logger.debug('Inserting new agent: {}'.format(agentData.get('name', 'unknown')))
         
         for field, value in agentData.items(): setattr(self, field, value)
 
@@ -294,6 +294,7 @@ class Agent(Core, Base):
         # Parse and remove lifespan dates from the author name string
         lifeGroup = re.search(r'([0-9]{4})\-(?:([0-9]{4})|)', tmpName)
         if lifeGroup is not None:
+            if getattr(self, 'tmp_dates', None) is None: setattr(self, 'tmp_dates', [])
             tmpName = tmpName.replace(lifeGroup.group(0), '')
             try:
                 birthDate = lifeGroup.group(1)
@@ -320,6 +321,7 @@ class Agent(Core, Base):
         # Parse and remove roles from the author name string
         roleGroup = re.search(r'\[([a-zA-Z; ]+)\]', tmpName)
         if roleGroup is not None:
+            if getattr(self, 'tmp_roles', None) is None: setattr(self, 'tmp_roles', [])
             tmpName = tmpName.replace(roleGroup.group(0), '')
             tmpRoles = roleGroup.group(1).split(';')
             cleanRoles = [r.lower().strip() for r in tmpRoles]

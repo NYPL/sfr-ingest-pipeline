@@ -179,7 +179,7 @@ class Work(Core, Base):
     def update(self, workData, session=None):
         """Update an existing work record"""
         logger.info('Updating existing work record {}'.format(self.id))
-        if not self.session: self.session = session
+        if not getattr(self, 'session', None): self.session = session
 
         self.createTmpRelations(workData)
 
@@ -261,14 +261,14 @@ class Work(Core, Base):
 
     def addAgents(self):
         logger.info('Adding agents to work')
-        for a in self.tmp_agents: Work.addAgent(a)
+        for a in self.tmp_agents: self.addAgent(a)
 
     def addAgent(self, agent):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
             if roles is None: roles = ['author']
             self.agents.extend = {
-                AgentWorks(agent=agentRec, work=self, roles=role)
+                AgentWorks(agent=agentRec, work=self, role=role)
                 for role in set(roles)
             }
         except (DataError, DBError) as err:
@@ -281,7 +281,7 @@ class Work(Core, Base):
     
     def updateAgent(self, agent):
         try:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
+            agentRec, roles = Agent.updateOrInsert(self.session, agent)
             if roles is None: roles = ['author']
             for role in roles:
                 if AgentWorks.roleExists(
@@ -349,7 +349,7 @@ class Work(Core, Base):
                 self.tmp_language = [self.tmp_language]
             
             self.language = {
-                self.addLanguage(self.session, l) for l in self.tmp_language
+                self.addLanguage(l) for l in self.tmp_language
             }
     
     def addLanguage(self, language):
@@ -400,10 +400,10 @@ class Work(Core, Base):
                 else:
                     AltTitle.insertOrSkip(self.session, newTitle, Work, self.id)
 
-        if self.tmp_altTitles:
+        if self.tmp_alt_titles:
             self.alt_titles.extend({
                 AltTitle.insertOrSkip(session, a, Work, self.id)
-                for a in self.tmp_altTitles
+                for a in self.tmp_alt_titles
             })   
 
     @classmethod

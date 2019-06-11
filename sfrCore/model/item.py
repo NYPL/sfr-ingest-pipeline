@@ -203,7 +203,11 @@ class Item(Core, Base):
         return item
 
     @classmethod
-    def lookup(self, session, identifiers):
+    def lookup(self, session, identifiers, primaryID=None):
+        if primaryID:
+            item = Identifier.getByIdentifier(Item, session, [primaryID])
+            if item: return item
+
         return Identifier.getByIdentifier(Item, session, identifiers)
     
     def insertData(self, itemData):
@@ -223,7 +227,7 @@ class Item(Core, Base):
         """Update an existing item record"""
 
         self.session = session
-        self.createTmpRelations()
+        self.createTmpRelations(itemData)
 
         for field, value in itemData.items():
             if(value is not None and value.strip() != ''):
