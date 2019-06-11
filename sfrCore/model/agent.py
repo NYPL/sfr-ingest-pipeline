@@ -75,9 +75,8 @@ class Agent(Core, Base):
     def createTmpRelations(self, agentData):
         for relType in Agent.RELS:
             tmpRel = 'tmp_{}'.format(relType)
-            if getattr(self, tmpRel, None): continue
-            tmpData = agentData.pop(relType, []) if agentData.get(relType, None) else []
-            setattr(self, tmpRel, tmpData)
+            setattr(self, tmpRel, agentData.pop(relType, []))
+            if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
     
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
@@ -167,7 +166,7 @@ class Agent(Core, Base):
 
     def insertData(self, agentData):
         """Inserts a new agent record"""
-        logger.debug('Inserting new agent: {}'.format(self.name))
+        logger.debug('Inserting new agent: {}'.format(agentData.get('name', 'unknown')))
         
         for field, value in agentData.items(): setattr(self, field, value)
 
