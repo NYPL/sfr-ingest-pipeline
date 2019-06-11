@@ -14,22 +14,21 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm.exc import NoResultFound
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.subject import SUBJECT_WORKS
-from sfrCore.model.identifiers import WORK_IDENTIFIERS, Identifier
-from sfrCore.model.altTitle import AltTitle, WORK_ALTS
-from sfrCore.model.rawData import RawData
-from sfrCore.model.measurement import WORK_MEASUREMENTS, Measurement
-from sfrCore.model.link import WORK_LINKS, Link
-from sfrCore.model.date import DateField
-from sfrCore.model.instance import Instance
-from sfrCore.model.agent import Agent
-from sfrCore.model.subject import Subject
-from sfrCore.model.rights import Rights, WORK_RIGHTS
-from sfrCore.model.language import Language
+from .core import Base, Core
+from .subject import SUBJECT_WORKS
+from .identifiers import WORK_IDENTIFIERS, Identifier
+from .altTitle import AltTitle, WORK_ALTS
+from .rawData import RawData
+from .measurement import WORK_MEASUREMENTS, Measurement
+from .link import WORK_LINKS, Link
+from .date import DateField
+from .instance import Instance
+from .agent import Agent
+from .subject import Subject
+from .rights import Rights, WORK_RIGHTS
+from .language import Language
 
-from sfrCore.helpers.errors import DBError, DataError
-from sfrCore.helpers.logger import createLog
+from ..helpers import createLog, DBError, DataError
 
 logger = createLog('workModel')
 
@@ -123,7 +122,7 @@ class Work(Core, Base):
     def createTmpRelations(self, workData):
         logger.debug('Creating tmp relationship arrays')
         for relType in Work.RELS:
-            tmpRel = '{}_tmp'.format(relType)
+            tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, workData.pop(relType, []))
             if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
     
@@ -131,7 +130,7 @@ class Work(Core, Base):
         """Removes temporary attributes that were used to hold related objects.
         """
         logger.debug('Removing temporary relationship arrays')
-        for rel in Work.RELS: delattr(self, '{}_tmp'.format(rel))
+        for rel in Work.RELS: delattr(self, 'tmp_{}'.format(rel))
 
     def insert(self, workData):
         """Insert a new work record"""
@@ -154,12 +153,12 @@ class Work(Core, Base):
         # This might want to be a namespaced UUID in the future, but for now
         # it will be a random v4 value
         #
-        work.uuid = uuid.uuid4()
+        self.uuid = uuid.uuid4()
         
         logger.debug('Adding current work {} to session'.format(self))
         self.session.add(self)
 
-        self.import_json.append(RawData(data=self.tmp_storeJson))
+        self.addImportJson()
         self.addIdentifiers()
         self.addInstances()
         self.addAgents()
@@ -170,14 +169,19 @@ class Work(Core, Base):
         self.addDates()
         self.addLanguages()
 
+        epubsToLoad = getattr(self, 'epubsToLoad', [])
+        delattr(self, 'epubsToLoad')
         delattr(self, 'session')
         self.removeTmpRelations()
+
+        return epubsToLoad
     
-    def update(self, workData):
+    def update(self, workData, session=None):
         """Update an existing work record"""
         logger.info('Updating existing work record {}'.format(self.id))
+        if not self.session: self.session = session
 
-        childFields = self.createTmpRelations(workData)
+        self.createTmpRelations(workData)
 
         for field, value in workData.items():
             if (
@@ -199,8 +203,12 @@ class Work(Core, Base):
         self.updateDates()
         self.updateLanguages()
         
+        epubsToLoad = getattr(self, 'epubsToLoad', [])
+        delattr(self, 'epubsToLoad')
         delattr(self, 'session')
         self.removeTmpRelations()
+
+        return epubsToLoad
     
     def addImportJson(self):
         logger.debug('Adding JSON block of current import data')
@@ -232,10 +240,12 @@ class Work(Core, Base):
 
     def addInstances(self):
         logger.info('Adding instances to work')
-        self.instances = { 
-            Instance.createNew(self.session, i) for i in self.tmp_instances
-        }
-    
+        self.epubsToLoad = []
+        for inst in self.tmp_instances:
+            newInstance, newEpubs = Instance.createNew(self.session, inst)
+            self.instances.add(newInstance)
+            self.epubsToLoad.extend(newEpubs)
+
     def updateInstances(self):
         logger.info('Upserting instances for work')
         for instance in self.tmp_instances: self.updateInstance(instance)
@@ -258,7 +268,7 @@ class Work(Core, Base):
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
             if roles is None: roles = ['author']
             self.agents.extend = {
-                {'agent': agentRec, 'work': self, 'role': role}
+                AgentWorks(agent=agentRec, work=self, roles=role)
                 for role in set(roles)
             }
         except (DataError, DBError) as err:
@@ -410,7 +420,8 @@ class Work(Core, Base):
                 identifiers
             )
             if instanceID:
-                workID = session.query(Instance.work_id).get(instanceID)
+                workID = session.query(Instance.work_id)\
+                    .filter(Instance.id == instanceID).one()[0]
         
         if workID: return session.query(Work).get(workID)
         return None
@@ -477,3 +488,14 @@ class AgentWorks(Core, Base):
             self.agent_id,
             self.role
         )
+    
+    @classmethod
+    def roleExists(cls, session, agent, role, recordID):
+        """Query database to see if relationship with role exists between
+        agent and work. Returns model work if it does or None if it
+        does not"""
+        return session.query(cls)\
+            .filter(cls.agent_id == agent.id)\
+            .filter(cls.work_id == recordID)\
+            .filter(cls.role == role)\
+            .one_or_none()

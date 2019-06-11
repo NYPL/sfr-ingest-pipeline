@@ -10,11 +10,10 @@ from sqlalchemy import (
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.exc import MultipleResultsFound
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.measurement import SUBJECT_MEASUREMENTS, Measurement
+from .core import Base, Core
+from .measurement import SUBJECT_MEASUREMENTS, Measurement
 
-from sfrCore.helpers.logger import createLog
-from sfrCore.helpers.errors import DBError
+from ..helpers import createLog, DBError
 
 logger = createLog('subjects')
 
@@ -48,7 +47,7 @@ class Subject(Core, Base):
     )
 
     def __repr__(self):
-        return '<Subject(subject={}, uri={}, authority={})'.format(
+        return '<Subject(subject={}, uri={}, authority={})>'.format(
             self.subject,
             self.uri,
             self.authority

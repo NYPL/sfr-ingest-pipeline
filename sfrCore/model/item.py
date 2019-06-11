@@ -17,20 +17,19 @@ from sqlalchemy.orm import relationship, backref
 from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.ext.associationproxy import association_proxy
 
-from sfrCore.model.core import Base, Core
-from sfrCore.model.measurement import (
+from .core import Base, Core
+from .measurement import (
     ITEM_MEASUREMENTS,
     REPORT_MEASUREMENTS,
     Measurement
 )
-from sfrCore.model.identifiers import ITEM_IDENTIFIERS, Identifier
-from sfrCore.model.link import ITEM_LINKS, Link
-from sfrCore.model.date import ITEM_DATES, DateField
-from sfrCore.model.rights import Rights, ITEM_RIGHTS
-from sfrCore.model.agent import Agent
+from .identifiers import ITEM_IDENTIFIERS, Identifier
+from .link import ITEM_LINKS, Link
+from .date import ITEM_DATES, DateField
+from .rights import Rights, ITEM_RIGHTS
+from .agent import Agent
 
-from sfrCore.helpers.logger import createLog
-from sfrCore.helpers.errors import DataError
+from ..helpers import createLog, DataError
 
 logger = createLog('items')
 
@@ -45,7 +44,7 @@ class Item(Core, Base):
     modified = Column(DateTime)
     drm = Column(Unicode)
     
-    instance_id = Column(Integer, ForeignKey('instances.id'))
+    instance_id = Column(Integer, ForeignKey('instances.id'), index=True)
 
     instance = relationship(
         'Instance',
@@ -87,6 +86,13 @@ class Item(Core, Base):
         'rights',
         'agents'
     ]
+
+    SOURCE_REGEX = {
+        'gut': r'gutenberg.org\/ebooks\/[0-9]+\.epub\.(?:no|)images$',
+        'ia': r'archive.org\/details\/[a-z0-9]+$'
+    }
+
+    EPUB_SOURCES = ['gut']
     
     def __init__(self, session=None):
         self.session = session
@@ -99,21 +105,82 @@ class Item(Core, Base):
 
     def createTmpRelations(self, itemData):
         for relType in Item.RELS:
-            tmpRel = '{}_tmp'.format(relType)
+            tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, itemData.pop(relType, []))
             if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
     
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
-        for rel in Item.RELS: delattr(self, '{}_tmp'.format(rel))
+        for rel in Item.RELS: delattr(self, 'tmp_{}'.format(rel))
+    
+    @classmethod
+    def createOrStore(cls, session, item, instance):
+        links = deque(item.pop('links', []))
+        item['links'] = []
+        deferredLoad = False
+        instance.epubsToLoad = []
+        while len(links) > 0:
+            link = links.popleft()
+            url = link['url']
+            if not isinstance(url, (str,)): continue
+            for source, regex in cls.SOURCE_REGEX.items():
+                try:
+                    if re.search(regex, url):
+                        if source in cls.EPUB_SOURCES:
+
+                            # We need to get the ID of the instance to allow 
+                            # for asynchronously storing the ePub file, so
+                            # instance is added and flushed here
+                            if instance.id is None:
+                                session.add(instance)
+                                session.flush()
+
+                            deferredLoad = True
+                            cls.createLocalEpub(item, link, instance)
+                            break
+                except TypeError as err:
+                    logger.warning('Found link {} with no url {}'.format(
+                        link,
+                        url
+                    ))
+                    logger.debug(err)
+            else:
+                item['links'].append(link)
+        
+        if not deferredLoad: return cls.updateOrInsert(session, item)
+        return None
+
+    @classmethod
+    def createLocalEpub(cls, item, link, instance):
+        """Pass new item to epub storage pipeline. Does not store item record
+        at this time, but defers until epub has been processed.
+        The payload object takes several parameters:
+        url: The URL of the ebook to be accessed
+        id: The ID of the parent row of the item to be stored
+        updated: Date the ebook was last updated at the source
+        data: A raw block of the metadata associated with this item"""
+        putItem = deepcopy(item)
+        putItem['links'] = [link]
+        epubPayload = {
+            'url': link['url'],
+            'id': instance.id,
+            'updated': item['modified'],
+            'data': putItem
+        }
+
+        for measure in item['measurements']:
+            if measure['quantity'] == 'bytes':
+                epubPayload['size'] = measure['value']
+                break
+        instance.epubsToLoad.append(epubPayload)
 
     @classmethod
     def updateOrInsert(cls, session, itemData):
         """Will query for existing items and either update or insert an item
         record pending the outcome of that query"""
         
-        existingID = Item.lookup()
+        existingID = Item.lookup(session, itemData['identifiers'])
 
         if existingID is not None:
             logger.debug('Found existing item by identifier')
@@ -123,7 +190,7 @@ class Item(Core, Base):
         else:
             logger.debug('Inserting new item record')
             outItem = Item.createItem(session, itemData)
-
+        
         return outItem
 
     @classmethod

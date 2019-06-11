@@ -1,2 +1,2 @@
-from sfrCore.helpers.errors import DataError, DBError
-from sfrCore.helpers.logger import createLog
+from .errors import DataError, DBError
+from .logger import createLog
