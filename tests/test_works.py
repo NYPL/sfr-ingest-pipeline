@@ -307,7 +307,8 @@ class WorkTest(unittest.TestCase):
     @patch('sfrCore.model.work.Identifier')
     def test_lookup_work_by_instance(self, mock_iden):
         mock_session = MagicMock()
-        mock_session.query().get.side_effect = [1, 'test_work']
+        mock_session.query().filter().one.return_value = (1,)
+        mock_session.query().get.return_value = 'test_work'
         mock_iden.getByIdentifier.side_effect = [None, 'test_id']
         testID = Work.lookupWork(mock_session, ['id1'], None)
         self.assertEqual(testID, 'test_work')

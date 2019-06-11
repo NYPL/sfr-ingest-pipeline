@@ -420,7 +420,8 @@ class Work(Core, Base):
                 identifiers
             )
             if instanceID:
-                workID = session.query(Instance.work_id).get(instanceID)
+                workID = session.query(Instance.work_id)\
+                    .filter(Instance.id == instanceID).one()[0]
         
         if workID: return session.query(Work).get(workID)
         return None
