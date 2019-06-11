@@ -335,7 +335,7 @@ class Instance(Core, Base):
         for altTitle in list(
             filter(
                 lambda x: AltTitle.insertOrSkip(self.session, x, Instance, self.id),
-                self.tmp_altTitles
+                self.tmp_alt_titles
             )
         ):
             self.alt_titles.add(AltTitle(title=altTitle))

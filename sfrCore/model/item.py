@@ -203,7 +203,11 @@ class Item(Core, Base):
         return item
 
     @classmethod
-    def lookup(self, session, identifiers):
+    def lookup(self, session, identifiers, primaryID=None):
+        if primaryID:
+            item = Identifier.getByIdentifier(Item, session, [primaryID])
+            if item: return item
+
         return Identifier.getByIdentifier(Item, session, identifiers)
     
     def insertData(self, itemData):

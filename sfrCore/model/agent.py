@@ -75,8 +75,9 @@ class Agent(Core, Base):
     def createTmpRelations(self, agentData):
         for relType in Agent.RELS:
             tmpRel = 'tmp_{}'.format(relType)
-            setattr(self, tmpRel, agentData.pop(relType, []))
-            if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
+            if getattr(self, tmpRel, None): continue
+            tmpData = agentData.pop(relType, []) if agentData.get(relType, None) else []
+            setattr(self, tmpRel, tmpData)
     
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
@@ -294,6 +295,7 @@ class Agent(Core, Base):
         # Parse and remove lifespan dates from the author name string
         lifeGroup = re.search(r'([0-9]{4})\-(?:([0-9]{4})|)', tmpName)
         if lifeGroup is not None:
+            if getattr(self, 'tmp_dates', None) is None: setattr(self, 'tmp_dates', [])
             tmpName = tmpName.replace(lifeGroup.group(0), '')
             try:
                 birthDate = lifeGroup.group(1)
@@ -320,6 +322,7 @@ class Agent(Core, Base):
         # Parse and remove roles from the author name string
         roleGroup = re.search(r'\[([a-zA-Z; ]+)\]', tmpName)
         if roleGroup is not None:
+            if getattr(self, 'tmp_roles', None) is None: setattr(self, 'tmp_roles', [])
             tmpName = tmpName.replace(roleGroup.group(0), '')
             tmpRoles = roleGroup.group(1).split(';')
             cleanRoles = [r.lower().strip() for r in tmpRoles]
