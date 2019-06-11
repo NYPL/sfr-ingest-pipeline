@@ -196,7 +196,8 @@ class ESDoc():
         }
         newLink = Link(**linkData)
 
-        linkFlags = json.loads(getattr(link, 'flags', {}))
+        linkFlags = getattr(link, 'flags', {})
+        if isinstance(linkFlags, str): linkFlags = json.loads(linkFlags)
         for flag, value in linkFlags.items():
             setattr(newLink, flag, value)
         
