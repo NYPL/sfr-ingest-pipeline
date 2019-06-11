@@ -31,8 +31,9 @@ def importRecord(session, record):
             workData = workData['data']
         
         primaryID = workData.pop('primary_identifier', None)
-        workUUID = Work.lookupWork(session, workData['identifiers'], primaryID)
-        if workUUID is not None:
+        work = Work.lookupWork(session, workData['identifiers'], primaryID)
+        if work is not None:
+            workUUID = work.uuid
             logger.info('Found exsting work {}. Placing record in update stream'.format(
                 workUUID
             ))

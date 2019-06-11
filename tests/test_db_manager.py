@@ -41,7 +41,7 @@ class TestDBManager(unittest.TestCase):
         }
         with patch('lib.dbManager.Work.lookupWork', return_value=mock_work):
             testReport = importRecord('session', testData)
-            self.assertEqual(testReport, 'Existing work {}'.format(mock_work))
+            self.assertEqual(testReport, 'Existing work {}'.format(mock_work.uuid))
     
     @patch('lib.dbManager.Identifier.getByIdentifier', return_value=None)
     @patch('lib.dbManager.OutputManager.putKinesis')
