@@ -168,7 +168,7 @@ class Instance(Core, Base):
     @classmethod
     def addItemRecord(cls, session, instanceID, itemRec):
         instance = session.query(cls).get(instanceID)
-        instance.items.append(itemRec)
+        instance.items.add(itemRec)
 
     @classmethod
     def createNew(cls, session, instanceData):
