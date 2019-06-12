@@ -139,9 +139,11 @@ class Measurement(Core, Base):
     
     @classmethod
     def getMeasurements(cls, session, measure, model, recordID):
-        return session.query(cls.value)\
+        return [ 
+            m.value for m in session.query(cls.value)\
             .join(model.__tablename__[:-1])\
             .filter(cls.quantity == measure)\
             .filter(model.id == recordID)\
             .all()
+        ]
 
