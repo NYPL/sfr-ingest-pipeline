@@ -318,6 +318,7 @@ class Instance(Core, Base):
             logger.warning('Unable to parse language {}'.format(lang))
     
     def insertItems(self):
+        setattr(self, 'epubsToLoad', [])
         for item in self.tmp_formats:
             # Check if the provided record contains an epub that can be stored
             # locally. If it does, defer insert to epub creation process
