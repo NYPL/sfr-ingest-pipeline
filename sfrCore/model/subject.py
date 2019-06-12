@@ -91,8 +91,8 @@ class Subject(Core, Base):
         
         return newSubject
     
-    def addMeasurements(self):
-        newSubject.measurements = {
+    def addMeasurements(self, measurements):
+        self.measurements = {
             Measurement.insert(m) for m in measurements
         }
 
