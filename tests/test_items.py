@@ -101,10 +101,9 @@ class ItemTest(unittest.TestCase):
         testLink = {
             'url': 'test_link'
         }
-        mock_inst = MagicMock()
-        mock_inst.epubsToLoad = []
-        Item.createLocalEpub(testItem, testLink, mock_inst)
-        self.assertEqual(len(mock_inst.epubsToLoad), 1)
+        testPayload = Item.createLocalEpub(testItem, testLink, 1)
+        self.assertEqual(testPayload['url'], 'test_link')
+        self.assertEqual(testPayload['id'], 1)
     
     @patch.object(Item, 'lookup', return_value=None)
     @patch.object(Item, 'createItem', return_value='newItem')

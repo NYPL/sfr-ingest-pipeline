@@ -72,11 +72,11 @@ class InstanceTest(unittest.TestCase):
     
     def test_add_new_item(self):
         mock_instance = MagicMock()
-        mock_instance.items = []
+        mock_instance.items = set()
         mock_session = MagicMock()
         mock_session.query().get.return_value = mock_instance
         Instance.addItemRecord(mock_session, 1, 'newItem')
-        self.assertEqual(mock_instance.items[0], 'newItem')
+        self.assertEqual(list(mock_instance.items)[0], 'newItem')
     
     @patch.object(Instance, 'createTmpRelations')
     @patch.object(Instance, 'insertData', return_value=['epub'])

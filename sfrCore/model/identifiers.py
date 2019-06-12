@@ -418,4 +418,4 @@ class Identifier(Base):
         trueIdentifiers = list(
             filter(lambda x: x['type'] not in['lcc', 'ddc'], identifiers)
         )
-        return sorted(trueIdentifiers, key=lambda x:idWeight[x['type']])
+        return sorted(trueIdentifiers, key=lambda x:idWeight.get(x['type'], 10))
