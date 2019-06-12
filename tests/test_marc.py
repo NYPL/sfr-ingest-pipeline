@@ -1,7 +1,16 @@
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, call
+from requests.exceptions import ConnectionError
 
-from lib.marcParse import parseMARC, transformMARC, extractAgentValue, extractHoldingsLinks, extractSubjects, extractSubfieldValue
+from lib.marcParse import (
+    parseMARC,
+    transformMARC,
+    extractAgentValue,
+    extractHoldingsLinks,
+    extractSubjects,
+    extractSubfieldValue,
+    parseHoldingURI
+)
 from helpers.errorHelpers import DataError
 
 
@@ -41,10 +50,6 @@ class TestMARC(unittest.TestCase):
         self.assertEqual(testWork.language[0].iso3, 'eng')
     
     def test_agent_create(self):
-        testData = {
-            '100': [MagicMock()]
-        }
-        
         testRec = MagicMock()
         testRec.agents = []
 
@@ -53,14 +58,13 @@ class TestMARC(unittest.TestCase):
         mock_role = MagicMock()
         mock_role.value = 'tst'
         
-        def side_effect(subfield):
-            subs = {
+        testData = {
+            '100': [{
                 'a': [mock_name],
                 '4': [mock_role]
-            }
-            return subs[subfield]
+            }]
+        }
 
-        testData['100'][0].subfield.side_effect = side_effect
         testRels = {
             'tst': 'testing'
         }
@@ -69,27 +73,31 @@ class TestMARC(unittest.TestCase):
         self.assertEqual(testRec.agents[0].name, 'Test, Tester')
         self.assertEqual(testRec.agents[0].roles[0], 'testing')
     
-    def test_add_links(self):
+    @patch('lib.marcParse.parseHoldingURI', side_effect=[
+        ('uri1', 'text/html'),
+        ('uri2', 'application/pdf')
+    ])
+    def test_add_links(self, mock_parse):
         testRec = MagicMock()
         testItem = MagicMock()
         
         mock_bad = MagicMock()
         mock_bad.ind1 = 'err'
 
+        mock_html = MagicMock()
+        mock_html.ind1 = '4'
+
         mock_pdf = MagicMock()
         mock_pdf.ind1 = '4'
         mock_url = MagicMock()
         mock_url.value = 'general/url'
+        
         mock_note = MagicMock()
         mock_note.value = 'DOAB Note'
 
         mock_missing = MagicMock()
         mock_missing.ind1 = '4'
         mock_missing.subfield.side_effect = IndexError
-
-        mock_no_note = MagicMock()
-        mock_no_note.ind1 = '4'
-        
 
         def side_effect(subfield):
             subs = {
@@ -98,26 +106,52 @@ class TestMARC(unittest.TestCase):
             }
             return subs[subfield]
         mock_pdf.subfield.side_effect = side_effect
-
-        def side_error(subfield):
-            subs = {
-                'u': [mock_url]
-            }
-            if subfield == 'z':
-                raise IndexError
-            return subs[subfield]
-        mock_no_note.subfield.side_effect = side_error
+        mock_html.subfield.side_effect = side_effect
         
         testHoldings = [
             mock_bad,
+            mock_html,
             mock_pdf,
-            mock_missing,
-            mock_no_note
+            mock_missing
         ]
 
         extractHoldingsLinks(testHoldings, testRec, testItem)
 
         self.assertEqual(2, testItem.addClassItem.call_count)
+    
+    @patch('lib.marcParse.requests')
+    def test_parse_holding_success(self, mock_req):
+        mock_redirect = MagicMock()
+        mock_redirect.status_code = 302
+        mock_redirect.headers = {'Location': 'testURI'}
+        mock_head = MagicMock()
+        mock_head.headers = {'Content-Type': 'text/testing'}
+
+        mock_req.head.side_effect = [mock_redirect, mock_head]
+        
+        outURI, contentType = parseHoldingURI('testURI')
+        
+        mock_req.head.assert_has_calls([
+            call('testURI', allow_redirects=False),
+            call('testURI', allow_redirects=False)
+        ])
+        self.assertEqual(outURI, 'testURI')
+        self.assertEqual(contentType, 'text/testing')
+    
+    @patch('lib.marcParse.requests.head', side_effect=ConnectionError)
+    def test_parse_holding_error(self, mock_head):
+        with self.assertRaises(DataError):
+            parseHoldingURI('errorURI')
+    
+    @patch('lib.marcParse.requests.head')
+    def test_parse_holding_no_type(self, mock_head):
+        mock_header = MagicMock()
+        mock_header.headers = {}
+        mock_head.return_value = mock_header
+        testURI, contentType = parseHoldingURI('noContentURI')
+
+        self.assertEqual(testURI, 'noContentURI')
+        self.assertEqual(contentType, 'text/html')
     
     def test_600_subjects(self):
 

@@ -1,8 +1,9 @@
 import re
-
 import pycountry
+import requests
+from requests.exceptions import ConnectionError, MissingSchema, InvalidURL
 
-from helpers.errorHelpers import MARCXMLError
+from helpers.errorHelpers import MARCXMLError, DataError
 from helpers.logHelpers import createLog
 
 from lib.dataModel import (
@@ -171,7 +172,7 @@ def transformMARC(record, marcRels):
             for language in langs:
                 logger.debug('Adding language {} to work and instance'.format(language))
                 langObj = pycountry.languages.get(name=language.strip())
-                if langObj is None:
+                if langObj is None or langObj.alpha_3 == 'und':
                     logger.warning('Unable to parse language {}'.format(language))
                     continue
                 sfrLang = Language(
@@ -205,45 +206,77 @@ def extractAgentValue(data, rec, field, marcRels):
     SFR Agent objects to the current record.
     """
     for agentField in data[field]:
+        if len(agentField['a']) == 0: continue
         agent = Agent(role=[])
-        agent.name = agentField.subfield('a')[0].value
-        roleCode = agentField.subfield('4')[0].value
+        agent.name = agentField['a'][0].value
+        roleCode = agentField['4'][0].value if len(agentField['4']) > 0 else 'aut'
         agent.roles.append(marcRels[roleCode])
         rec.agents.append(agent)
 
 
 def extractHoldingsLinks(holdings, instance, item):
     """Extracts holdings data from MARC and adds it to the current SFR object
-    as measurement data.
+    as links.
     """
+    itemURIs = set()
     for holding in holdings:
         if holding.ind1 != '4':
             continue
         try:
             uri = holding.subfield('u')[0].value
-        except IndexError:
+            itemURIs.add(parseHoldingURI(uri))
+        except (IndexError, DataError):
             logger.info('Could not load URI {} for instance, skipping'.format(holding))
             continue
-        try:
-            note = holding.subfield('z')[0].value
-            if 'doab' in note.lower():
-                logger.info('Adding PDF link {} for item record'.format(uri))
-                item.addClassItem('links', Link, **{
-                    'url': uri,
-                    'media_type': 'application/pdf',
-                    'rel_type': 'pdf_download'
-                })
-                continue
-        except IndexError:
-            pass
-        
-        logger.info('Adding HTML link {} for item record'.format(uri))
-        item.addClassItem('links', Link, **{
-            'url': uri,
-            'media_type': 'text/html',
-            'rel_type': 'external_view'
-        })
+    
+    for itemURI in itemURIs:
+        uriFlags = {
+            'local': False,
+            'download': True,
+            'images': True,
+            'ebook': True
+        }
+        if 'text/html' in itemURI[1]:
+            logger.info('Adding Read Online link {} for item record'.format(uri))
+            uriFlags['download'] = False
+            item.addClassItem('links', Link, **{
+                'url': itemURI[0],
+                'media_type': itemURI[1],
+                'flags': uriFlags
+            })
+        else:         
+            logger.info('Adding Download link {} for item record'.format(uri))
+            item.addClassItem('links', Link, **{
+                'url': itemURI[0],
+                'media_type': itemURI[1],
+                'flags': uriFlags
+            })
 
+
+def parseHoldingURI(uri):
+    logger.info('Loading URI {}'.format(uri))
+    try:
+        uriHead = requests.head(uri, allow_redirects=False)
+        headers = uriHead.headers
+    except (MissingSchema, ConnectionError, InvalidURL):
+        raise DataError('Invalid Holding URL')
+
+    if uriHead.status_code in [301, 302, 307, 308]:
+        redirectTo = headers['Location']
+        logger.debug('Found {} Redirect to {}'.format(
+            uriHead.status_code,
+            redirectTo
+        ))
+        return parseHoldingURI(redirectTo)
+    
+    try:
+        contentType = headers['Content-Type']
+    except KeyError:
+        logger.warning('Unable to find header Content-Type for {}'.format(uri))
+        contentType = 'text/html'
+    
+    return uri, contentType
+    
 
 def extractSubjects(data, rec, field):
     """Extracts subject fields from the MARC record and assigns them to the 
