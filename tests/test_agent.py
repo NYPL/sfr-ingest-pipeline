@@ -65,7 +65,7 @@ class TestAgent(unittest.TestCase):
             mock_session.query.return_value.get.return_value = mock_existing
             testAgent, roles = Agent.updateOrInsert(mock_session, 'fakeAgent')
             self.assertEqual(testAgent, mock_existing)
-            self.assertEqual(roles, ['existing', 'test'])
+            self.assertTrue('existing' in roles and 'test' in roles)
 
     @patch.object(Agent, 'addLifespan')
     @patch.object(Agent, 'insertData')

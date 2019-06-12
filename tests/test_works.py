@@ -336,11 +336,9 @@ class WorkTest(unittest.TestCase):
             Work.getByUUID(mock_session, 'uuid')
     
     def test_create_agent_work(self):
-        testRec = AgentWorks(
-            work_id=1,
-            agent_id=1,
-            role='tester'
-        )
+        testRec = AgentWorks(role='tester')
+        testRec.work_id = 1
+        testRec.agent_id = 1
         self.assertEqual(str(testRec), '<AgentWorks(work=1, agent=1, role=tester)>')
     
     def test_role_exists(self):
