@@ -85,7 +85,9 @@ def importRecord(session, record):
         itemData = record['data']
         instanceID = itemData.pop('instance_id', None)
         primaryID = itemData.pop('primary_identifier', None)
-        logger.debug('Ingesting Item #{}'.format(primaryID['identifier']))
+        logger.debug('Ingesting Item #{}'.format(
+            primaryID.get('identifier', 'unknown'))
+        )
         existing = Item.lookup(
             session,
             itemData.get('identifiers', []),
