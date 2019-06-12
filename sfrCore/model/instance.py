@@ -208,6 +208,7 @@ class Instance(Core, Base):
     def update(self, session, instanceData):
         """Update an existing instance"""
         
+        self.session = session
         # Set fields targeted for works
         if self.work is not None:
             self.setWorkFields(
@@ -216,7 +217,6 @@ class Instance(Core, Base):
                 instanceData.pop('subjects', [])
             )
 
-        self.session = session
         self.createTmpRelations(instanceData)
 
         for field, value in instanceData.items():
