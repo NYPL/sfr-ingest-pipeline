@@ -268,7 +268,7 @@ class Work(Core, Base):
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
             if roles is None: roles = ['author']
             self.agents.extend = {
-                AgentWorks(agent=agentRec, work=self, roles=role)
+                AgentWorks(agent=agentRec, work=self, role=role)
                 for role in set(roles)
             }
         except (DataError, DBError) as err:
@@ -281,7 +281,7 @@ class Work(Core, Base):
     
     def updateAgent(self, agent):
         try:
-            agentRec, roles = Agent.updateOrInsert(session, agent)
+            agentRec, roles = Agent.updateOrInsert(self.session, agent)
             if roles is None: roles = ['author']
             for role in roles:
                 if AgentWorks.roleExists(
@@ -400,10 +400,10 @@ class Work(Core, Base):
                 else:
                     AltTitle.insertOrSkip(self.session, newTitle, Work, self.id)
 
-        if self.tmp_altTitles:
+        if self.tmp_alt_titles:
             self.alt_titles.extend({
                 AltTitle.insertOrSkip(session, a, Work, self.id)
-                for a in self.tmp_altTitles
+                for a in self.tmp_alt_titles
             })   
 
     @classmethod
