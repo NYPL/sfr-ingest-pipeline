@@ -242,14 +242,14 @@ def extractHoldingsLinks(holdings, instance, item):
             item.addClassItem('links', Link, **{
                 'url': itemURI[0],
                 'media_type': itemURI[1],
-                'rel_type': uriFlags
+                'flags': uriFlags
             })
         else:         
             logger.info('Adding Download link {} for item record'.format(uri))
             item.addClassItem('links', Link, **{
                 'url': itemURI[0],
                 'media_type': itemURI[1],
-                'rel_type': uriFlags
+                'flags': uriFlags
             })
 
 
