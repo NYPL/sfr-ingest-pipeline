@@ -135,7 +135,11 @@ class Item(Core, Base):
                                 session.flush()
 
                             deferredLoad = True
-                            localPayload = cls.createLocalEpub(item, link)
+                            localPayload = cls.createLocalEpub(
+                                item,
+                                link,
+                                instance.id
+                            )
                             instance.epubsToLoad.append(localPayload)
                             break
                 except TypeError as err:
@@ -151,7 +155,7 @@ class Item(Core, Base):
         return None
 
     @classmethod
-    def createLocalEpub(cls, item, link):
+    def createLocalEpub(cls, item, link, instanceID):
         """Pass new item to epub storage pipeline. Does not store item record
         at this time, but defers until epub has been processed.
         The payload object takes several parameters:
@@ -163,7 +167,7 @@ class Item(Core, Base):
         putItem['links'] = [link]
         epubPayload = {
             'url': link['url'],
-            'id': instance.id,
+            'id': instanceID,
             'updated': item['modified'],
             'data': putItem
         }
