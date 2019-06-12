@@ -406,6 +406,11 @@ class AgentInstances(Core, Base):
     )
     agent = relationship('Agent')
 
+    def __init__(self, instance=None, agent=None, role=None):
+        self.instance= instance
+        self.agent = agent
+        self.role = role
+
     @classmethod
     def roleExists(cls, session, agent, role, recordID):
         """Query database to see if relationship with role exists between

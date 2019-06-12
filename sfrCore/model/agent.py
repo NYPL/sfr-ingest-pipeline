@@ -1,3 +1,4 @@
+import copy
 import re
 import requests
 from dateutil.parser import parse
@@ -88,13 +89,13 @@ class Agent(Core, Base):
         """Evaluates whether a matching record exists and either updates that
         agent record or creates a new one"""
 
-        agentRec, roles = Agent.createAgent(session, agentData)
+        agentRec, roles = Agent.createAgent(session, copy.deepcopy(agentData))
         existingAgentID = agentRec.lookup()
 
         if existingAgentID is not None:
             existingAgent = session.query(cls).get(existingAgentID)
-            roles = existingAgent.update(session, agentData)
-            return existingAgent, roles
+            updateRoles = existingAgent.update(session, agentData)
+            return existingAgent, list(set(roles) | set(updateRoles))
 
 
         return agentRec, roles

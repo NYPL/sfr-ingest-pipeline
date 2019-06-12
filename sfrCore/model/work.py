@@ -482,6 +482,11 @@ class AgentWorks(Core, Base):
     )
     agent = relationship('Agent')
 
+    def __init__(self, work=None, agent=None, role=None):
+        self.work = work
+        self.agent = agent
+        self.role = role
+
     def __repr__(self):
         return '<AgentWorks(work={}, agent={}, role={})>'.format(
             self.work_id,

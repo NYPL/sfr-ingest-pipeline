@@ -422,6 +422,11 @@ class AgentItems(Core, Base):
     )
     agent = relationship('Agent')
 
+    def __init__(self, item=None, agent=None, role=None):
+        self.item = item
+        self.agent = agent
+        self.role = role
+
     @classmethod
     def roleExists(cls, session, agent, role, recordID):
         """Query database to check if a role exists between a specific work and
