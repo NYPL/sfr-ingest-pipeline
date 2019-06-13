@@ -106,13 +106,13 @@ class Subject(Core, Base):
     def lookupSubject(cls, session, subject):
         """Query database for an existing subject. If multiple are found,
         raise an error, otherwise return the subject record."""
-        try:
-            return session.query(Subject)\
+        subjQuery = session.query(Subject)\
                 .filter(Subject.authority == subject['authority'])\
-                .filter(Subject.subject == subject['subject'])\
-                .one_or_none()
+                .filter(Subject.subject == subject['subject'])
+        try:
+            return subjQuery.one_or_none()
         except MultipleResultsFound:
-            logger.error('Too many subjects found for {}'.format(
+            logger.error('Too many subjects found for {}. Set first'.format(
                 subject['subject']
             ))
-            raise DBError('subjects', 'Found multiple subject entries')
+            return subjQuery.first()
