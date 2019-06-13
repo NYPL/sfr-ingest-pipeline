@@ -1,6 +1,7 @@
 import json
 import base64
 import traceback
+from psycopg2.errors import DeadlockDetected
 
 from sfrCore import SessionManager
 
@@ -100,6 +101,11 @@ def parseRecord(encodedRec, session):
         record = importRecord(session, record)
         MANAGER.commitChanges()
         return record
+    except DeadlockDetected as deadlock:
+        MANAGER.session.rollback()
+        logger.error('Conflicting updates caused deadlock, retry')
+        logger.debug(deadlock)
+        parseRecord(encodedRec, session)
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
