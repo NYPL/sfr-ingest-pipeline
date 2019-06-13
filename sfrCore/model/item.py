@@ -206,10 +206,13 @@ class Item(Core, Base):
         return item
 
     @classmethod
-    def lookup(self, session, identifiers, primaryID=None):
+    def lookup(cls, session, identifiers, primaryID=None):
         if primaryID:
-            item = Identifier.getByIdentifier(Item, session, [primaryID])
-            if item: return item
+            if primaryID.get('type') == 'row_id':
+                return session.query(cls).get(primaryID.get('identifier'))
+            else:
+                item = Identifier.getByIdentifier(Item, session, [primaryID])
+                if item: return item
 
         return Identifier.getByIdentifier(Item, session, identifiers)
     

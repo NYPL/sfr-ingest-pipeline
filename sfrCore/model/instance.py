@@ -148,12 +148,18 @@ class Instance(Core, Base):
         return outInstance
 
     @classmethod
-    def lookup(cls, session, identifiers, newVolume):
+    def lookup(cls, session, identifiers, newVolume, primaryID=None):
         """Query for an existing instance. Generally this will be returned
         by a simple identifier match, but if we have volume data, check to
         be sure that these are the same volume (generally only for) periodicals
         """
-        existingID = Identifier.getByIdentifier(Instance, session, identifiers)
+
+        existingID = None
+        if primaryID is not None and primaryID.get('type', None) == 'row_id':
+            existingID = primaryID.get('identifier')
+
+        if existingID is None:
+            existingID = Identifier.getByIdentifier(Instance, session, identifiers)
 
         if existingID is not None and newVolume is not None:
             logger.debug('Checking to see if volume records match')
@@ -164,7 +170,7 @@ class Instance(Core, Base):
                 existingID = None
 
         return existingID
-    
+
     @classmethod
     def addItemRecord(cls, session, instanceID, itemRec):
         instance = session.query(cls).get(instanceID)
