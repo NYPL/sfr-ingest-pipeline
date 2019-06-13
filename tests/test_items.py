@@ -264,10 +264,10 @@ class ItemTest(unittest.TestCase):
         mock_iden.getByidentifier.return_value = 1
         mock_session = MagicMock()
         mock_item = MagicMock()
-        mock_item.access_reports = []
+        mock_item.access_reports = set()
         mock_session.query().get.return_value=mock_item
         Item.addReportData(mock_session, testReport)
-        self.assertEqual(mock_item.access_reports[0], 'newReport')
+        self.assertEqual(list(mock_item.access_reports)[0], 'newReport')
 
     def test_init_report(self):
         testReport = AccessReport(
