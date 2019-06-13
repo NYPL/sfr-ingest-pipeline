@@ -324,7 +324,6 @@ class Identifier(Base):
             ))
             idenType = ident['type']
             idenTable = idenType if idenType is not None else 'generic'
-            print(idenType, idenTable)
             records = session.query(model.id)\
                 .join('identifiers', idenTable)\
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
