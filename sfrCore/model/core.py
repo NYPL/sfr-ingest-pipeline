@@ -14,11 +14,11 @@ class Core(object):
     date_updated field for all database tables."""
     date_created = Column(
         DateTime,
-        default=datetime.now()
+        default=datetime.utcnow()
     )
 
     date_modified = Column(
         DateTime,
-        default=datetime.now(),
-        onupdate=datetime.now()
+        default=datetime.utcnow(),
+        onupdate=datetime.utcnow()
     )
