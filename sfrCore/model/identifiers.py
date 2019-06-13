@@ -323,7 +323,8 @@ class Identifier(Base):
                 ident['type']
             ))
             idenType = ident['type']
-            idenTable = idenType if idenType is not None else 'generic'  
+            idenTable = idenType if idenType is not None else 'generic'
+            print(idenType, idenTable)
             records = session.query(model.id)\
                 .join('identifiers', idenTable)\
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
@@ -381,7 +382,7 @@ class Identifier(Base):
     def _cleanIdentifier(identifier):
         """Normalizes all identifiers received to remove issue ids"""
 
-        identifierVal = identifier['identifier']
+        identifierVal = str(identifier['identifier'])
 
         # Remove parenthetical notes on identifiers (Frequently found on ISBNs)
         cleanIdentifier = re.sub(r'\(.+\)', '', identifierVal).strip()
