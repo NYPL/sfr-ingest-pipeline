@@ -62,7 +62,8 @@ def importRecord(session, record):
         existingID = Instance.lookup(
             session,
             instanceData.get('identifiers', []),
-            instanceData.get('volume', None)    
+            instanceData.get('volume', None),
+            instanceData.pop('primary_identifier', None)
         )
         if existingID is None:
             logger.warning('Could not locate instance, skipping record')
@@ -110,7 +111,7 @@ def importRecord(session, record):
                     'Could not locate item in database, skipping'
                 )
 
-        Item.update(session, existing, itemData)
+        existing.update(session, itemData)
 
         existing.instance.work.date_modified = datetime.utcnow()
 
