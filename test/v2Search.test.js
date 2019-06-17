@@ -120,12 +120,14 @@ describe('v2 simple search tests', () => {
             _type: 'test',
             _id: 1,
             _score: 1,
+            _source: {},
           },
         ],
       },
     }
     Search.formatResponseEditionRange(testResp)
-    expect(testResp.hits.hits[0].edition_range).to.equal('1900 - 2000')
+    // eslint-disable-next-line no-underscore-dangle
+    expect(testResp.hits.hits[0]._source.edition_range).to.equal('1900 - 2000')
     stubGetRange.restore()
     done()
   })
