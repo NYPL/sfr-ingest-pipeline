@@ -3,3 +3,20 @@ node_js:
 - '10.15'
 install: npm install
 script: npm test
+before_deploy: echo "All unit tests pass. Launching build on AWS EB."
+deploy:
+- provider: elasticbeanstalk
+  skip_cleanup: true
+  access_key_id: "$AWS_ACCESS_KEY_ID_DEVELOPMENT"
+  secret_access_key: "$AWS_SECRET_ACCESS_KEY_DEVELOPMENT"
+  region: us-east-1
+  app: sfr-front-end
+  env: sfr-front-end-development
+  bucket_name: elasticbeanstalk-us-east-1-224280085904
+  bucket_path: sfr-search-api
+  on:
+    repo: NYPL/sfr-search-api
+    branch: development
+env:
+  global:
+    secure: kVPspf9jKq60zuQiUqWSMu1dc0YYmrtX8TFU0G3y5ltctZ0LmvbNkmZ6EoheOliorlBN9im/DA1cpnU3df7EYm5OksaSEFR7FG5ZU7RNpFKspZDYMIiE4o1TYH2XkjveWD/hn18bpfx6SWaWYOGhriIkqQrsEFK060iGB3z7P1R9rw7MoFMuqF1dDN47f5+jKn7+CeLyIc4HyZEjonY/gFqwbcof6Scf68wJaWbpJsf1PyTIFnZpHFhcF2ZDqnHkFnpIp8R7WQgn46fuuwEh1XlidXr/+XAjim4zgSaNVyIEIbkI6BU3O6ZQ+3v1mHx61UJuefX4TkcPuod0Xysx2FstpZ9V99OwcIyItFE/Oexf+zaiJZB8goTUjdp3iT+ZkzEUy28UwTllqKGm0Hti+TDaEyJSf5tc/0yj10fy/ZA1EVRPZwaPeVkYFy/aQuh0vb09CSxGSo6AoSene+aLrrKSNjuYJDHMRuL6/Q+KI0O0TkAvI4Y0LhDISiydCDC5CjYqpgOhr+yiWEuYH3HT0U2CQ2HASkHLcUO+pgss7/RqNJxTkmFZNEvmaxqgTn3RYKGt66bg9VQ6d6YZdT3NLZTzqkHszgLw0upLFr6/FkG70UXWbM3KJY5d4hE/68LF74u5THp2BdhSqV56taZLe9C6MWwcsrTJawSDVRzXmtI=
