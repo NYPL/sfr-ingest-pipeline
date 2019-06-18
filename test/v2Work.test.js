@@ -9,6 +9,7 @@ chai.use(sinonChai)
 chai.use(chaiPromise)
 const { expect } = chai
 
+const Helpers = require('../helpers/esSourceHelpers')
 const { fetchWork } = require('../routes/v2/work')
 const { ElasticSearchError, MissingParamError } = require('../lib/errors')
 
@@ -23,6 +24,7 @@ describe('v2 single work retrieval tests', () => {
 
   it('should return a single record for a successful query', async () => {
     const testClient = sinon.stub()
+    const testRange = sinon.stub(Helpers, 'formatResponseEditionRange')
     testClient.resolves({
       took: 0,
       timed_out: false,
@@ -54,6 +56,7 @@ describe('v2 single work retrieval tests', () => {
     const resp = await fetchWork(params, testApp)
     expect(resp.uuid).to.equal(1)
     expect(resp.title).to.equal('Test Work')
+    testRange.restore()
   })
 
   it('should raise error if multiple records received', async () => {
