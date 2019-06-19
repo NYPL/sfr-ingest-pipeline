@@ -134,7 +134,7 @@ describe('v2 simple search tests', () => {
     done()
   })
 
-  it('should a title.keyword sort for a title sort option', (done) => {
+  it('should sort on sort_title for a title sort option', (done) => {
     const testApp = sinon.mock()
     const testParams = { sort: [{ field: 'title' }] }
     const testSearch = new Search(testApp, testParams)
@@ -142,8 +142,8 @@ describe('v2 simple search tests', () => {
     testSearch.addSort()
     testBody = testSearch.query.build()
     expect(testBody).to.have.property('sort')
-    expect(testBody.sort[0]).to.have.property('title.keyword')
-    expect(testBody.sort[0]['title.keyword'].order).to.equal('ASC')
+    expect(testBody.sort[0]).to.have.property('sort_title')
+    expect(testBody.sort[0].sort_title.order).to.equal('ASC')
     expect(testBody.sort[1]).to.have.property('uuid')
     done()
   })
