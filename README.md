@@ -9,7 +9,7 @@ This allows various Lambda functions of the SFR ingest pipeline to share a unifi
 
 ## Version
 
-v0.1.1
+v0.1.2
 
 ## Requirements
 
