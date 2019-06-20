@@ -1,3 +1,4 @@
+import re
 import uuid
 import json
 from sqlalchemy import (
@@ -142,11 +143,6 @@ class Work(Core, Base):
             logger.debug('Setting {} for field {}'.format(value, key))
             setattr(self, key, value)
 
-        # TODO Remove prepositions, etc from the start of the sort title
-        if self.sort_title is None: 
-            logger.debug('Setting sort_title to {}'.format(self.title))
-            self.sort_title = self.title
-
         #
         # === IMPORTANT ===
         # This inserts a uuid value for the db row
@@ -169,6 +165,10 @@ class Work(Core, Base):
         self.addDates()
         self.addLanguages()
 
+        if self.sort_title is None: 
+            logger.debug('Setting sort_title to {}'.format(self.title))
+            self.sort_title = self.setSortTitle()
+        
         epubsToLoad = getattr(self, 'epubsToLoad', [])
         delattr(self, 'epubsToLoad')
         delattr(self, 'session')
@@ -397,6 +397,7 @@ class Work(Core, Base):
                         self.id
                     )
                     self.title = newTitle
+                    self.setSortTitle()
                 else:
                     AltTitle.insertOrSkip(self.session, newTitle, Work, self.id)
 
@@ -404,7 +405,41 @@ class Work(Core, Base):
             self.alt_titles.extend({
                 AltTitle.insertOrSkip(session, a, Work, self.id)
                 for a in self.tmp_alt_titles
-            })   
+            })
+    
+    def setSortTitle(self):
+        workLangs = [ l.iso_3 for l in list(self.language) ]
+        
+        stops = Work.getStops(workLangs)
+            
+        titleTokens = re.split(r'\s+', self.title)
+        stoppedTitle = []
+        for i, t in enumerate(titleTokens):
+            if t.lower() in stops: 
+                continue
+            else:
+                stoppedTitle = titleTokens[i:]
+                break
+        self.sort_title = ' '.join(stoppedTitle).lower()
+
+    @staticmethod
+    def getStops(workLangs):
+        eng_stops = ['a', 'an', 'the']
+        fra_stops = ['le', 'la', 'les', 'l', 'un', 'une']
+        esp_stops = ['el', 'la', 'los', 'las', 'un', 'una']
+
+        lang_stops = {
+            'eng': eng_stops,
+            'fra': fra_stops,
+            'esp': esp_stops
+        }
+        for lang in workLangs:
+            try:
+                return lang_stops[lang]
+            except KeyError:
+                continue
+        
+        return lang_stops['eng']
 
     @classmethod
     def lookupWork(cls, session, identifiers, primaryID=None):

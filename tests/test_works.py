@@ -57,7 +57,8 @@ class WorkTest(unittest.TestCase):
             addLinks=DEFAULT,
             addDates=DEFAULT,
             addLanguages=DEFAULT,
-            removeTmpRelations=DEFAULT
+            removeTmpRelations=DEFAULT,
+            setSortTitle=DEFAULT
         ) as item_mocks:
             newEpubs = testWork.insert(testData)
             self.assertEqual(testWork.title, 'Test Title')
@@ -287,6 +288,23 @@ class WorkTest(unittest.TestCase):
         self.assertEqual(len(list(testWork.language)), 1)
         self.assertEqual(list(testWork.language)[0].value, 'test_language')
 
+    @patch.object(Work, 'getStops', return_value=['a', 'an', 'the'])
+    def test_set_sort_title(self, mock_stops):
+        testWork = Work()
+        testWork.title = 'A Test Title'
+        mock_lang = MagicMock()
+        mock_lang.iso_3 = 'eng'
+        testWork.language = set(mock_lang)
+        testWork.setSortTitle()
+        self.assertEqual(testWork.sort_title, 'test title')
+
+    def test_get_title_stopwords(self):
+        testStops = Work.getStops(['fra', 'eng'])
+        self.assertEqual(testStops[0], 'le')
+    
+    def test_get_title_stopwords_default(self):
+        testStops = Work.getStops(['ell'])
+        self.assertEqual(testStops[0], 'a')
 
     @patch.object(Work, 'getByUUID', return_value='test_id')
     def test_lookup_uuid(self, mock_get_uuid):
