@@ -6,7 +6,7 @@ def readme():
 
 setup(
     name='sfrCore',
-    version='0.1.2',
+    version='0.1.3',
     description='Core database model and utilities for the SFR project',
     url='https://github.com/nypl/sfr-core',
     author='Michael Benowitz',
