@@ -66,12 +66,15 @@ class TestOCLCClassify(unittest.TestCase):
         mock_clean.assert_called_once()
     
     def test_author_missing(self):
-        testQuery = QueryManager(None, None, None, None, 'Sole Title')
-        try:
+        with self.assertRaises(DataError):
+            testQuery = QueryManager(None, None, None, None, 'Sole Title')
             testQuery.generateAuthorTitleURL()
-        except DataError:
-            pass
-        self.assertRaises(DataError)
+
+    def test_author_missing_empty_string(self):
+        with self.assertRaises(DataError):
+            testQuery = QueryManager(None, None, None, '', 'Sole Title')
+            testQuery.generateAuthorTitleURL()
+            
     
     @patch('lib.readers.oclcClassify.QueryManager.addClassifyOptions')
     def test_identifier_generate(self, mock_add):

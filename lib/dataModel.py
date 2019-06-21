@@ -173,12 +173,12 @@ class Identifier(DataObject):
 
 
 class Link(DataObject):
-    def __init__(self, url=None, mediaType=None, relType=None):
+    def __init__(self, url=None, mediaType=None, flags=None):
         super()
         self.url = url
         self.media_type = mediaType
         self.content = None
-        self.rel_type = None
+        self.flags = None
         self.thumbnail = None
 
 
