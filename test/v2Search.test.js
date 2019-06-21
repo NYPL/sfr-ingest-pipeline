@@ -56,11 +56,13 @@ describe('v2 simple search tests', () => {
     testSearch.query = {
       build: sinon.stub(),
     }
+    const instanceFilter = sinon.stub(Search, 'filterSearchEditions')
     const editionRangeStub = sinon.stub(Helpers, 'formatResponseEditionRange')
     const resp = await testSearch.execSearch()
     expect(resp.took).to.equal(0)
     expect(resp.hits.hits.length).to.equal(1)
     editionRangeStub.restore()
+    instanceFilter.restore()
   })
 
   it('should create facet object for response', (done) => {
@@ -171,6 +173,40 @@ describe('v2 simple search tests', () => {
     expect(testBody).to.have.property('sort')
     expect(testBody.sort[0]).to.have.property('_score')
     expect(testBody.sort[1]).to.have.property('uuid')
+    done()
+  })
+
+  it('should slice instance array down to first 3 instances', (done) => {
+    const testResp = {
+      took: 0,
+      timed_out: false,
+      hits: {
+        total: 1,
+        max_score: 1,
+        hits: [
+          {
+            _index: 'sfr_test',
+            _type: 'test',
+            _id: 1,
+            _score: 1,
+            _source: {
+              instances: [
+                { id: 1 },
+                { id: 2 },
+                { id: 3 },
+                { id: 4 },
+              ],
+            },
+          },
+        ],
+      },
+      aggregations: {},
+    }
+    Search.filterSearchEditions(testResp)
+    /* eslint-disable no-underscore-dangle */
+    expect(testResp.hits.hits[0]._source.instances.length).to.equal(3)
+    expect(testResp.hits.hits[0]._source.instances[2].id).to.equal(3)
+    /* eslint-enable no-underscore-dangle */
     done()
   })
 })
