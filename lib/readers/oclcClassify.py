@@ -139,8 +139,8 @@ class QueryManager():
         self.searchType = searchType
         self.recID = recID
         self.recType = recType
-        self.author = author
-        self.title = title
+        self.author = QueryManager.parseString(author)
+        self.title = QueryManager.parseString(title)
         self.query = None
 
     def generateQueryURL(self):
@@ -228,3 +228,11 @@ class QueryManager():
             raise OCLCError('Failed to reach OCLC Classify Service')
 
         return classifyResp.text
+    
+    @classmethod
+    def parseString(cls, string):
+        if isinstance(string, str):
+            cleanString = string.strip()
+            return cleanString if cleanString != '' else None
+        
+        return string
