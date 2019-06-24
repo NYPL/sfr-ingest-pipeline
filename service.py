@@ -101,16 +101,16 @@ def parseRecord(encodedRec, session):
         record = importRecord(session, record)
         MANAGER.commitChanges()
         return record
-    except DeadlockDetected as deadlock:
-        MANAGER.session.rollback()
-        logger.error('Conflicting updates caused deadlock, retry')
-        logger.debug(deadlock)
-        parseRecord(encodedRec, session)
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
         MANAGER.session.rollback() # Rollback current record only
-        logger.error('Failed to store record')
-        logger.debug(err)
-        logger.debug(traceback.format_exc())
+        if isinstance(err, DeadlockDetected):
+            logger.error('Conflicting updates caused deadlock, retry')
+            logger.debug(deadlock)
+            parseRecord(encodedRec)
+        else:
+            logger.error('Failed to store record')
+            logger.debug(err)
+            logger.debug(traceback.format_exc())
