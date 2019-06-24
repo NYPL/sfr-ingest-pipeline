@@ -9,8 +9,15 @@ const formatResponseEditionRange = (resp) => {
     const startYear = module.exports.getEditionRangeValue(hit, 'gte', 1)
     const endYear = module.exports.getEditionRangeValue(hit, 'lte', -1)
 
+    let editionRange = ''
+    if (startYear !== endYear) {
+      editionRange = `${startYear} - ${endYear}`
+    } else {
+      editionRange = startYear
+    }
+
     // eslint-disable-next-line no-param-reassign, no-underscore-dangle
-    hit._source.edition_range = `${startYear} - ${endYear}`
+    hit._source.edition_range = editionRange
   })
 }
 
@@ -27,7 +34,8 @@ const formatResponseEditionRange = (resp) => {
  */
 const getEditionRangeValue = (hit, range, flip) => {
   let year
-  // eslint-disable-next-line no-underscore-dangle
+  /* eslint-disable no-underscore-dangle */
+  if (!hit._source.instances) { return '????' }
   const rangeInstance = hit._source.instances.sort(
     module.exports.startEndCompare(range, flip),
   ).filter(instance => instance.pub_date)[0]
@@ -39,6 +47,7 @@ const getEditionRangeValue = (hit, range, flip) => {
   // eslint-disable-next-line no-restricted-globals
   if (isNaN(year)) { year = '????' }
   return year
+  /* eslint-enable no-underscore-dangle */
 }
 
 /**
