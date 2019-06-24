@@ -206,6 +206,7 @@ describe('v2 simple search tests', () => {
     /* eslint-disable no-underscore-dangle */
     expect(testResp.hits.hits[0]._source.instances.length).to.equal(3)
     expect(testResp.hits.hits[0]._source.instances[2].id).to.equal(3)
+    expect(testResp.hits.hits[0]._source.edition_count).to.equal(4)
     /* eslint-enable no-underscore-dangle */
     done()
   })
