@@ -692,7 +692,7 @@
           "type": "object",
           "$ref": "#/definitions/FilterObject",
           "example": "English",
-          "description": "Value on which to filter. Can be a string (for term filters), or an object such as {gte: 1900, lte: 2000} for years"
+          "description": "Value on which to filter. Can be a string (for term filters), or an object such as {start: 1900, end: 2000} for years"
         }
       }
     },

@@ -84,6 +84,7 @@ Basic sorting is implemented to support the requirements of the next/previous pa
 Filtering is supported on a set of pre-defined fields. At present the following filters are supported:
 
 - `language`: Filters results to return only works matching the provided language
+- `years`: Filters results to return only works with publication dates based off the provided range. This is calculated from the publication dates associated with the editions for each work. This should be formatted as `{"start": year, "end": year}`.
 
 ## Aggregations/Facets
 
