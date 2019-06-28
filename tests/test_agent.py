@@ -138,7 +138,7 @@ class TestAgent(unittest.TestCase):
         
         testRoles = testAgent.insertData(newData)
         self.assertEqual(testAgent.name, 'New, Name')
-        self.assertEqual(testAgent.sort_name, 'New, Name')
+        self.assertEqual(testAgent.sort_name, 'new, name')
 
     
     @patch.object(Agent, 'findJaroWinklerQuery', return_value='mockAgent')
