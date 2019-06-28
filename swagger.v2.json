@@ -668,7 +668,7 @@
           "type": "string",
           "example": "title",
           "description": "An ElasticSearch field to sort results by",
-          "enum": ["title"]
+          "enum": ["title", "author"]
         },
         "dir": {
           "type": "string",
