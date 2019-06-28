@@ -11,7 +11,7 @@ from sqlalchemy import (
     Unicode,
     or_
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
@@ -54,6 +54,19 @@ class Agent(Core, Base):
         back_populates='agents',
         collection_class=set
     )
+
+    @validates('sort_name')
+    def convertSortLower(self, key, name):
+        """Ensures that all sort_name values are stored as lowercase strings
+        
+        Arguments:
+            key {str} -- Field being validated
+            name {str} -- The sort_name value for the current record
+        
+        Returns:
+            str -- The lowercased value for the sort_name
+        """
+        return name.lower()
 
     VIAF_API = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName='  # noqa: E501
 
