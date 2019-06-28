@@ -57,39 +57,111 @@ describe('Testing ElasticSearch Integration', () => {
       })
   })
 
-  it('responds to v2 search', async () => {
-    const v2Mock = nock(process.env.ELASTICSEARCH_HOST)
-      .post('/_count')
-      .reply(200, { count: 1 })
-      .post('/sfr_test/_search')
-      .reply(200, {
-        took: 0,
-        timed_out: false,
-        hits: {
-          total: 1,
-          max_score: 1,
-          hits: [
-            {
-              _index: 'sfr_test',
-              _type: 'test',
-              _id: 31,
-              _score: 1,
-              _source: {
-                instances: [],
+  describe('v2 Search', () => {
+    let v2Mock
+    beforeEach(() => {
+      v2Mock = nock(process.env.ELASTICSEARCH_HOST).post('/_count').reply(200, { count: 1 })
+    })
+
+    afterEach(() => {
+      // Do Nothing
+    })
+
+    it('responds to v2 search', async () => {
+      v2Mock.post('/sfr_test/_search')
+        .reply(200, {
+          took: 0,
+          timed_out: false,
+          hits: {
+            total: 1,
+            max_score: 1,
+            hits: [
+              {
+                _index: 'sfr_test',
+                _type: 'test',
+                _id: 31,
+                _score: 1,
+                _source: {
+                  instances: [],
+                },
               },
+            ],
+          },
+          aggregations: {},
+        })
+
+      req.get('/v2/sfr/search?field=keyword&query=the')
+        .then((resp) => {
+          expect(resp.body.hits.total).to.be.greaterThan(0)
+          // eslint-disable-next-line no-underscore-dangle
+          expect(resp.body.hits.hits[0]._id).to.equal(31)
+          // eslint-disable-next-line no-unused-expressions
+          expect(v2Mock.isDone()).to.be.true
+        })
+    })
+
+    it('sorts response by author', async () => {
+      v2Mock.post('/sfr_test/_search')
+        .reply(200, {
+          took: 0,
+          timed_out: false,
+          hits: {
+            total: 2,
+            max_score: 1,
+            hits: [
+              {
+                _index: 'sfr_test',
+                _type: 'test',
+                _id: 32,
+                _score: 1,
+                _source: {
+                  instances: [],
+                  agents: [
+                    {
+                      name: 'Other Tester, Test',
+                      sort_name: 'other tester, test',
+                      roles: ['editor'],
+                    },
+                  ],
+                },
+              }, {
+                _index: 'sfr_test',
+                _type: 'test',
+                _id: 31,
+                _score: 1,
+                _source: {
+                  instances: [],
+                  agents: [
+                    {
+                      name: 'Tester, Test',
+                      sort_name: 'tester, test',
+                      roles: ['author'],
+                    },
+                  ],
+                },
+              },
+            ],
+          },
+          aggregations: {},
+        })
+
+      req.post('/v2/sfr/search')
+        .send({
+          query: 'the',
+          field: 'keyword',
+          sort: [
+            {
+              field: 'author',
             },
           ],
-        },
-        aggregations: {},
-      })
-
-    req.get('/v2/sfr/search?field=keyword&query=the')
-      .then((resp) => {
-        expect(resp.body.hits.total).to.be.greaterThan(0)
-        // eslint-disable-next-line no-underscore-dangle
-        expect(resp.body.hits.hits[0]._id).to.equal(31)
-        // eslint-disable-next-line no-unused-expressions
-        expect(v2Mock.isDone()).to.be.true
-      })
+        })
+        .then((resp) => {
+          expect(resp.body.hits.total).to.be.greaterThan(0)
+          // eslint-disable-next-line no-underscore-dangle
+          expect(resp.body.hits.hits[0]._id).to.equal(32)
+          // eslint-disable-next-line no-unused-expressions
+          expect(v2Mock.isDone()).to.be.true
+        })
+    })
   })
 })
