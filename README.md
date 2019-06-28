@@ -76,7 +76,9 @@ The paging options are:
 
 Basic sorting is implemented to support the requirements of the next/previous page functionality. The default sort is by the internal ElasticSearch scoring algorithm, based off the initial search query. This can be changed to any field in the index. Adding a sort involves placing a single parameter, `sort`, in the request, which is an array of objects with the following fields:
 
-- `field` The field to sort the results on
+- `field` The field to sort the results on. The currently valid sorting options are:
+  - title
+  - author
 - `dir` The direction of the sort, either `asc` or `desc`
 
 ## Filtering
