@@ -66,7 +66,12 @@ class Agent(Core, Base):
         Returns:
             str -- The lowercased value for the sort_name
         """
-        return name.lower()
+        if isinstance(name, str):
+            return name.lower()
+        elif isinstance(name, bytes):
+            return name.decode('utf-8').lower()
+        else:
+            return name
 
     VIAF_API = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName='  # noqa: E501
 

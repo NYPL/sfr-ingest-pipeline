@@ -140,6 +140,29 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(testAgent.name, 'New, Name')
         self.assertEqual(testAgent.sort_name, 'new, name')
 
+    def test_agent_insert_sort_none(self):
+        testAgent = Agent()
+        testData = {
+            'name': 'New, Name',
+            'sort_name': None
+        }
+        testAgent.createTmpRelations(testData)
+        testAgent.insertData(testData)
+        testAgent.removeTmpRelations()
+        self.assertEqual(testAgent.name, 'New, Name')
+        self.assertEqual(testAgent.sort_name, 'new, name')
+    
+    def test_agent_insert_sort_unicode(self):
+        testAgent = Agent()
+        testData = {
+            'name': 'New, Name',
+            'sort_name': 'New, Name'.encode('utf-8')
+        }
+        testAgent.createTmpRelations(testData)
+        testAgent.insertData(testData)
+        testAgent.removeTmpRelations()
+        self.assertEqual(testAgent.name, 'New, Name')
+        self.assertEqual(testAgent.sort_name, 'new, name')
     
     @patch.object(Agent, 'findJaroWinklerQuery', return_value='mockAgent')
     @patch.object(Agent, 'findViafQuery', return_value=None)
