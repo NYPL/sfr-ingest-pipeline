@@ -164,6 +164,34 @@ describe('v2 simple search tests', () => {
     done()
   })
 
+  it('should sort on instances.pub_date_sort for ASC date sort', (done) => {
+    const testApp = sinon.mock()
+    const testParams = { sort: [{ field: 'date' }] }
+    const testSearch = new Search(testApp, testParams)
+    testSearch.query = bodybuilder()
+    testSearch.addSort()
+    testBody = testSearch.query.build()
+    expect(testBody).to.have.property('sort')
+    expect(testBody.sort[0]).to.have.property('instances.pub_date_sort')
+    expect(testBody.sort[0]['instances.pub_date_sort'].order).to.equal('ASC')
+    expect(testBody.sort[1]).to.have.property('uuid')
+    done()
+  })
+
+  it('should sort on instances.pub_date_sort_desc for DESC date sort', (done) => {
+    const testApp = sinon.mock()
+    const testParams = { sort: [{ field: 'date', dir: 'DESC' }] }
+    const testSearch = new Search(testApp, testParams)
+    testSearch.query = bodybuilder()
+    testSearch.addSort()
+    testBody = testSearch.query.build()
+    expect(testBody).to.have.property('sort')
+    expect(testBody.sort[0]).to.have.property('instances.pub_date_sort_desc')
+    expect(testBody.sort[0]['instances.pub_date_sort_desc'].order).to.equal('DESC')
+    expect(testBody.sort[1]).to.have.property('uuid')
+    done()
+  })
+
   it('should add a field sort for an arbitrary sort option', (done) => {
     const testApp = sinon.mock()
     const testParams = { sort: [{ field: 'testing', dir: 'DESC' }] }
