@@ -3,7 +3,7 @@ This Lambda function manages the SFR ElasticSearch index, reflecting updates fro
 
 ## Version
 
-v0.0.2
+v0.1.2
 
 ## Dependencies
 - coverage
