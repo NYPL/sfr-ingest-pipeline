@@ -3,6 +3,7 @@ import os
 from unittest.mock import patch, MagicMock, call
 from elasticsearch.exceptions import ConnectionError, TransportError, ConflictError
 from elasticsearch.helpers import BulkIndexError
+from elasticsearch_dsl import DateRange
 
 from helpers.errorHelpers import ESError
 
@@ -161,6 +162,24 @@ class TestESManager(unittest.TestCase):
         langRec = ESDoc.addLanguage(testLang)
         self.assertEqual(langRec.language, 'test')
         self.assertEqual(langRec.iso_3, 'tes')
+    
+    def test_insert_instance_w_pub_date(self):
+        testInstance = MagicMock()
+        testDate = MagicMock()
+        testDate.lower = '2019-01-01'
+        testDate.upper = '2019-12-31'
+        dateObj = MagicMock()
+        dateObj.date_type = 'pub_date'
+        dateObj.display_date = '2019'
+        dateObj.date_range = testDate
+        testInstance.title = 'Test Title'
+        testInstance.dates = [dateObj]
+        newInstance = ESDoc.addInstance(testInstance)
+
+        self.assertEqual(newInstance.title, 'Test Title')
+        self.assertEqual(newInstance.pub_date_sort, '2019-01-01')
+        self.assertEqual(newInstance.pub_date_sort_desc, '2019-12-31')
+
 
 
 class TestDict(dict):

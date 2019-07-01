@@ -38,6 +38,7 @@ Not included in the model documentation below are the `date_created` and `date_m
 - instances (Nested)
 
 ### Instance
+
 - title (Text)
   - keyword (Keyword)
 - sub_title (Text)
@@ -47,6 +48,9 @@ Not included in the model documentation below are the `date_created` and `date_m
 - pub_place (Text)
   - keyword (Keyword)
 - pub_date (DateRange)
+- pub_date_display (Text)
+- pub_date_sort (Date)
+- pub_date_sort_desc (Date)
 - copyright_date (DateRange)
 - edition (Text)
   - keyword (Keyword)

@@ -163,6 +163,8 @@ class Instance(BaseInner):
     pub_place = Text(fields={'keyword': Keyword()})
     pub_date = DateRange(format='date_optional_time')
     pub_date_display = Keyword(index=False)
+    pub_date_sort = Date()
+    pub_date_sort_desc = Date()
     edition = Text(fields={'keyword': Keyword()})
     edition_statement = Text(fields={'keyword': Keyword()})
     table_of_contents = Text()
