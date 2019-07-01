@@ -40,7 +40,7 @@ const getEditionRangeValue = (hit, range, flip) => {
     module.exports.startEndCompare(range, flip),
   ).filter(instance => instance.pub_date)[0]
   if (rangeInstance) {
-    year = new Date(`${rangeInstance.pub_date[range]}T12:00:00.000+00:00`).getFullYear()
+    year = new Date(`${rangeInstance.pub_date[range]}Z`).getUTCFullYear()
   } else {
     year = '????'
   }
@@ -81,8 +81,8 @@ const startEndCompare = (startEnd, sortFlip) => {
     if (!a.pub_date[startEnd]) return -1 * sortFlip
     if (!b.pub_date[startEnd]) return 1 * sortFlip
 
-    const d1 = new Date(`${a.pub_date[startEnd]}T12:00:00.000+00:00`).getFullYear()
-    const d2 = new Date(`${b.pub_date[startEnd]}T12:00:00.000+00:00`).getFullYear()
+    const d1 = new Date(`${a.pub_date[startEnd]}Z`).getUTCFullYear()
+    const d2 = new Date(`${b.pub_date[startEnd]}Z`).getUTCFullYear()
 
     if (d1 > d2) return 1 * sortFlip
     if (d1 < d2) return -1 * sortFlip
