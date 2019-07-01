@@ -2,7 +2,8 @@
 This Lambda function manages the SFR ElasticSearch index, reflecting updates from the postgreSQL persistence layer into an ElasticSearch index (used for record retrieval by APIs/the SFR front-end application)
 
 ## Version
-v0.0.1
+
+v0.0.2
 
 ## Dependencies
 - coverage
