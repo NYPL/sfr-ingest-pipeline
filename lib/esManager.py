@@ -273,6 +273,12 @@ class ESDoc():
         for dateType, date in ESDoc._loadDates(instance, ['pub_date']).items():
             ESDoc._insertDate(esInstance, date, dateType)
         
+        if esInstance.pub_date:
+            if esInstance.pub_date.gte:
+                esInstance.pub_date_sort = esInstance.pub_date.gte
+            if esInstance.pub_date.lte:
+                esInstance.pub_date_sort_desc = esInstance.pub_date.lte
+
         #esInstance.identifiers = [
         #    ESDoc.addIdentifier(identifier)
         #    for identifier in instance.identifiers
