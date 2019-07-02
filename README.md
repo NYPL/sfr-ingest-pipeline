@@ -1,5 +1,8 @@
 # SFR Search API
 
+[![Build Status](https://travis-ci.com/NYPL/sfr-search-api.svg?branch=development)](https://travis-ci.com/NYPL/sfr-search-api)
+[![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-search-api.svg)](https://badge.fury.io/gh/nypl%2Fsfr-search-api)
+
 Provides access to the SFR ElasticSearch index. Currently supports basic search on `keyword`, `title`, `author` and `subject` fields, as well as single record retrieval by `identifier`.
 
 View Swagger documentation for [v2](https://dev-platformdocs.nypl.org)
