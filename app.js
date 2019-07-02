@@ -2,6 +2,7 @@ const config = require('config')
 const express = require('express')
 const bodyParser = require('body-parser')
 const SwaggerParser = require('swagger-parser')
+const swaggerUI = require('swagger-ui-express')
 const logger = require('./lib/logger')
 const swaggerDocs = require('./swagger.v2.json')
 
@@ -34,9 +35,7 @@ app.use('/v1', v1Router)
 app.use('/', v1Router) // Controls default version of app
 
 // TODO: Implement different Swagger doc versions for versions of the API
-app.get('/research-now/swagger', (req, res) => {
-  res.send(swaggerDocs)
-})
+app.use('/research-now/swagger', swaggerUI.serve, swaggerUI.setup(swaggerDocs))
 
 app.get('/research-now/swagger-test', (req, res) => {
   SwaggerParser.validate(swaggerDocs, (err, api) => {

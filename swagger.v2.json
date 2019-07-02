@@ -578,7 +578,8 @@
         "field": {
           "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
           "type": "string",
-          "example": "keyword|title|author|subject"
+          "example": "keyword",
+          "enum": ["keyword", "title", "author", "subject"]
         },
         "query": {
           "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
@@ -668,7 +669,7 @@
           "type": "string",
           "example": "title",
           "description": "An ElasticSearch field to sort results by",
-          "enum": ["title", "author"]
+          "enum": ["title", "author", "date"]
         },
         "dir": {
           "type": "string",
@@ -684,17 +685,24 @@
       "properties": {
         "field": {
           "type": "string",
-          "example": "language",
           "enum": ["language", "years"],
           "description": "Field on which to match results by (effectively exact-match search)"
         },
         "value": {
           "type": "object",
           "$ref": "#/definitions/FilterObject",
-          "example": "English",
           "description": "Value on which to filter. Can be a string (for term filters), or an object such as {start: 1900, end: 2000} for years"
         }
-      }
+      },
+      "example": [
+        {
+          "field": "language",
+          "value": "Spanish"
+        },{
+          "field": "years",
+          "value": {"start": 1800, "end": 2000}
+        }
+    ]
     },
     "QueryBlock": {
       "title": "Query",

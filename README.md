@@ -79,6 +79,7 @@ Basic sorting is implemented to support the requirements of the next/previous pa
 - `field` The field to sort the results on. The currently valid sorting options are:
   - title
   - author
+  - date (This sorts on either the first or last publication date, depending on the sort direction)
 - `dir` The direction of the sort, either `asc` or `desc`
 
 ## Filtering
