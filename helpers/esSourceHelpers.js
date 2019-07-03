@@ -36,7 +36,8 @@ const getEditionRangeValue = (hit, range, flip) => {
   let year
   /* eslint-disable no-underscore-dangle */
   if (!hit._source.instances) { return '????' }
-  const rangeInstance = hit._source.instances.sort(
+  const instanceSorter = hit._source.instances.map(o => ({ ...o }))
+  const rangeInstance = instanceSorter.sort(
     module.exports.startEndCompare(range, flip),
   ).filter(instance => instance.pub_date)[0]
   if (rangeInstance) {
