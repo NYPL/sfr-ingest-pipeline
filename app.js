@@ -35,7 +35,11 @@ app.use('/v1', v1Router)
 app.use('/', v1Router) // Controls default version of app
 
 // TODO: Implement different Swagger doc versions for versions of the API
-app.use('/research-now/swagger', swaggerUI.serve, swaggerUI.setup(swaggerDocs))
+app.get('/research-now/swagger', (req, res) => {
+  res.send(swaggerDocs)
+})
+
+app.use('/research-now/swagger-ui', swaggerUI.serve, swaggerUI.setup(swaggerDocs))
 
 app.get('/research-now/swagger-test', (req, res) => {
   SwaggerParser.validate(swaggerDocs, (err, api) => {
