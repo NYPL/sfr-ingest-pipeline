@@ -14,14 +14,141 @@ const { Search } = require('../lib/search')
 const { MissingParamError } = require('../lib/errors')
 
 describe('v2 simple search tests', () => {
-  it('should raise an error if field or query is missing in build', (done) => {
-    const testApp = sinon.stub()
-    const params = {
-      field: 'testing',
-    }
-    const testSearch = new Search(testApp, params)
-    expect(testSearch.buildSearch.bind()).to.throw(MissingParamError('Your POST request must include either queries or filters'))
-    done()
+  describe('buildSearch()', () => {
+    let stubBuildQuery = null
+    let stubFilters = null
+    let stubSort = null
+    let stubAggs = null
+
+    beforeEach(() => {
+      stubBuildQuery = sinon.stub(Search.prototype, 'buildQuery')
+      stubFilters = sinon.stub(Search.prototype, 'addFilters')
+      stubSort = sinon.stub(Search.prototype, 'addSort')
+      stubAggs = sinon.stub(Search.prototype, 'addAggregations')
+    })
+
+    afterEach(() => {
+      stubBuildQuery.restore()
+      stubFilters.restore()
+      stubSort.restore()
+      stubAggs.restore()
+    })
+
+    it('should raise an error if field or query is missing in build', (done) => {
+      const testApp = sinon.stub()
+      const params = {
+        field: 'testing',
+      }
+      const testSearch = new Search(testApp, params)
+      expect(testSearch.buildSearch.bind()).to.throw(MissingParamError('Your POST request must include either queries or filters'))
+      done()
+    })
+
+    it('should create a query object with aggregations, filters and paging', (done) => {
+      const testApp = sinon.stub()
+      const testParams = {
+        queries: [
+          {
+            field: 'keyword',
+            query: 'testing',
+          }, {
+            field: 'subject',
+            query: 'local',
+          },
+        ],
+      }
+
+      const testSearch = new Search(testApp, testParams)
+      testSearch.buildSearch()
+      /* eslint-disable no-unused-expressions */
+      expect(stubBuildQuery.getCall(0).calledWith('keyword', 'testing')).to.be.true
+      expect(stubBuildQuery.getCall(1).calledWith('subject', 'local')).to.be.true
+      expect(stubFilters).to.have.been.calledOnce
+      expect(stubSort).to.have.been.calledOnce
+      expect(stubAggs).to.have.been.calledOnce
+      /* eslint-enable no-unused-expressions */
+
+      done()
+    })
+
+    it('should also accept a single search object', (done) => {
+      const testApp = sinon.stub()
+      const testParams = {
+        field: 'keyword',
+        query: 'testing',
+      }
+
+      const testSearch = new Search(testApp, testParams)
+      testSearch.buildSearch()
+      /* eslint-disable no-unused-expressions */
+      expect(stubBuildQuery).to.have.been.calledOnceWith('keyword', 'testing')
+      expect(stubFilters).to.have.been.calledOnce
+      expect(stubSort).to.have.been.calledOnce
+      expect(stubAggs).to.have.been.calledOnce
+      /* eslint-enable no-unused-expressions */
+
+      done()
+    })
+  })
+
+  describe('buildQuery()', () => {
+    let testApp = null
+    let testParams = null
+    let testSearch = null
+
+    beforeEach(() => {
+      testApp = sinon.stub()
+      testParams = {}
+      testSearch = new Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+    })
+
+    afterEach(() => {})
+
+    it('should raise error if field or query is missing from args', (done) => {
+      expect(testSearch.buildQuery.bind('test')).to.throw(MissingParamError('Each query object in your request must contain query and field fields'))
+
+      done()
+    })
+
+    it('should add a OR boolean query for author fields', (done) => {
+      testSearch.buildQuery('author', 'Testing')
+
+      const testQuery = testSearch.query.build()
+      expect(testQuery.query.bool.should[0].nested.query.bool.must.query_string.query).to.equal('Testing')
+      done()
+    })
+
+    it('should add a OR boolean query for viaf/lcnaf fields', (done) => {
+      testSearch.buildQuery('viaf', 't0000000000')
+
+      const testQuery = testSearch.query.build()
+      expect(testQuery.query.bool.should[0].nested.query.term['agents.viaf']).to.equal('t0000000000')
+      done()
+    })
+
+    it('should add a single nested query for subject searches', (done) => {
+      testSearch.buildQuery('subject', 'testSubject')
+      const testQuery = testSearch.query.build()
+      expect(testQuery.query.nested.query.query_string.query).to.equal('testSubject')
+      done()
+    })
+
+    it('should add a simple query for title searches', (done) => {
+      testSearch.buildQuery('title', 'testTitle')
+      const testQuery = testSearch.query.build()
+      expect(testQuery.query.query_string.query).to.equal('testTitle')
+      done()
+    })
+
+    it('should add a OR boolean query for keyword searches', (done) => {
+      testSearch.buildQuery('keyword', 'testing')
+
+      const testQuery = testSearch.query.build()
+      expect(testQuery.query.bool.should[0].query_string.query).to.equal('testing')
+      expect(testQuery.query.bool.should[1].nested.query.query_string.query).to.equal('testing')
+      done()
+    })
   })
 
   it('should query for a simple search field/query pair', async () => {

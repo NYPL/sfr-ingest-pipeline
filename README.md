@@ -48,10 +48,35 @@ After initialization, if this is a new application, run `eb create` to create th
 
 ## Searching
 
-The `search` endpoint supports both `GET` and `POST` requests with the same basic parameters. Required are:
+The `search` endpoint supports both `GET` and `POST` requests with the same basic parameters. Queries can be both for an individual term or an array of terms. In either case the main `query` object must be comprised of the following:
 
 - `field` the field(s) you would like to search. Currently supported are `keyword`, `title`, `author` and `subject`.
 - `query` the string you would like to search. The query field supports boolean search construction as well as quotation marks for exact term matching.
+
+For example a simple search query looks like:
+
+``` json
+{
+    "field": "keyword",
+    "query": "history"
+}
+```
+
+A more complex query looks like:"
+
+``` json
+{
+    "queries": [
+        {
+            "field": "keyword",
+            "query": "New York City"
+        },{
+            "field": "subject",
+            "query": "history"
+        }
+    ]
+}
+```
 
 ### Search Fields
 
