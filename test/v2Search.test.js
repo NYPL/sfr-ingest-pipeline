@@ -68,20 +68,20 @@ describe('v2 simple search tests', () => {
   it('should create facet object for response', (done) => {
     const testResp = {
       aggregations: {
-        test: {
-          test: {
+        test_1: {
+          test_2: {
             buckets: [
               {
                 key: 'test1',
-                test: { doc_count: 9 },
+                test_3: { doc_count: 9 },
               },
               {
                 key: 'test2',
-                test: { doc_count: 3 },
+                test_3: { doc_count: 3 },
               },
               {
                 key: 'test3',
-                test: { doc_count: 6 },
+                test_3: { doc_count: 6 },
               },
             ],
           },
@@ -102,8 +102,8 @@ describe('v2 simple search tests', () => {
     testSearch.addAggregations()
     testBody = testSearch.query.build()
     expect(testBody).to.have.property('aggs')
-    expect(testBody.aggs).to.have.property('language')
-    expect(testBody.aggs.language).to.have.property('nested')
+    expect(testBody.aggs).to.have.property('language_1')
+    expect(testBody.aggs.language_1).to.have.property('nested')
     done()
   })
 
@@ -117,8 +117,8 @@ describe('v2 simple search tests', () => {
       testSearch.addFilters()
       testBody = testSearch.query.build()
       expect(testBody).to.have.property('query')
-      expect(testBody.query.nested.query.range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
-      expect(testBody.query.nested.query.range['instances.pub_date'].lte.getTime()).to.equal(new Date('2000-12-31T12:00:00.000+00:00').getTime())
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte.getTime()).to.equal(new Date('2000-12-31T12:00:00.000+00:00').getTime())
       done()
     })
 
@@ -131,9 +131,9 @@ describe('v2 simple search tests', () => {
       testSearch.addFilters()
       testBody = testSearch.query.build()
       expect(testBody).to.have.property('query')
-      expect(testBody.query.nested.query.range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
       // eslint-disable-next-line no-unused-expressions
-      expect(testBody.query.nested.query.range['instances.pub_date'].lte).to.be.undefined
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte).to.be.undefined
       done()
     })
 
@@ -146,8 +146,33 @@ describe('v2 simple search tests', () => {
       testSearch.addFilters()
       testBody = testSearch.query.build()
       expect(testBody).to.have.property('query')
-      expect(testBody.query.nested.query.bool.should[0].nested.query.term['instances.language.language']).to.equal('Testing')
-      expect(testBody.query.nested.query.bool.should[1].nested.query.term['instances.language.language']).to.equal('Hello')
+      expect(testBody.query.bool.must[0].nested.query.bool.must[1].nested.query.term['instances.language.language']).to.equal('Testing')
+      expect(testBody.query.bool.must[1].nested.query.bool.must[1].nested.query.term['instances.language.language']).to.equal('Hello')
+      done()
+    })
+
+    it('should add the show_all filter unless specific disabled', (done) => {
+      const testApp = sinon.mock()
+      testApp.logger = logger
+      const testParams = {}
+      const testSearch = new Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      testSearch.addFilters()
+      testBody = testSearch.query.build()
+      expect(testBody).to.have.property('query')
+      expect(testBody.query.nested.query.nested.query.exists.field).to.equal('instances.items.source')
+      done()
+    })
+
+    it('should not include the show_all filter if disabled', (done) => {
+      const testApp = sinon.mock()
+      testApp.logger = logger
+      const testParams = { filters: [{ field: 'show_all', value: true }] }
+      const testSearch = new Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      testSearch.addFilters()
+      testBody = testSearch.query.build()
+      expect(testBody).to.not.have.property('query')
       done()
     })
   })
