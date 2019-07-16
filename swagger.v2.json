@@ -491,6 +491,56 @@
           }
         }
       }
+    },
+    "/v0.1/research-now/v2/utils/languages": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) GET Distinct Language Lookup",
+        "description": "Returns an array of unique languages in the ResearchNow database",
+        "parameters": [
+          {
+            "name": "total",
+            "in": "query",
+            "description": "Toggle, if true will return total number of works associated with each language",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing the languages array",
+            "schema": {
+              "$ref": "#/definitions/LanguageResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -720,6 +770,50 @@
         }
       }
     },
-    "FilterObject": {}
+    "FilterObject": {},
+    "LanguageResponse": {
+      "title": "Language Utility Response",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "example": "200",
+          "description": "API status code"
+        },
+        "data": {
+          "type": "object",
+          "$ref": "#/definitions/LanguageData",
+          "description": "Data block for the language utility"
+        }
+      }
+    },
+    "LanguageData": {
+      "title": "Language Data Block",
+      "type": "object",
+      "properties": {
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LanguageObject"
+          }
+        }
+      }
+    },
+    "LanguageObject": {
+      "title": "Language Object",
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string",
+          "example": "Spanish",
+          "description": "Full text string of the language"
+        },
+        "count": {
+          "type": "integer",
+          "example": "10",
+          "description": "Count of the number of works associated with this language"
+        }
+      }
+    }
   }
 }
