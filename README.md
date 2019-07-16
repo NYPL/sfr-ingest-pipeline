@@ -132,3 +132,11 @@ The `work` endpoint also supports both `GET` and `POST` requests and returns a s
 UUID is preferred as it is the only identifier that is guaranteed to only return a single record.
 
 If no results or multiple results are found for an identifier, this will return a non-200 error message.
+
+## Utilities
+
+The API also supports a `utils` route that can provide additional functionality that supports the core functionality of the API. These endpoints will return statistics, specific pieces of data from the collection or other small functions that can help support large functionality. Each existing utility endpoint will be detailed in this section
+
+### Language List: (`utils/languages`) [`GET`]
+
+This endpoint returns a list of all languages that currently exist in the ResearchNow database. This allows the advanced search interface to present users with an array of all languages they might filter their results by. This accepts a single query parameter: `total` which accepts a boolean value (`false` by default) and which returns the total count of `Work` records associated with each language when enabled. This allows API users to quickly obtain a list of `Work` counts by language, enabling insights into the data and potential use as a visualization/feature.
