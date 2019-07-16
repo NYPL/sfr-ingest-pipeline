@@ -48,10 +48,35 @@ After initialization, if this is a new application, run `eb create` to create th
 
 ## Searching
 
-The `search` endpoint supports both `GET` and `POST` requests with the same basic parameters. Required are:
+The `search` endpoint supports both `GET` and `POST` requests with the same basic parameters. Queries can be both for an individual term or an array of terms. In either case the main `query` object must be comprised of the following:
 
 - `field` the field(s) you would like to search. Currently supported are `keyword`, `title`, `author` and `subject`.
 - `query` the string you would like to search. The query field supports boolean search construction as well as quotation marks for exact term matching.
+
+For example a simple search query looks like:
+
+``` json
+{
+    "field": "keyword",
+    "query": "history"
+}
+```
+
+A more complex query looks like:"
+
+``` json
+{
+    "queries": [
+        {
+            "field": "keyword",
+            "query": "New York City"
+        },{
+            "field": "subject",
+            "query": "history"
+        }
+    ]
+}
+```
 
 ### Search Fields
 
@@ -91,6 +116,7 @@ Filtering is supported on a set of pre-defined fields. At present the following 
 
 - `language`: Filters results to return only works matching the provided language
 - `years`: Filters results to return only works with publication dates based off the provided range. This is calculated from the publication dates associated with the editions for each work. This should be formatted as `{"start": year, "end": year}`.
+- `show_all`: By default, the search results only include works with editions that have readable copies (either downloadable or available to read online). Setting this value to `true` will return all works, regardless of this status, in the search results.
 
 ## Aggregations/Facets
 
