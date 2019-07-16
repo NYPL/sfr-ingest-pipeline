@@ -579,12 +579,18 @@
           "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
           "type": "string",
           "example": "keyword",
-          "enum": ["keyword", "title", "author", "subject"]
+          "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
         },
         "query": {
           "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
-          "example": "\"Personal Anecodotes\" OR narrative",
+          "example": "\"Civil War\" OR Lincoln",
           "type": "string"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v2QueryBlock"
+          }
         },
         "filters": {
           "type": "array",
@@ -717,6 +723,23 @@
           "type": "string",
           "example": "divina",
           "description": "Query value"
+        }
+      }
+    },
+    "v2QueryBlock": {
+      "title": "v2 Query",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "example": "keyword",
+          "description": "Field to query",
+          "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
+        },
+        "query": {
+          "type": "string",
+          "example": "\"Civil War\" OR Lincoln",
+          "description": "Text of the query. Can contain standard boolean search syntax"
         }
       }
     },
