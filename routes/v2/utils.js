@@ -43,7 +43,7 @@ const fetchLangs = (app, params) => {
   const { total } = params
 
   // Construct the ElasticSearch query using the BodyBuilder library
-  const body = buildQuery(total)
+  const body = module.exports.buildQuery(total)
 
   // Create an object that can be understood by the ElasticSearch service
   const esQuery = {
@@ -52,7 +52,7 @@ const fetchLangs = (app, params) => {
   }
 
   // Execute ElasticSearch query
-  return execQuery(app, esQuery, total)
+  return module.exports.execQuery(app, esQuery, total)
 }
 
 /**
@@ -92,19 +92,18 @@ const buildQuery = (total) => {
  * @param {Object} esQuery Object containing ES index and built query object
  * @param {Boolean} total Toggle for the return of total works associated with each language
  */
-const execQuery = (app, esQuery, total) => {
-  return new Promise((resolve, reject) => {
+const execQuery = (app, esQuery, total) => (
+  new Promise((resolve, reject) => {
     app.client.search(esQuery)
       .then((resp) => {
         // Raise an error if no aggregations were returned
         const docCount = resp.aggregations.language_inner.doc_count
         if (docCount < 1) reject(new ElasticSearchError('Could not load language aggregations'))
-        const langArray = parseLanguageAgg(resp.aggregations.language_inner, total)
+        const langArray = module.exports.parseLanguageAgg(resp.aggregations.language_inner, total)
         resolve(langArray)
       })
       .catch(error => reject(error))
-  })
-}
+  }))
 
 /**
  * Parses the aggregation received from ElasticSearch
@@ -140,4 +139,11 @@ const formatLanguageResponse = langArr => (
   }
 )
 
-module.exports = { utilEndpoints }
+module.exports = {
+  utilEndpoints,
+  fetchLangs,
+  buildQuery,
+  execQuery,
+  parseLanguageAgg,
+  formatLanguageResponse,
+}

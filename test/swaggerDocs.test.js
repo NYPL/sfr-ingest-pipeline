@@ -34,7 +34,7 @@ describe('Testing Swagger Documentation', () => {
       .then((resp) => {
         const apiPaths = []
         Object.keys(resp.body.paths).map(path => apiPaths.push(path))
-        expect(apiPaths.length).to.equal(5)
+        expect(apiPaths.length).to.equal(6)
       })
   })
 })
