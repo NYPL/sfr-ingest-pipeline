@@ -11,7 +11,7 @@ const { expect } = chai
 
 const Helpers = require('../helpers/esSourceHelpers')
 const { Search } = require('../lib/search')
-const { MissingParamError } = require('../lib/errors')
+const { MissingParamError, InvalidFilterError } = require('../lib/errors')
 
 describe('v2 simple search tests', () => {
   describe('buildSearch()', () => {
@@ -300,6 +300,29 @@ describe('v2 simple search tests', () => {
       testSearch.addFilters()
       testBody = testSearch.query.build()
       expect(testBody).to.not.have.property('query')
+      done()
+    })
+
+    it('should create an array of format filter options', (done) => {
+      const testApp = sinon.mock()
+      testApp.logger = logger
+      const testParams = { filters: [{ field: 'format', value: 'pdf' }, { field: 'format', value: 'epub' }] }
+      const testSearch = new Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      testSearch.addFilters()
+      testBody = testSearch.query.build()
+      expect(testSearch.formats).to.deep.equal(['application/pdf', 'application/epub+zip'])
+      expect(testBody.query.nested.query.bool.must[1].nested.query.terms).to.have.property('instances.items.links.media_type')
+      done()
+    })
+
+    it('should throw an InvalidFilterError if format is not recognized', (done) => {
+      const testApp = sinon.mock()
+      testApp.logger = logger
+      const testParams = { filters: [{ field: 'format', value: 'pbf' }, { field: 'format', value: 'epub' }] }
+      const testSearch = new Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      expect(testSearch.addFilters.bind()).to.throw(InvalidFilterError('Format filter value (pbf) must be one of the following: pdf, epub or html'))
       done()
     })
   })
