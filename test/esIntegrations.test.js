@@ -164,4 +164,90 @@ describe('Testing ElasticSearch Integration', () => {
         })
     })
   })
+
+  describe('Utility Endpoints', () => {
+    it('should respond with a list of languages for utils/languages', async () => {
+      const langMock = nock(process.env.ELASTICSEARCH_HOST)
+        .post('/sfr_test/_search')
+        .reply(200, {
+          took: 0,
+          timed_out: false,
+          hits: {
+            total: 2,
+            max_score: 0,
+            hits: [],
+          },
+          aggregations: {
+            language_inner: {
+              doc_count: 10,
+              unique_languages: {
+                buckets: [
+                  {
+                    key: 'Test1',
+                  }, {
+                    key: 'Test2',
+                  }, {
+                    key: 'Test3',
+                  },
+                ],
+              },
+            },
+          },
+        })
+      req.get('/v2/sfr/utils/languages')
+        .then((resp) => {
+          expect(resp.body.status).to.equal(200)
+          expect(resp.body.data.languages[1].language).to.equal('Test2')
+          // eslint-disable-next-line no-unused-expressions
+          expect(langMock.isDone()).to.be.true
+        })
+    })
+
+    it('should return list of languages with counts with total option on utils/languages', async () => {
+      const langMock = nock(process.env.ELASTICSEARCH_HOST)
+        .post('/sfr_test/_search')
+        .reply(200, {
+          took: 0,
+          timed_out: false,
+          hits: {
+            total: 2,
+            max_score: 0,
+            hits: [],
+          },
+          aggregations: {
+            language_inner: {
+              doc_count: 10,
+              unique_languages: {
+                buckets: [
+                  {
+                    key: 'Test1',
+                    inner_count: {
+                      doc_count: 5,
+                    },
+                  }, {
+                    key: 'Test2',
+                    inner_count: {
+                      doc_count: 3,
+                    },
+                  }, {
+                    key: 'Test3',
+                    inner_count: {
+                      doc_count: 2,
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        })
+      req.get('/v2/sfr/utils/languages?total=true')
+        .then((resp) => {
+          expect(resp.body.status).to.equal(200)
+          expect(resp.body.data.languages[2].language).to.equal('Test3')
+          expect(resp.body.data.languages[2].count).to.equal(2)
+          // eslint-disable-next-line no-unused-expressions
+          expect(langMock.isDone()).to.be.true
+        })
+    })
+  })
 })

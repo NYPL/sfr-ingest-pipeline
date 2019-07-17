@@ -4,6 +4,7 @@ const logger = require('../../lib/logger')
 const pjson = require('../../package.json')
 const { searchEndpoints } = require('./search')
 const { workEndpoints } = require('./work')
+const { utilEndpoints } = require('./utils')
 
 // Create an instance of an Express router to handle requests to v2 of the API
 const v2Router = express.Router()
@@ -73,5 +74,6 @@ const handleError = (res, error) => {
 // Load endpoints
 searchEndpoints(v2Router, respond, handleError)
 workEndpoints(v2Router, respond, handleError)
+utilEndpoints(v2Router, respond, handleError)
 
 module.exports = { v2Router, respond, handleError }
