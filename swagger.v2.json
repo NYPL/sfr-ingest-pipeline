@@ -741,13 +741,13 @@
       "properties": {
         "field": {
           "type": "string",
-          "enum": ["language", "years", "show_all"],
+          "enum": ["language", "years", "show_all", "format"],
           "description": "Field on which to match results by (effectively exact-match search)"
         },
         "value": {
           "type": "object",
           "$ref": "#/definitions/FilterObject",
-          "description": "Value on which to filter. Can be a string (for term filters such as language), a boolean value (for show_all), or an object such as {start: 1900, end: 2000} for years"
+          "description": "Value on which to filter. Can be a string (for term filters such as language or format), a boolean value (for show_all), or an object such as {start: 1900, end: 2000} for years"
         }
       },
       "example": [

@@ -117,6 +117,11 @@ Filtering is supported on a set of pre-defined fields. At present the following 
 - `language`: Filters results to return only works matching the provided language
 - `years`: Filters results to return only works with publication dates based off the provided range. This is calculated from the publication dates associated with the editions for each work. This should be formatted as `{"start": year, "end": year}`.
 - `show_all`: By default, the search results only include works with editions that have readable copies (either downloadable or available to read online). Setting this value to `true` will return all works, regardless of this status, in the search results.
+- `format`: Filters results to return only works that contain `Item` records with links to the specified ebook formats The current valid options for this format are:
+  
+  - `pdf`
+  - `epub`
+  - `html`
 
 ## Aggregations/Facets
 
