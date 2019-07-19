@@ -7,10 +7,6 @@ This package contains the scaffolding and ORM for the SFR database model. Includ
 
 This allows various Lambda functions of the SFR ingest pipeline to share a unified database model and greatly simplify the process of updating and migrating the database.
 
-## Version
-
-v0.1.5
-
 ## Requirements
 
 alembic
