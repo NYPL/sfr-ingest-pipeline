@@ -84,7 +84,7 @@ class TestDates(unittest.TestCase):
             'display_date': '1999'
         }
         DateField.parseUncertainty(dateData)
-        self.assertEqual(dateData['date_range'], '1998-2000')
+        self.assertEqual(dateData['date_range'], '1998/2000')
     
     def test_parse_uncertain_3(self):
         dateData = {
@@ -92,7 +92,7 @@ class TestDates(unittest.TestCase):
             'display_date': 'the 90s'
         }
         DateField.parseUncertainty(dateData)
-        self.assertEqual(dateData['date_range'], '1990-1999')
+        self.assertEqual(dateData['date_range'], '1990/1999')
     
     def test_parse_uncertain_2(self):
         dateData = {
@@ -100,7 +100,16 @@ class TestDates(unittest.TestCase):
             'display_date': '1900s'
         }
         DateField.parseUncertainty(dateData)
-        self.assertEqual(dateData['date_range'], '1900-1999')
+        self.assertEqual(dateData['date_range'], '1900/1999')
+    
+    def test_parse_uncertain_range(self):
+        dateData = {
+            'date_range': '199?-2000',
+            'display_date': '199-]-2000'
+        }
+        DateField.parseUncertainty(dateData)
+        self.assertEqual(dateData['date_range'], '1990/2000')
+        self.assertEqual(dateData['display_date'], '199X/2000')
 
     def test_parse_single_date(self):
         testDate = DateField()
@@ -119,11 +128,19 @@ class TestDates(unittest.TestCase):
     
     def test_parse_years(self):
         testDate = DateField()
+        testDate.display_date = '2006-2010'
         testDate.setDateRange('2006-2010')
+        self.assertEqual(testDate.date_range, '[2006-01-01, 2010-12-31)')
+        self.assertEqual(testDate.display_date, '2006/2010')
+    
+    def test_parse_years_slash(self):
+        testDate = DateField()
+        testDate.setDateRange('2006/2010')
         self.assertEqual(testDate.date_range, '[2006-01-01, 2010-12-31)')
     
     def test_parse_years_reversed(self):
         testDate = DateField()
+        testDate.display_date = '2010-2006'
         testDate.setDateRange('2010-2006')
         self.assertEqual(testDate.date_range, None)
 
@@ -136,3 +153,60 @@ class TestDates(unittest.TestCase):
         testDate = DateField()
         testDate.setDateRange('Modnay, Dec 01, 87')
         self.assertEqual(testDate.date_range, None)
+
+    # Full Date Integration Tests
+
+    def test_insert_new_date(self):
+        testData = {
+            'date_type': 'test_date',
+            'date_range': '19-?',
+            'display_date': '20th Century'
+        }
+        testDate = DateField.insert(testData)
+
+        self.assertEqual(testDate.date_range, '[1900-01-01, 1999-12-31)')
+        self.assertEqual(testDate.display_date, '19XX')
+
+    def test_insert_new_date_weird(self):
+        testData = {
+            'date_type': 'test_date',
+            'date_range': '198-]-1985',
+            'display_date': '1980-1985'
+        }
+        testDate = DateField.insert(testData)
+
+        self.assertEqual(testDate.date_range, '[1980-01-01, 1985-12-31)')
+        self.assertEqual(testDate.display_date, '198X/1985')
+    
+    def test_insert_missing_digit(self):
+        testData = {
+            'date_type': 'test_date',
+            'date_range': '199-',
+            'display_date': '1990s'
+        }
+        testDate = DateField.insert(testData)
+
+        self.assertEqual(testDate.date_range, '[1990-01-01, 1999-12-31)')
+        self.assertEqual(testDate.display_date, '199X')
+    
+    def test_insert_single_date(self):
+        testData = {
+            'date_type': 'test_date',
+            'date_range': '1999-09-09',
+            'display_date': 'Sept. 9, 1999'
+        }
+        testDate = DateField.insert(testData)
+
+        self.assertEqual(testDate.date_range, '[1999-09-09,)')
+        self.assertEqual(testDate.display_date, 'Sept. 9, 1999')
+    
+    def test_bracketed_date_in_string(self):
+        testData = {
+            'date_type': 'test_date',
+            'date_range': 'something else [1990?]',
+            'display_date': 'approx 1990'
+        }
+        testDate = DateField.insert(testData)
+
+        self.assertEqual(testDate.date_range, '[1989-01-01, 1991-12-31)')
+        self.assertEqual(testDate.display_date, '1990?')

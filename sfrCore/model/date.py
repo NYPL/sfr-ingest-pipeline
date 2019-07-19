@@ -147,26 +147,67 @@ class DateField(Core, Base):
 
     @classmethod
     def cleanDateData(cls, dateData):
-        bracketMatch = re.search(r'\[([\d\-\?]+)\]', dateData['date_range'])
-        if bracketMatch: dateData['date_range'] = bracketMatch.group(1)
-        if '?' in dateData['date_range']:
-            DateField.parseUncertainty(dateData)
         dateData['date_range'] = dateData['date_range'].strip(' ©.')
         dateData['display_date'] = dateData['display_date'].strip(' .[]')
+        bracketMatch = re.search(r'\[([\d\-\?u%~©]+)\]', dateData['date_range'])
+        if bracketMatch: dateData['date_range'] = bracketMatch.group(1)
+        if re.search(r'(?:[\?u%~X]+|\-(?![0-9]+))', dateData['date_range']):
+            DateField.parseUncertainty(dateData)
     
     @classmethod
     def parseUncertainty(cls, dateData):
-        rawDate = re.search(r'\d+', dateData['date_range']).group(0)
-        if len(rawDate) == 2:
-            dateData['date_range'] = '{}00-{}99'.format(rawDate, rawDate)
-        elif len(rawDate) == 3:
-            dateData['date_range'] = '{}0-{}9'.format(rawDate, rawDate)
-        elif len(rawDate) == 4:
-            dateInt = int(rawDate)
-            dateData['date_range'] = '{}-{}'.format(
-                str(dateInt - 1),
-                str(dateInt + 1)
+        rawDates = re.findall(r'(\d+)((?:[\?u%~X]*|(?:\-(?![0-9]+))))', dateData['date_range'])
+        if len(rawDates) == 1:
+            parsedDate = DateField.setUncertainDates(rawDates[0])
+            dateData['date_range'] =  '{}/{}'.format(
+                parsedDate['range']['start'],
+                parsedDate['range']['end']
             )
+            dateData['display_date'] = parsedDate['display']
+        elif len(rawDates) == 2:
+            startParsedDate = DateField.setUncertainDates(rawDates[0])
+            endParsedDate = DateField.setUncertainDates(rawDates[1])
+            dateData['date_range'] = '{}/{}'.format(
+                startParsedDate['range']['start'],
+                endParsedDate['range']['end']
+            )
+            dateData['display_date'] = '{}/{}'.format(
+                startParsedDate['display'],
+                endParsedDate['display']
+            )
+
+    @classmethod
+    def setUncertainDates(cls, matchObj):
+        innerDate = {}
+        dateStr = matchObj[0]
+        fuzzyChar = matchObj[1]
+        if len(dateStr) == 2:
+            innerDate['range'] =  {
+                'start': '{}00'.format(dateStr),
+                'end': '{}99'.format(dateStr)
+            }
+            innerDate['display'] = '{}XX'.format(dateStr)
+        elif len(dateStr) == 3:
+            innerDate['range'] =  {
+                'start': '{}0'.format(dateStr),
+                'end': '{}9'.format(dateStr)
+            }
+            innerDate['display'] = '{}X'.format(dateStr)
+        elif len(dateStr) == 4:
+            dateInt = int(dateStr)
+            if fuzzyChar != '':
+                innerDate['range'] =  {
+                    'start': str(dateInt - 1),
+                    'end': str(dateInt + 1)
+                }
+                innerDate['display'] = '{}?'.format(dateStr)
+            else:
+                innerDate['range'] = {
+                    'start': dateStr,
+                    'end': dateStr
+                }
+                innerDate['display'] = dateStr
+        return innerDate
 
     def setDateRange(self, dateObj):
         logger.info('Parsing date string {} into date range'.format(dateObj))
@@ -186,8 +227,12 @@ class DateField(Core, Base):
                     date(year, 1, 1),
                     date(year, 12, 31)
                 )
-            elif re.match(r'^[0-9]{4}-[0-9]{4}$', dateObj):
-                dateYears = dateObj.split('-')
+            elif re.match(r'^[0-9]{4}(?:/|-)[0-9]{4}$', dateObj):
+                if '-' in dateObj:
+                    dateYears = dateObj.split('-')
+                    self.display_date = self.display_date.replace('-', '/')
+                else:
+                    dateYears = dateObj.split('/')
                 startYear = parse(dateYears[0]).year
                 endYear = parse(dateYears[1]).year
                 if endYear < startYear:
