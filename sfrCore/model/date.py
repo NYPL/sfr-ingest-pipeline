@@ -1,7 +1,7 @@
 import re
 from dateutil.parser import parse
 from datetime import date
-from calendar import monthrange
+from calendar import monthrange, IllegalMonthError
 from psycopg2.extras import DateRange
 from sqlalchemy import (
     Table,
@@ -147,26 +147,77 @@ class DateField(Core, Base):
 
     @classmethod
     def cleanDateData(cls, dateData):
-        bracketMatch = re.search(r'\[([\d\-\?]+)\]', dateData['date_range'])
-        if bracketMatch: dateData['date_range'] = bracketMatch.group(1)
-        if '?' in dateData['date_range']:
-            DateField.parseUncertainty(dateData)
         dateData['date_range'] = dateData['date_range'].strip(' ©.')
         dateData['display_date'] = dateData['display_date'].strip(' .[]')
+        bracketMatch = re.search(r'\[([\d\-\?u%~©]+)\]', dateData['date_range'])
+        if bracketMatch: dateData['date_range'] = bracketMatch.group(1)
+        if re.search(r'(?:(?<=[0-9])[\?u%~X]+|\-(?![0-9]+)|^(?:c|ca.|c.|ca)(?=[0-9]))', dateData['date_range']):
+            try:
+                DateField.parseUncertainty(dateData)
+            except KeyError:
+                logger.error('Unable to parse uncertain date {}'.format(dateData['date_range']))
     
     @classmethod
     def parseUncertainty(cls, dateData):
-        rawDate = re.search(r'\d+', dateData['date_range']).group(0)
-        if len(rawDate) == 2:
-            dateData['date_range'] = '{}00-{}99'.format(rawDate, rawDate)
-        elif len(rawDate) == 3:
-            dateData['date_range'] = '{}0-{}9'.format(rawDate, rawDate)
-        elif len(rawDate) == 4:
-            dateInt = int(rawDate)
-            dateData['date_range'] = '{}-{}'.format(
-                str(dateInt - 1),
-                str(dateInt + 1)
+        rawDates = re.findall(r'((?:(?:c|ca.|c.|ca))(?=[0-9])|)(\d+)((?:[\?u%~X]*||(?:\-(?![0-9]+))))', dateData['date_range'])
+        if len(rawDates) == 1:
+            parsedDate = DateField.setUncertainDates(rawDates[0])
+            dateData['date_range'] =  '{}/{}'.format(
+                parsedDate['range']['start'],
+                parsedDate['range']['end']
             )
+            dateData['display_date'] = parsedDate['display']
+        elif len(rawDates) == 2:
+            startParsedDate = DateField.setUncertainDates(rawDates[0])
+            endParsedDate = DateField.setUncertainDates(rawDates[1])
+            dateData['date_range'] = '{}/{}'.format(
+                startParsedDate['range']['start'],
+                endParsedDate['range']['end']
+            )
+            dateData['display_date'] = '{}/{}'.format(
+                startParsedDate['display'],
+                endParsedDate['display']
+            )
+
+    @classmethod
+    def setUncertainDates(cls, matchObj):
+        innerDate = {}
+        circaChar = matchObj[0]
+        dateStr = matchObj[1]
+        fuzzyChar = matchObj[2]
+        if len(dateStr) == 1:
+            innerDate['range'] =  {
+                'start': '{}000'.format(dateStr),
+                'end': '{}999'.format(dateStr)
+            }
+            innerDate['display'] = '{}XXX'.format(dateStr)
+        if len(dateStr) == 2:
+            innerDate['range'] =  {
+                'start': '{}00'.format(dateStr),
+                'end': '{}99'.format(dateStr)
+            }
+            innerDate['display'] = '{}XX'.format(dateStr)
+        elif len(dateStr) == 3:
+            innerDate['range'] =  {
+                'start': '{}0'.format(dateStr),
+                'end': '{}9'.format(dateStr)
+            }
+            innerDate['display'] = '{}X'.format(dateStr)
+        elif len(dateStr) == 4:
+            dateInt = int(dateStr)
+            if fuzzyChar != '' or circaChar != '':
+                innerDate['range'] =  {
+                    'start': str(dateInt - 1),
+                    'end': str(dateInt + 1)
+                }
+                innerDate['display'] = '{}?'.format(dateStr)
+            else:
+                innerDate['range'] = {
+                    'start': dateStr,
+                    'end': dateStr
+                }
+                innerDate['display'] = dateStr
+        return innerDate
 
     def setDateRange(self, dateObj):
         logger.info('Parsing date string {} into date range'.format(dateObj))
@@ -186,8 +237,12 @@ class DateField(Core, Base):
                     date(year, 1, 1),
                     date(year, 12, 31)
                 )
-            elif re.match(r'^[0-9]{4}-[0-9]{4}$', dateObj):
-                dateYears = dateObj.split('-')
+            elif re.match(r'^[0-9]{4}(?:/|-)[0-9]{4}$', dateObj):
+                if '-' in dateObj:
+                    dateYears = dateObj.split('-')
+                    self.display_date = self.display_date.replace('-', '/')
+                else:
+                    dateYears = dateObj.split('/')
                 startYear = parse(dateYears[0]).year
                 endYear = parse(dateYears[1]).year
                 if endYear < startYear:
@@ -198,14 +253,20 @@ class DateField(Core, Base):
                 )
             elif re.match(r'^[0-9]{4}-[0-9]{2}$', dateObj):
                 logger.debug('Received year-month, parsing into month range')
-                dateObj = parse(dateObj)
-                year = dateObj.year
-                month = dateObj.month
-                lastDay = monthrange(year, month)[1]  # Accounts for leap years
-                self.date_range = '[{}, {})'.format(
-                    date(year, month, 1),
-                    date(year, month, lastDay)
-                )
+                try:
+                    dateObj = parse(dateObj)
+                    year = dateObj.year
+                    month = dateObj.month
+                    lastDay = monthrange(year, month)[1]  # Accounts for leap years
+                    self.date_range = '[{}, {})'.format(
+                        date(year, month, 1),
+                        date(year, month, lastDay)
+                    )
+                except IllegalMonthError:
+                    logger.debug('Year-month is actually year-2 dig year')
+                    secondYear = '{}{}'.format(dateObj[:2], dateObj[5:])
+                    self.display_date = '{}/{}'.format(dateObj[:4], secondYear)
+                    self.setDateRange(self.display_date)
             else:
                 logger.debug('Received other value, treating as single date')
                 self.date_range = '[{},)'.format(
