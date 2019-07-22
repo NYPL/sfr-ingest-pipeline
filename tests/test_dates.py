@@ -1,10 +1,7 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from collections import namedtuple
 
 from sfrCore.model import DateField
-
-TestDate = namedtuple('TestDate', ['id', 'display_date', 'date_range', 'date_type'])
 
 
 class TestDates(unittest.TestCase):
@@ -42,6 +39,22 @@ class TestDates(unittest.TestCase):
         mock_table.__tablename__ = 'teesting'
         testDate = DateField.lookupDate(mock_session, dateInst, mock_table, 1)
         self.assertEqual(testDate, 'testDate')
+    
+    def test_date_merge(self):
+        mock_session = MagicMock()
+        mock_session.query.return_value\
+            .join.return_value\
+            .filter.return_value.filter.return_value\
+            .all.return_value = [
+                DateField(id=1, date_type='test', display_date='2010', date_range='[2010,2010)', date_modified='2019-01-01'),
+                DateField(id=1, date_type='test', display_date='2020', date_range='[2020,2020)', date_modified='2019-06-01')
+            ]
+        dateInst = {'date_type': 'test'}
+        mock_table = MagicMock()
+        mock_table.__tablename__ = 'testing'
+        mergeDate = DateField.mergeDates(mock_session, dateInst, mock_table, 1)
+        self.assertEqual(mergeDate.display_date, '2020')
+        self.assertEqual(mergeDate.date_range, '[2020,2020)')
     
     @patch.object(DateField, 'cleanDateData')
     @patch.object(DateField, 'setDateRange')

@@ -2,7 +2,6 @@ import re
 from dateutil.parser import parse
 from datetime import date
 from calendar import monthrange, IllegalMonthError
-from psycopg2.extras import DateRange
 from sqlalchemy import (
     Table,
     Column,
@@ -12,12 +11,11 @@ from sqlalchemy import (
 )
 from sqlalchemy.dialects.postgresql import DATERANGE
 from sqlalchemy.orm import relationship, backref
-from sqlalchemy.sql import text
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import MultipleResultsFound
 
 from .core import Base, Core
 
-from ..helpers import createLog, DBError
+from ..helpers import createLog
 
 logger = createLog('dateModel')
 
@@ -56,6 +54,7 @@ RIGHTS_DATES = Table(
     Column('date_id', Integer, ForeignKey('dates.id'), index=True)
 )
 
+
 class DateField(Core, Base):
     """An abstract class that represents a date value, associated with any
     entity or record in the SFR data model. This class contains a set of fields
@@ -81,7 +80,7 @@ class DateField(Core, Base):
         'Instance',
         secondary=INSTANCE_DATES,
         backref=backref('dates', collection_class=set)
-        
+
     )
     items = relationship(
         'Item',
@@ -109,15 +108,36 @@ class DateField(Core, Base):
         )
         """Query the database for a date on the current record. If found,
         update the existing date, if not, insert new row"""
-        outDate = DateField.lookupDate(session, dateInst, model, recordID)
+        try:
+            outDate = DateField.lookupDate(session, dateInst, model, recordID)
+        except MultipleResultsFound:
+            outDate = DateField.mergeDates(session, dateInst, model, recordID)
         if outDate:
             logger.info('Updating existing date record {}'.format(outDate.id))
             outDate.update(dateInst)
         else:
             logger.info('Inserting new date object')
             outDate = DateField.insert(dateInst)
-        
+
         return outDate
+
+    @classmethod
+    def mergeDates(cls, session, dateInst, model, recordID):
+        dupeDates = session.query(cls)\
+            .join(model.__tablename__)\
+            .filter(model.id == recordID)\
+            .filter(cls.date_type == dateInst['date_type'])\
+            .all()
+
+        dupeDates.sort(key=lambda d: d.date_modified)
+
+        for i in range(1, len(dupeDates)):
+            if dupeDates[i].date_range:
+                dupeDates[0].display_date = dupeDates[i].display_date
+                dupeDates[0].date_range = dupeDates[i].date_range
+            session.delete(dupeDates[i])
+
+        return dupeDates[0]
 
     @classmethod
     def lookupDate(cls, session, dateInst, model, recordID):
@@ -128,7 +148,7 @@ class DateField(Core, Base):
             .filter(model.id == recordID)\
             .filter(cls.date_type == dateInst['date_type'])\
             .one_or_none()
-    
+
     def update(self, dateData):
         """Update fields on existing date"""
         DateField.cleanDateData(dateData)
@@ -150,13 +170,14 @@ class DateField(Core, Base):
         dateData['date_range'] = dateData['date_range'].strip(' ©.')
         dateData['display_date'] = dateData['display_date'].strip(' .[]')
         bracketMatch = re.search(r'\[([\d\-\?u%~©]+)\]', dateData['date_range'])
-        if bracketMatch: dateData['date_range'] = bracketMatch.group(1)
+        if bracketMatch: 
+            dateData['date_range'] = bracketMatch.group(1)
         if re.search(r'(?:(?<=[0-9])[\?u%~X]+|\-(?![0-9]+)|^(?:c|ca.|c.|ca)(?=[0-9]))', dateData['date_range']):
             try:
                 DateField.parseUncertainty(dateData)
             except KeyError:
                 logger.error('Unable to parse uncertain date {}'.format(dateData['date_range']))
-    
+
     @classmethod
     def parseUncertainty(cls, dateData):
         rawDates = re.findall(r'((?:(?:c|ca.|c.|ca))(?=[0-9])|)(\d+)((?:[\?u%~X]*||(?:\-(?![0-9]+))))', dateData['date_range'])
