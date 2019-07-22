@@ -9,7 +9,7 @@ services:
 install:
   - pip install --upgrade pip
   - pip install -r requirements.txt
-script: python -m unittest
+script: pytest
 
 #after_success:
 #  - docker build -t sfr_core_layer --build-arg accesskey=$AWS_ACCESS_KEY_ID --build-arg secretkey="$AWS_SECRET_ACCESS_KEY" --build-arg region=us-east-1 sfrCore

@@ -6,8 +6,6 @@ from sfrCore.helpers import DataError
 from sfrCore.model import Identifier
 from sfrCore.model.identifiers import DOAB, Hathi, OCLC, LCCN, ISBN, OWI, Gutenberg, ISSN, LCC, DDC, GENERIC
 
-TestIdentifer = namedtuple('TestIdentifier', ['id', 'value', 'identifier_id'])
-
 
 class TestIdentifiers(unittest.TestCase):
     

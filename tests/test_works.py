@@ -9,7 +9,6 @@ from sfrCore.model.date import DateField
 
 from sfrCore.helpers import DataError, DBError
 
-TestDate = namedtuple('TestDate', ['id', 'display_date', 'date_range', 'date_type'])
 
 class WorkTest(unittest.TestCase):
     def test_work_init(self):
