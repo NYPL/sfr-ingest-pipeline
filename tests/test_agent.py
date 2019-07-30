@@ -339,3 +339,17 @@ class TestAgent(unittest.TestCase):
 
         newAlias = Alias.insertOrSkip(mock_session, 'Alias Name', mock_model, 1)
         self.assertEqual(newAlias.alias, 'Alias Name')
+    
+    # Name full integration tests
+
+    def test_new_agent_creation(self):
+        mockSession = MagicMock()
+        newAgent, roles = Agent.createAgent(
+            mockSession,
+            {
+                'name': 'Murry, Kathleen Beauchamp',
+                'roles': ['author']
+            }
+        )
+        self.assertEqual(newAgent.name, 'Murry, Kathleen Beauchamp')
+        self.assertEqual(roles[0], 'author')
