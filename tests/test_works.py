@@ -1,6 +1,6 @@
+import unicodedata
 import unittest
 from unittest.mock import patch, MagicMock, call, DEFAULT
-from collections import namedtuple
 
 from sqlalchemy.orm.exc import NoResultFound
 
@@ -36,7 +36,18 @@ class WorkTest(unittest.TestCase):
         testWork.removeTmpRelations()
         with self.assertRaises(AttributeError):
             tmpLinks = testWork.tmp_links
-    
+
+    def test_work_add_title(self):
+        testWork = Work()
+        # Attempt to insert NFD unicode string, should convert to NFC
+        testTitle = unicodedata.normalize('NFD', 'tésting')
+        testWork.title = testTitle
+        self.assertNotEqual(testWork.title, testTitle)
+        self.assertEqual(
+            testWork.title,
+            unicodedata.normalize('NFC', testTitle)
+        )
+
     def test_work_insert(self):
         testData = {
             'title': 'Test Title'
@@ -44,6 +55,8 @@ class WorkTest(unittest.TestCase):
         mock_session = MagicMock()
         testWork = Work(session=mock_session)
         testWork.epubsToLoad = []
+        mock_sort = MagicMock()
+        mock_sort.return_value = 'test title'
         with patch.multiple(Work,
             createTmpRelations=DEFAULT,
             addImportJson=DEFAULT,
@@ -57,7 +70,7 @@ class WorkTest(unittest.TestCase):
             addDates=DEFAULT,
             addLanguages=DEFAULT,
             removeTmpRelations=DEFAULT,
-            setSortTitle=DEFAULT
+            setSortTitle=mock_sort
         ) as item_mocks:
             newEpubs = testWork.insert(testData)
             self.assertEqual(testWork.title, 'Test Title')
