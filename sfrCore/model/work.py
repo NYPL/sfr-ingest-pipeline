@@ -49,7 +49,6 @@ class Work(Core, Base):
     medium = Column(Unicode)
     series = Column(Unicode)
     series_position = Column(Unicode)
-    summary = Column(Unicode)
 
     alt_titles = relationship(
         'AltTitle',

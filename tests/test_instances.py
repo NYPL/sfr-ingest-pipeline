@@ -10,14 +10,18 @@ from sfrCore.model.instance import AgentInstances
 from sfrCore.helpers import DataError, DBError
 
 class InstanceTest(unittest.TestCase):
-
     def test_create_instance(self):
         testInst = Instance()
         testInst.title = 'Testing'
         testInst.edition = '1st ed'
+        testInst.summary = 'test summary'
 
-        self.assertEqual(str(testInst), '<Instance(title=Testing, edition=1st ed, work=None)>')
-    
+        self.assertEqual(
+            str(testInst),
+            '<Instance(title=Testing, edition=1st ed, work=None)>'
+        )
+        self.assertEqual(testInst.summary, 'test summary')
+
     def test_create_tmp(self):
         instanceData = {
             'formats': ['item1', 'item2'],

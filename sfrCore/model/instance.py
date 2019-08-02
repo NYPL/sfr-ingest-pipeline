@@ -44,7 +44,8 @@ class Instance(Core, Base):
     table_of_contents = Column(Unicode)
     copyright_date = Column(Date)
     extent = Column(Unicode)
-    
+    summary = Column(Unicode)
+
     work_id = Column(Integer, ForeignKey('works.id'))
 
     work = relationship(
