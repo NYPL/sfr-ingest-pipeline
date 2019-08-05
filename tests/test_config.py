@@ -8,33 +8,35 @@ from helpers.configHelpers import loadEnvFile, setEnvVars, loadEnvVars
 
 class TestConfig(unittest.TestCase):
 
-    @patch('yaml.load', return_value={'testing': True})
+    @patch('yaml.full_load', return_value={'testing': True})
     def test_load_env_success(self, mock_yaml):
-        resDict = loadEnvFile('development', None)
-        self.assertTrue(resDict['testing'])
+        with patch('builtins.open'):
+            resDict = loadEnvFile('testing', None)
+            self.assertTrue(resDict['testing'])
 
-    @patch('yaml.load', return_value={'testing': True})
+    @patch('yaml.full_load', return_value={'testing': True})
     def test_load_env_config_success(self, mock_yaml):
-        resDict = loadEnvFile('development', 'config/{}.yaml')
-        self.assertTrue(resDict['testing'])
+        with patch('builtins.open'):
+            resDict = loadEnvFile('testing', 'config/{}.yaml')
+            self.assertTrue(resDict['testing'])
 
-    @patch('yaml.load', side_effect={'testing': True})
+    @patch('yaml.full_load', side_effect={'testing': True})
     def test_load_env_failure(self, mock_yaml):
         try:
-            loadEnvFile('development', 'missing/{}.yaml')
+            loadEnvFile('testing', 'missing/{}.yaml')
         except FileNotFoundError:
             pass
         self.assertRaises(FileNotFoundError)
 
-    @patch('yaml.load', return_value=None)
+    @patch('yaml.full_load', return_value=None)
     def test_load_empty_env(self, mock_yaml):
-        resDict = loadEnvFile('development', None)
+        resDict = loadEnvFile('testing', None)
         self.assertEqual(resDict, {})
 
-    @patch('yaml.load', side_effect=YAMLError)
+    @patch('yaml.full_load', side_effect=YAMLError)
     def test_read_env_failure(self, mock_yaml):
         try:
-            loadEnvFile('development', 'config/{}.yaml')
+            loadEnvFile('testing', 'config/{}.yaml')
         except YAMLError:
             pass
         self.assertRaises(YAMLError)
