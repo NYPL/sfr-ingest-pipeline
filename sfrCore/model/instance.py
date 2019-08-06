@@ -1,6 +1,4 @@
-
-import re
-from datetime import datetime
+import requests
 from sqlalchemy import (
     Column,
     Date,
@@ -17,11 +15,11 @@ from .core import Base, Core
 from .measurement import INSTANCE_MEASUREMENTS, Measurement
 from .identifiers import INSTANCE_IDENTIFIERS, Identifier
 from .link import INSTANCE_LINKS, Link
-from .date import INSTANCE_DATES, DateField
+from .date import DateField
 from .item import Item
 from .agent import Agent
 from .altTitle import INSTANCE_ALTS, AltTitle
-from .rights import Rights, INSTANCE_RIGHTS
+from .rights import Rights
 from .language import Language
 
 from ..helpers import createLog, DataError
@@ -33,6 +31,7 @@ class Instance(Core, Base):
     """Instances describe specific versions (e.g. editions) of a work in the
     FRBR model. Each of these instance can have multiple items and be
     associated with various agents, measurements, links and identifiers."""
+
     __tablename__ = 'instances'
     id = Column(Integer, primary_key=True)
     title = Column(Unicode, index=True)
@@ -86,6 +85,8 @@ class Instance(Core, Base):
         collection_class=set
     )
 
+    UNGLUE_API = 'https://dev-platform.nypl.org/api/v0.1/research-now/v2/utils/unglueit-lookup?isbn='  # noqa: E501
+
     RELS = [
         'formats',
         'agents',
@@ -110,17 +111,19 @@ class Instance(Core, Base):
             self.edition,
             self.work
         )
-    
+
     def createTmpRelations(self, instanceData):
         for relType in Instance.RELS:
             tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, instanceData.pop(relType, []))
-            if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
-    
+            if getattr(self, tmpRel) is None:
+                setattr(self, tmpRel, [])
+
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
-        for rel in Instance.RELS: delattr(self, 'tmp_{}'.format(rel))
+        for rel in Instance.RELS:
+            delattr(self, 'tmp_{}'.format(rel))
 
     @classmethod
     def updateOrInsert(cls, session, instanceData, work=None):
@@ -133,18 +136,23 @@ class Instance(Core, Base):
             instanceData.get('identifiers', []),
             instanceData.get('volume', None)
         )
-        
+
         if existingID is not None:
             existing = session.query(Instance).get(existingID)
 
-            if existing.work is None and work is not None: existing.work = work
-            
+            if existing.work is None and work is not None:
+                existing.work = work
+
             epubsToLoad = existing.update(session, instanceData)
             outInstance = existing
         else:
-            outInstance, epubsToLoad = Instance.createNew(session, instanceData)
-        
-        if work is not None: work.epubsToLoad = epubsToLoad
+            outInstance, epubsToLoad = Instance.createNew(
+                session,
+                instanceData
+            )
+
+        if work is not None:
+            work.epubsToLoad = epubsToLoad
 
         return outInstance
 
@@ -160,7 +168,11 @@ class Instance(Core, Base):
             existingID = primaryID.get('identifier')
 
         if existingID is None:
-            existingID = Identifier.getByIdentifier(Instance, session, identifiers)
+            existingID = Identifier.getByIdentifier(
+                Instance,
+                session,
+                identifiers
+            )
 
         if existingID is not None and newVolume is not None:
             logger.debug('Checking to see if volume records match')
@@ -185,16 +197,20 @@ class Instance(Core, Base):
         newInstance.removeTmpRelations()
         delattr(newInstance, 'session')
         return newInstance, epubsToLoad
-    
+
     def insertData(self, instanceData):
         """Insert a new instance record"""
         logger.info('Inserting new instance record')
-        for key, value in instanceData.items(): setattr(self, key, value)
+        for key, value in instanceData.items():
+            setattr(self, key, value)
 
         # Drop fields that should be targeted for works
-        if getattr(self, 'series', None): delattr(self, 'series')
-        if getattr(self, 'series_position', None): delattr(self, 'series_position')
-        if getattr(self, 'subjects', None): delattr(self, 'subjects')
+        if getattr(self, 'series', None):
+            delattr(self, 'series')
+        if getattr(self, 'series_position', None):
+            delattr(self, 'series_position')
+        if getattr(self, 'subjects', None):
+            delattr(self, 'subjects')
 
         self.cleanData()
 
@@ -214,7 +230,7 @@ class Instance(Core, Base):
 
     def update(self, session, instanceData):
         """Update an existing instance"""
-        
+
         self.session = session
         # Set fields targeted for works
         if self.work is not None:
@@ -233,7 +249,7 @@ class Instance(Core, Base):
         self.cleanData()
 
         self.updateAgents()
-        self.updateIdentifiers()
+        self.addIdentifiers()
         self.insertLanguages()
         epubsToLoad = self.insertItems()
         self.updateAltTitles()
@@ -241,27 +257,32 @@ class Instance(Core, Base):
         self.updateDates()
         self.updateLinks()
         self.updateRights()
-        
+
         delattr(self, 'session')
         self.removeTmpRelations()
 
         return epubsToLoad
-    
+
     def setWorkFields(self, series, position, subjects):
-        if series: self.work.series = series
-        if position: self.work.series_position = position
-        if len(subjects): self.work.importSubjects(self.session, subjects)
+        if series:
+            self.work.series = series
+        if position:
+            self.work.series_position = position
+        if len(subjects):
+            self.work.importSubjects(self.session, subjects)
 
     def cleanData(self):
         """Cleans common data errors from fields before inserting or updating
         records. Most commonly this is publication place and other data that
         frequently retains MARC formatting and punctuation.
         """
-        if self.pub_place: self.pub_place = self.pub_place.strip(' :;,')
+        if self.pub_place:
+            self.pub_place = self.pub_place.strip(' :;,')
 
     def addAgents(self):
-        for agent in self.tmp_agents: self.addAgent(agent)
-    
+        for agent in self.tmp_agents:
+            self.addAgent(agent)
+
     def addAgent(self, agent):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
@@ -275,12 +296,14 @@ class Instance(Core, Base):
             logger.warning('Unable to read agent {}'.format(agent['name']))
 
     def updateAgents(self):
-        for agent in self.tmp_agents: self.updateAgent(agent)
-    
+        for agent in self.tmp_agents:
+            self.updateAgent(agent)
+
     def updateAgent(self, agent):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
-            if roles is None: roles = ['author']
+            if roles is None:
+                roles = ['author']
             for role in roles:
                 if AgentInstances.roleExists(
                     self.session,
@@ -291,17 +314,14 @@ class Instance(Core, Base):
                     AgentInstances(agent=agentRec, instance=self, role=role)
         except DataError:
             logger.warning('Unable to read agent {}'.format(agent['name']))
-    
-    def addIdentifiers(self):
-        self.identifiers = {
-            Identifier.returnOrInsert(self.session, i) 
-            for i in self.tmp_identifiers
-        }
 
-    def updateIdentifiers(self):
-        for iden in self.tmp_identifiers: self.updateIdentifier(iden)
-    
-    def updateIdentifier(self, iden):
+    def addIdentifiers(self):
+        for iden in self.tmp_identifiers:
+            if iden['type'] == 'isbn':
+                self.fetchUnglueitSummary(iden['value'])
+            self.upsertIdentifier(iden)
+
+    def upsertIdentifier(self, iden):
         try:
             self.identifiers.add(
                 Identifier.returnOrInsert(self.session, iden)
@@ -309,13 +329,15 @@ class Instance(Core, Base):
         except DataError as err:
             logger.warning('Received invalid identifier')
             logger.debug(err)
-    
+
     def insertLanguages(self):
         languages = self.tmp_language
         if languages is not None:
-            if isinstance(languages, str): languages = [languages]
-            for lang in languages: self.insertLanguage(lang)
-    
+            if isinstance(languages, str):
+                languages = [languages]
+            for lang in languages:
+                self.insertLanguage(lang)
+
     def insertLanguage(self, lang):
         try:
             self.language.add(
@@ -323,31 +345,37 @@ class Instance(Core, Base):
             )
         except DataError:
             logger.warning('Unable to parse language {}'.format(lang))
-    
+
     def insertItems(self):
         setattr(self, 'epubsToLoad', [])
         for item in self.tmp_formats:
             # Check if the provided record contains an epub that can be stored
             # locally. If it does, defer insert to epub creation process
             newItem = Item.createOrStore(self.session, item, self)
-            if newItem: self.items.add(newItem)
-        
+            if newItem:
+                self.items.add(newItem)
+
         epubsToLoad = getattr(self, 'epubsToLoad', [])
         delattr(self, 'epubsToLoad')
         return epubsToLoad
-    
+
     def addAltTitles(self):
-        self.alt_titles = { AltTitle(title=a) for a in self.tmp_alt_titles }
+        self.alt_titles = {AltTitle(title=a) for a in self.tmp_alt_titles}
 
     def updateAltTitles(self):
         for altTitle in list(
             filter(
-                lambda x: AltTitle.insertOrSkip(self.session, x, Instance, self.id),
+                lambda x: AltTitle.insertOrSkip(
+                    self.session,
+                    x,
+                    Instance,
+                    self.id
+                ),
                 self.tmp_alt_titles
             )
         ):
             self.alt_titles.add(AltTitle(title=altTitle))
-    
+
     def addMeasurements(self):
         self.measurements = {
             Measurement.insert(m) for m in self.tmp_measurements
@@ -358,18 +386,18 @@ class Instance(Core, Base):
             self.measurements.add(
                 Measurement.updateOrInsert(self.session, m, Instance, self.id)
             )
-    
+
     def addDates(self):
-        self.dates = { DateField.insert(d) for d in self.tmp_dates }
+        self.dates = {DateField.insert(d) for d in self.tmp_dates}
 
     def updateDates(self):
         for d in self.tmp_dates:
             self.dates.add(
                 DateField.updateOrInsert(self.session, d, Instance, self.id)
             )
-    
+
     def addLinks(self):
-        self.links = { Link(**l) for l in self.tmp_links }
+        self.links = {Link(**l) for l in self.tmp_links}
 
     def updateLinks(self):
         for l in self.tmp_links:
@@ -388,7 +416,15 @@ class Instance(Core, Base):
             self.rights.add(
                 Rights.updateOrInsert(self.session, r, Instance, self.id)
             )
-        
+
+    def fetchUnglueitSummary(self, isbn):
+        unglueResp = requests.get('{}{}'.format(Instance.UNGLUE_API, isbn))
+        respJSON = unglueResp.json()
+        if respJSON.get('match', False):
+            summary = respJSON.get('summary', None)
+            if summary:
+                self.summary = summary
+
 
 class AgentInstances(Core, Base):
     """Table relating agents and instances. Is instantiated as a class to
@@ -396,8 +432,18 @@ class AgentInstances(Core, Base):
     (e.g. author, editor)"""
 
     __tablename__ = 'agent_instances'
-    instance_id = Column(Integer, ForeignKey('instances.id'), primary_key=True, index=True)
-    agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True, index=True)
+    instance_id = Column(
+        Integer,
+        ForeignKey('instances.id'),
+        primary_key=True,
+        index=True
+    )
+    agent_id = Column(
+        Integer,
+        ForeignKey('agents.id'),
+        primary_key=True,
+        index=True
+    )
     role = Column(String(64), primary_key=True)
 
     agentInstancesPkey = PrimaryKeyConstraint(
@@ -414,7 +460,7 @@ class AgentInstances(Core, Base):
     agent = relationship('Agent')
 
     def __init__(self, instance=None, agent=None, role=None):
-        self.instance= instance
+        self.instance = instance
         self.agent = agent
         self.role = role
 
