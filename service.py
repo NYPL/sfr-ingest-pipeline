@@ -1,6 +1,7 @@
 import json
 import base64
 import traceback
+from psycopg2.errors import DeadlockDetected
 
 from sfrCore import SessionManager
 
@@ -105,6 +106,11 @@ def parseRecord(encodedRec, session):
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
         MANAGER.session.rollback() # Rollback current record only
-        logger.error('Failed to store record')
-        logger.debug(err)
-        logger.debug(traceback.format_exc())
+        if isinstance(err, DeadlockDetected):
+            logger.error('Conflicting updates caused deadlock, retry')
+            logger.debug(deadlock)
+            parseRecord(encodedRec)
+        else:
+            logger.error('Failed to store record')
+            logger.debug(err)
+            logger.debug(traceback.format_exc())
