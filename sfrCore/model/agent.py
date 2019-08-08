@@ -9,10 +9,10 @@ from sqlalchemy import (
     Integer,
     String,
     Unicode,
-    or_
+    or_,
+    Index
 )
 from sqlalchemy.orm import relationship, validates
-from sqlalchemy.sql import text
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from .core import Base, Core
@@ -42,6 +42,15 @@ class Agent(Core, Base):
     lcnaf = Column(String(25), index=True)
     viaf = Column(String(25), index=True)
     biography = Column(Unicode)
+
+    __table_args__ = (
+        Index(
+            'idx_name_trgm',
+            'name',
+            postgresql_ops={'name': 'gin_trgm_ops'},
+            postgresql_using='gin'
+        ),
+    )
 
     aliases = relationship(
         'Alias',
@@ -213,27 +222,29 @@ class Agent(Core, Base):
         1) A VIAF or LCNAF identifier attached to the current record.
         2) A VIAF or LCNAF that can be found by querying the OCLC VIAF API.
         3) A fuzzy text match using the jaro_winkler algorithm.
-        
+
         Arguments:
             session {Session} -- A postgreSQL connection instance
             agent {dict} -- A dict describing an agent received from an outside
             source
             aliases {list} -- A list of alternate agent names
-        
+
         Returns:
             [Agent] -- An ORM Agent model from postgreSQL. If not found returns
             None.
         """
-        
-        if self.viaf is not None or self.lcnaf is not None:
-            agentRec = self.authorityQuery()
-        else:
-            agentRec = self.findViafQuery()
-        
-        if agentRec is None:
-            agentRec = self.findJaroWinklerQuery()
 
-        return agentRec
+        if self.viaf is not None or self.lcnaf is not None:
+            agentID = self.authorityQuery()
+        else:
+            agentID = self.findViafQuery()
+
+        if agentID is None:
+            agentRec = self.findTrgmQuery()
+            if agentRec:
+                agentID = agentRec['id']
+
+        return agentID
 
     def addLifespan(self, dateType, lifespanDate):
         if lifespanDate:
@@ -243,26 +254,23 @@ class Agent(Core, Base):
                 'date_type': dateType
             })
 
-    def findJaroWinklerQuery(self):
-        logger.debug('Matching agent based off jaro_winkler score')
-        
+    def findTrgmQuery(self):
+        logger.debug('Matching agent based off pg_trgm score')
+
         escapedName = self.name.replace('\'', '\'\'')
-        try:
-            jaroWinklerQ = text(
-                "jarowinkler({}, '{}') > {}".format('name', escapedName, 0.95)
-            )
-            return self.session.query(Agent.id)\
-                .filter(jaroWinklerQ)\
-                .one()
-            
-        except MultipleResultsFound:
-            logger.info(
-                'Name/information is too generic to create individual record'
-            )
-            pass
-        except NoResultFound:
-            pass
-        
+        trgmQ = """SELECT id, similarity(name, :name) AS score
+        FROM agents
+        WHERE name % :name
+        ORDER BY score DESC;
+        """
+        results = self.session.execute(trgmQ, {'name': escapedName})
+
+        if results.rowcount <= 1:
+            return results.first()
+
+        logger.info(
+            'Name/information is too generic to create individual record'
+        )
         return None
 
     def findViafQuery(self):
