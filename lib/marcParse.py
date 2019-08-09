@@ -163,7 +163,7 @@ def transformMARC(record, marcRels):
         ('520', 'summary', 'a')
     ]
     for field in tocData:
-        extractSubfieldValue(marcRecord, work, field)
+        extractSubfieldValue(marcRecord, instance, field)
 
     # Language Fields
     if len(marcRecord['546']) > 0:

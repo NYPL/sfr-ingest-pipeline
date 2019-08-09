@@ -61,7 +61,6 @@ class WorkRecord(DataObject):
         self.alt_titles = None
         self.sort_title = None
         self.medium = None
-        self.summary = None
         self.series = None
         self.series_position = None
         self.primary_identifier = None
@@ -95,6 +94,7 @@ class InstanceRecord(DataObject):
         self.edition_statement = None
         self.extent = None
         self.table_of_contents = None
+        self.summary = None
         self.agents = []
         self.identifiers = []
         self.formats = []

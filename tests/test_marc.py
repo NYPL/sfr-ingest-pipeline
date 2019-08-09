@@ -11,11 +11,14 @@ from lib.marcParse import (
     extractSubfieldValue,
     parseHoldingURI
 )
+from lib.dataModel import WorkRecord, InstanceRecord
 from helpers.errorHelpers import DataError
 
 
 class TestMARC(unittest.TestCase):
-
+    ############
+    # Unit Tests
+    ############
     @patch('lib.marcParse.transformMARC', side_effect=['test1', None, 'test2'])
     def test_parse_list(self, mock_marc):
         res = parseMARC([1, 2, 3], 'test_rels')
@@ -295,6 +298,39 @@ class TestMARC(unittest.TestCase):
         self.assertEqual(testRec['array'], ['testing'])
         self.assertEqual(testRec['other'], 'testing')
         self.assertEqual(2, testRec.addClassItem.call_count)
+    
+    ###################
+    # Functional Tests
+    ###################
 
+    def test_transformMARC_5XX_fields(self):
+        mockMarc = MagicMock()
+        mockMarc.name = 'testing_5XX'
+        testRec = (
+            1,
+            '2019-01-01',
+            mockMarc
+        )
+        
+        def mockField(fieldCode):
+            mockField = MagicMock()
+            mockValue = MagicMock()
+            if fieldCode == '505':
+                mockValue.value = 'table of contents'
+            elif fieldCode == '520':
+                mockValue.value = 'summary'
+            else:
+                mockValue.value = 'test'
+            mockField.subfield.return_value = [mockValue]
+            return [mockField]
+
+        mockMarc.__getitem__.side_effect = lambda field: mockField(field)
+
+        testWork = transformMARC(testRec, {})
+        self.assertIsInstance(testWork, WorkRecord)
+        self.assertIsInstance(testWork.instances[0], InstanceRecord)
+        self.assertEqual(testWork.instances[0].summary, 'summary')
+        self.assertEqual(testWork.instances[0].table_of_contents, 'table of contents')
+        print(testWork.instances[0].summary)
 
 
