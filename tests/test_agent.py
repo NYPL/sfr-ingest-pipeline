@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, call, MagicMock
+from unittest.mock import patch, MagicMock
 
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
@@ -13,7 +13,7 @@ class TestAgent(unittest.TestCase):
     def test_agent_init(self):
         testAgent = Agent('session')
         self.assertEqual(testAgent.session, 'session')
-    
+
     def test_agent_repr(self):
         testAgent = Agent('session')
         testAgent.name = 'Tester, Test'
@@ -22,29 +22,29 @@ class TestAgent(unittest.TestCase):
             str(testAgent),
             '<Agent(name=Tester, Test, sort_name=None, lcnaf=None, viaf=1)>'
         )
-    
+
     def test_agent_dir(self):
         testAgent = Agent('session')
         self.assertEqual(
             dir(testAgent),
             ['biography', 'lcnaf', 'name', 'sort_name', 'viaf']
         )
-    
+
     def test_agent_tmp_rels(self):
         testAgent = Agent('session')
         testAgent.createTmpRelations({'roles': None, 'dates': ['date']})
         self.assertEqual(testAgent.tmp_aliases, [])
         self.assertEqual(testAgent.tmp_roles, [])
         self.assertEqual(testAgent.tmp_dates, ['date'])
-    
+
     def test_agent_remove_tmp_rels(self):
         testAgent = Agent('session')
         testAgent.createTmpRelations({})
         self.assertEqual(testAgent.tmp_roles, [])
         testAgent.removeTmpRelations()
         with self.assertRaises(AttributeError):
-            tmpRoles = testAgent.tmp_roles
-    
+            testAgent.tmp_roles
+
     def test_updateInsert_insert(self):
         with patch('sfrCore.model.Agent.createAgent') as mock_create:
             mock_agent = MagicMock()
@@ -53,7 +53,7 @@ class TestAgent(unittest.TestCase):
             testAgent, roles = Agent.updateOrInsert('session', 'fakeAgent')
             self.assertEqual(testAgent, mock_agent)
             self.assertEqual(roles, ['test'])
-    
+
     def test_updateInsert_update(self):
         with patch('sfrCore.model.Agent.createAgent') as mock_create:
             mock_agent = MagicMock()
@@ -77,7 +77,7 @@ class TestAgent(unittest.TestCase):
             newAgent, newRoles = Agent.createAgent('session', testData)
             self.assertEqual(newAgent.name, 'Name, New')
             self.assertEqual(newRoles, [])
-    
+
     @patch.object(Agent, 'addLifespan')
     @patch.object(Agent, 'insertData')
     @patch.object(Agent, 'cleanName')
@@ -94,7 +94,13 @@ class TestAgent(unittest.TestCase):
     @patch('sfrCore.model.agent.Alias')
     @patch('sfrCore.model.agent.Link')
     @patch('sfrCore.model.agent.DateField')
-    def test_agent_update(self, mock_date, mock_link, mock_alias, mock_rm, mock_clean, mock_tmp):
+    def test_agent_update(self,
+                          mock_date,
+                          mock_link,
+                          mock_alias,
+                          mock_rm,
+                          mock_clean,
+                          mock_tmp):
         testAgent = Agent()
         for tmp in [
             ('tmp_aliases', ['Alias, Name']),
@@ -103,7 +109,7 @@ class TestAgent(unittest.TestCase):
             ('tmp_roles', ['test'])
         ]:
             setattr(testAgent, tmp[0], tmp[1])
-        
+
         testAgent.name = 'Old, Name'
 
         newData = {'name': 'New, Name'}
@@ -111,8 +117,8 @@ class TestAgent(unittest.TestCase):
         mock_alias.insertOrSkip.return_value = MagicMock()
         mock_link.updateOrInsert.side_effect = [MagicMock()]
         mock_date.updateOrInsert.side_effect = [MagicMock()]
-        
-        testRoles = testAgent.update('session', newData)
+
+        testAgent.update('session', newData)
         self.assertEqual(testAgent.name, 'New, Name')
 
     @patch('sfrCore.model.agent.Alias')
@@ -127,7 +133,7 @@ class TestAgent(unittest.TestCase):
             ('tmp_roles', ['test'])
         ]:
             setattr(testAgent, tmp[0], tmp[1])
-        
+
         testAgent.name = 'Old, Name'
 
         newData = {'name': 'New, Name'}
@@ -135,8 +141,8 @@ class TestAgent(unittest.TestCase):
         mock_alias.return_value = MagicMock()
         mock_link.side_effect = [MagicMock()]
         mock_date.insert.side_effect = [MagicMock()]
-        
-        testRoles = testAgent.insertData(newData)
+
+        testAgent.insertData(newData)
         self.assertEqual(testAgent.name, 'New, Name')
         self.assertEqual(testAgent.sort_name, 'new, name')
 
@@ -151,7 +157,7 @@ class TestAgent(unittest.TestCase):
         testAgent.removeTmpRelations()
         self.assertEqual(testAgent.name, 'New, Name')
         self.assertEqual(testAgent.sort_name, 'new, name')
-    
+
     def test_agent_insert_sort_unicode(self):
         testAgent = Agent()
         testData = {
@@ -163,8 +169,8 @@ class TestAgent(unittest.TestCase):
         testAgent.removeTmpRelations()
         self.assertEqual(testAgent.name, 'New, Name')
         self.assertEqual(testAgent.sort_name, 'new, name')
-    
-    @patch.object(Agent, 'findJaroWinklerQuery', return_value='mockAgent')
+
+    @patch.object(Agent, 'findTrgmQuery', return_value={'id': 'mockAgent'})
     @patch.object(Agent, 'findViafQuery', return_value=None)
     def test_agent_lookup_name(self, mock_viaf, mock_auth):
         testAgent = Agent()
@@ -172,7 +178,7 @@ class TestAgent(unittest.TestCase):
 
         res = testAgent.lookup()
         self.assertEqual(res, 'mockAgent')
-    
+
     @patch.object(Agent, 'authorityQuery', return_value='mockAgent')
     def test_agent_lookup_authority(self, mock_auth):
         testAgent = Agent()
@@ -182,38 +188,45 @@ class TestAgent(unittest.TestCase):
 
         res = testAgent.lookup()
         self.assertEqual(res, 'mockAgent')
-    
+
     def test_add_lifespan_date(self):
         testAgent = Agent()
         testAgent.tmp_dates = []
         testAgent.addLifespan('testdate', '1066')
         self.assertEqual(testAgent.tmp_dates[0]['display_date'], '1066')
 
-    def test_jw_query_success(self):
+    def test_trgm_query_success(self):
         mock_session = MagicMock()
-        mock_session.query().filter().one.return_value = 'mockAgent'
+        mock_resp = MagicMock()
+        mock_resp.rowcount = 1
+        mock_resp.first.return_value = 'mockAgent'
+        mock_session.execute.return_value = mock_resp
         testAgent = Agent(mock_session)
         testAgent.name = 'O\'Tester, Test'
-        matchAgent = testAgent.findJaroWinklerQuery()
+        matchAgent = testAgent.findTrgmQuery()
         self.assertEqual(matchAgent, 'mockAgent')
 
-    def test_jw_query_multiple_error(self):
+    def test_trgm_query_multiple_response(self):
         mock_session = MagicMock()
-        mock_session.query().filter().one.side_effect = MultipleResultsFound
+        mock_resp = MagicMock()
+        mock_resp.rowcount = 2
+        mock_session.execute.return_value = mock_resp
         testAgent = Agent(mock_session)
         testAgent.name = 'Tester, Test'
-        manyMatches = testAgent.findJaroWinklerQuery()
+        manyMatches = testAgent.findTrgmQuery()
         self.assertEqual(manyMatches, None)
-    
-    def test_jw_query_single_error(self):
+
+    def test_trgm_query_no_matches(self):
         mock_session = MagicMock()
-        mock_session.query().filter().one.side_effect = NoResultFound
+        mock_response = MagicMock()
+        mock_response.rowcount = 0
+        mock_response.first.return_value = None
+        mock_session.execute.return_value = mock_response
         testAgent = Agent(mock_session)
         testAgent.name = 'Tester, Test'
-        noMatches = testAgent.findJaroWinklerQuery()
+        noMatches = testAgent.findTrgmQuery()
         self.assertEqual(noMatches, None)
-    
-    
+
     @patch('sfrCore.model.agent.requests')
     @patch.object(Agent, 'authorityQuery', return_value='matchedAgent')
     @patch.object(Agent, 'cleanName')
@@ -229,7 +242,7 @@ class TestAgent(unittest.TestCase):
         testAgent.name = 'Old'
         outAgent = testAgent.findViafQuery()
         self.assertEqual(outAgent, 'matchedAgent')
-    
+
     @patch('sfrCore.model.agent.requests')
     def test_viaf_query_miss(self, mock_req):
         mock_resp = MagicMock()
@@ -241,7 +254,7 @@ class TestAgent(unittest.TestCase):
         testAgent.name = 'Old'
         outAgent = testAgent.findViafQuery()
         self.assertEqual(outAgent, None)
-    
+
     def test_authority_query_success(self):
         mock_session = MagicMock()
         mock_session.query().filter().one_or_none.return_value = 'mockAgent'
@@ -253,14 +266,15 @@ class TestAgent(unittest.TestCase):
 
     def test_authority_query_multiple_error(self):
         mock_session = MagicMock()
-        mock_session.query().filter().one_or_none.side_effect = MultipleResultsFound
+        mock_session.query()\
+            .filter().one_or_none.side_effect = MultipleResultsFound
         mock_session.query().filter().first.return_value = 'firstMatch'
         testAgent = Agent(mock_session)
         testAgent.viaf = 999999999
         testAgent.lcnaf = 999999999
         firstAgent = testAgent.authorityQuery()
         self.assertEqual(firstAgent, 'firstMatch')
-        
+
     def test_authority_query_single_error(self):
         mock_session = MagicMock()
         mock_session.query().filter().one_or_none.return_value = None
@@ -280,7 +294,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(testAgent.name, 'Test, Tester')
         self.assertEqual(testAgent.tmp_dates[0]['display_date'], '1950')
         self.assertEqual(testAgent.tmp_dates[1]['display_date'], '2000')
-    
+
     def test_clean_name_birth_only(self):
         testAgent = Agent()
         testAgent.name = 'Test, Tester 1950-'
@@ -290,7 +304,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(testAgent.tmp_roles, [])
         self.assertEqual(testAgent.name, 'Test, Tester')
         self.assertEqual(testAgent.tmp_dates[0]['display_date'], '1950')
-    
+
     def test_clean_roles(self):
         testAgent = Agent()
         testAgent.name = 'Test, Tester [tester; testing]'
@@ -299,7 +313,7 @@ class TestAgent(unittest.TestCase):
         testAgent.cleanName()
         self.assertEqual(testAgent.name, 'Test, Tester')
         self.assertEqual(testAgent.tmp_roles, ['tester', 'testing'])
-    
+
     def test_clean_role(self):
         testAgent = Agent()
         testAgent.name = 'Test, Tester [tester]'
@@ -308,7 +322,7 @@ class TestAgent(unittest.TestCase):
         testAgent.cleanName()
         self.assertEqual(testAgent.name, 'Test, Tester')
         self.assertEqual(testAgent.tmp_roles, ['tester'])
-    
+
     def test_combined(self):
         testAgent = Agent()
         testAgent.name = 'Test, Tester 1950-2000 [tester]'
@@ -324,22 +338,28 @@ class TestAgent(unittest.TestCase):
         testAlias = Alias()
         testAlias.alias = 'Testing'
         self.assertEqual(str(testAlias), '<Alias(alias=Testing, agent=None)>')
-    
+
     def test_alias_skip(self):
         mock_session = MagicMock()
         mock_session.query().join().filter().filter().one.return_value = None
         mock_model = MagicMock()
 
         Alias.insertOrSkip(mock_session, 'Alias Name', mock_model, 1)
-    
+
     def test_alias_insert(self):
         mock_session = MagicMock()
-        mock_session.query().join().filter().filter().one.side_effect = NoResultFound
+        mock_session.query()\
+            .join().filter().filter().one.side_effect = NoResultFound
         mock_model = MagicMock()
 
-        newAlias = Alias.insertOrSkip(mock_session, 'Alias Name', mock_model, 1)
+        newAlias = Alias.insertOrSkip(
+            mock_session,
+            'Alias Name',
+            mock_model,
+            1
+        )
         self.assertEqual(newAlias.alias, 'Alias Name')
-    
+
     # Name full integration tests
 
     def test_new_agent_creation(self):
