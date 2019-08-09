@@ -49,6 +49,8 @@ class Unglueit():
     def validateISBN13(isbn):
         try:
             checkDig = int(isbn[-1:])
+            if checkDig == 0:
+                checkDig = 10
         except ValueError:
             raise UnglueError(500, 'ISBN-13 check digit must be an integer')
         isbn = isbn[:-1]
@@ -56,7 +58,6 @@ class Unglueit():
             int(isbn[i]) if i % 2 == 0 else int(isbn[i]) * 3
             for i in range(len(isbn))
         ])
-
         if (10 - (calcTotal % 10)) != checkDig:
             raise UnglueError(500, 'ISBN fails ISBN-13 algorithm')
 

@@ -55,6 +55,7 @@ class TestUnglueSearch(unittest.TestCase):
         Unglueit.validateISBN13('9781402894626')
         Unglueit.validateISBN13('9781861978769')
         Unglueit.validateISBN13('9780199535569')
+        Unglueit.validateISBN13('9782759821150')
         with self.assertRaises(UnglueError):
             Unglueit.validateISBN13('9781585340982')
         with self.assertRaises(UnglueError):
