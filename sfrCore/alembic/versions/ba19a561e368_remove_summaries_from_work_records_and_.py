@@ -17,16 +17,16 @@ depends_on = None
 
 
 def upgrade():
-    op.drop_column('work', 'summary')
+    op.drop_column('works', 'summary')
     op.add_column(
-        'instance',
+        'instances',
         sa.Column('summary', sa.Unicode)
     )
 
 
 def downgrade():
-    op.drop_column('instance', 'summary')
+    op.drop_column('instances', 'summary')
     op.add_column(
-        'work',
+        'works',
         sa.Column('summary', sa.Unicode)
     )
