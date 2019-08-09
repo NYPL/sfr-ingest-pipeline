@@ -170,6 +170,7 @@ class Instance(BaseInner):
     table_of_contents = Text()
     volume = Text(fields={'keyword': Keyword()})
     extent = Text()
+    summary = Text()
     
     items = Nested(Item)
     agents = Nested(Agent)
@@ -184,7 +185,7 @@ class Instance(BaseInner):
         return [
             'title', 'sub_title', 'pub_place', 'edition',
             'edition_statement', 'table_of_contents', 'langauge', 'extent',
-            'volume'
+            'volume', 'summary'
         ]
 
 
