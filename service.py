@@ -44,6 +44,9 @@ def handler(event, context):
         returnObj = unglued.fetchSummary()
     except UnglueError as err:
         logger.error(err)
-        returnObj = Unglueit.formatResponse(err.status, err.message)
+        returnObj = Unglueit.formatResponse(err.status, {
+            'match': False,
+            'message': err.message
+        })
 
     return returnObj
