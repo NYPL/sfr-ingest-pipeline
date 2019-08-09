@@ -13,9 +13,7 @@ from sfrCore.helpers import DataError, DBError
 class WorkTest(unittest.TestCase):
     def test_work_init(self):
         testWork = Work()
-        testWork.summary = 'Summary'
         testWork.title = 'Testing'
-        self.assertEqual(testWork.summary, 'Summary')
         self.assertEqual(str(testWork), '<Work(title=Testing)>')
 
     def test_create_tmp(self):
