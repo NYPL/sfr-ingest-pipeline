@@ -206,8 +206,8 @@ class InstanceTest(unittest.TestCase):
     def test_add_identifiers(self, mock_unglue, mock_identifier):
         testInst = Instance()
         testInst.tmp_identifiers = [
-            {'value': 'id1', 'type': 'test'},
-            {'value': 'id2', 'type': 'isbn'}
+            {'identifier': 'id1', 'type': 'test'},
+            {'identifier': 'id2', 'type': 'isbn'}
         ]
 
         testInst.addIdentifiers()
