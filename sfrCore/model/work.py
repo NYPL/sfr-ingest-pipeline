@@ -123,6 +123,8 @@ class Work(Core, Base):
             relList = workData.pop(relType, [])
             if relList is None:
                 relList = []
+            elif isinstance(relList, str):
+                relList = [relList]
             dedupeList = [
                 val for pos, val in enumerate(relList)
                 if val not in relList[pos + 1:]
