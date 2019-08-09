@@ -86,9 +86,10 @@ class Unglueit():
 
         response = req.json()
         try:
+            print(response)
             work = response['objects'][0]
             return re.search(r'\/([0-9]+)\/', work['work']).group(1)
-        except AttributeError:
+        except (AttributeError, IndexError):
             raise UnglueError(404, {
                 'match': False,
                 'message': 'No record found in unglue.it for {}'.format(
