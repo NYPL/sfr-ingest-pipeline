@@ -1,9 +1,7 @@
 import re
 import uuid
-import json
 from sqlalchemy import (
     Column,
-    Date,
     ForeignKey,
     Integer,
     String,
@@ -26,7 +24,6 @@ from .date import DateField
 from .instance import Instance
 from .agent import Agent
 from .subject import Subject
-from .rights import Rights, WORK_RIGHTS
 from .language import Language
 
 from ..helpers import createLog, DBError, DataError
@@ -118,26 +115,33 @@ class Work(Core, Base):
 
     def __repr__(self):
         return '<Work(title={})>'.format(self.title)
-    
+
     def createTmpRelations(self, workData):
         logger.debug('Creating tmp relationship arrays')
         for relType in Work.RELS:
             tmpRel = 'tmp_{}'.format(relType)
-            setattr(self, tmpRel, workData.pop(relType, []))
-            if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
-    
+            relList = workData.pop(relType, [])
+            if relList is None:
+                relList = []
+            dedupeList = [
+                val for pos, val in enumerate(relList)
+                if val not in relList[pos + 1:]
+            ]
+            setattr(self, tmpRel, dedupeList)
+
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
         logger.debug('Removing temporary relationship arrays')
-        for rel in Work.RELS: delattr(self, 'tmp_{}'.format(rel))
+        for rel in Work.RELS:
+            delattr(self, 'tmp_{}'.format(rel))
 
     def insert(self, workData):
         """Insert a new work record"""
         logger.info('Inserting new work record {}'.format(workData['title']))
 
-        childFields = self.createTmpRelations(workData)
-        
+        self.createTmpRelations(workData)
+
         for key, value in workData.items():
             logger.debug('Setting {} for field {}'.format(value, key))
             setattr(self, key, value)
@@ -149,7 +153,7 @@ class Work(Core, Base):
         # it will be a random v4 value
         #
         self.uuid = uuid.uuid4()
-        
+
         logger.debug('Adding current work {} to session'.format(self))
         self.session.add(self)
 
@@ -178,7 +182,8 @@ class Work(Core, Base):
     def update(self, workData, session=None):
         """Update an existing work record"""
         logger.info('Updating existing work record {}'.format(self.id))
-        if not getattr(self, 'session', None): self.session = session
+        if not getattr(self, 'session', None):
+            self.session = session
 
         self.createTmpRelations(workData)
 

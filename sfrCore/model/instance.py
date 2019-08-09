@@ -115,9 +115,14 @@ class Instance(Core, Base):
     def createTmpRelations(self, instanceData):
         for relType in Instance.RELS:
             tmpRel = 'tmp_{}'.format(relType)
-            setattr(self, tmpRel, instanceData.pop(relType, []))
-            if getattr(self, tmpRel) is None:
-                setattr(self, tmpRel, [])
+            relList = instanceData.pop(relType, [])
+            if relList is None:
+                relList = []
+            dedupeList = [
+                val for pos, val in enumerate(relList)
+                if val not in relList[pos + 1:]
+            ]
+            setattr(self, tmpRel, dedupeList)
 
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
@@ -318,7 +323,7 @@ class Instance(Core, Base):
     def addIdentifiers(self):
         for iden in self.tmp_identifiers:
             if iden['type'] == 'isbn':
-                self.fetchUnglueitSummary(iden['value'])
+                self.fetchUnglueitSummary(iden['identifier'])
             self.upsertIdentifier(iden)
 
     def upsertIdentifier(self, iden):
