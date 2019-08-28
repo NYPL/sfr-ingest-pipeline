@@ -40,6 +40,7 @@ describe('v2 single work retrieval tests', () => {
             _source: {
               uuid: 1,
               title: 'Test Work',
+              instances: [],
             },
           },
         ],
