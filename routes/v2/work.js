@@ -73,4 +73,4 @@ const removeInvalidEditions = (source) => {
   ))
 }
 
-module.exports = { fetchWork, workEndpoints }
+module.exports = { fetchWork, workEndpoints, removeInvalidEditions }
