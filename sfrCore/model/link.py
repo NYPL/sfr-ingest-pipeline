@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -6,7 +8,7 @@ from sqlalchemy import (
     Unicode,
     Table
 )
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, validates
 from sqlalchemy.dialects.postgresql import JSON
 
 from .core import Base, Core
@@ -73,6 +75,20 @@ class Link(Core, Base):
         back_populates='links'
     )
 
+    @validates('url')
+    def removeHTTP(self, key, url):
+        """Ensures that http:// and https:// are removed from all URLs to ensure
+        equality are valid
+
+        Arguments:
+            key {str} -- Field being validated
+            name {str} -- The sort_name value for the current record
+
+        Returns:
+            str -- The clean version of the URL
+        """
+        return Link.httpRegexSub(url)
+
     def __repr__(self):
         return '<Link(url={}, media_type={})>'.format(
             self.url,
@@ -101,8 +117,16 @@ class Link(Core, Base):
     def lookupLink(cls, session, link, model, recordID):
         """Query database for link related to current record. Return link
         if found, otherwise return None"""
+        checkURL = Link.httpRegexSub(link.get('url', None))
         return session.query(cls)\
             .join(model.__tablename__)\
             .filter(model.id == recordID)\
-            .filter(cls.url == link['url'])\
+            .filter(cls.url == checkURL)\
             .one_or_none()
+
+    @staticmethod
+    def httpRegexSub(url):
+        if isinstance(url, str):
+            return re.sub(r'^http(?:s)?:\/\/', '', url.lower())
+        else:
+            return url
