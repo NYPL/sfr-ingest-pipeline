@@ -53,12 +53,24 @@ const fetchWork = (params, app) => {
         const respCount = resp.hits.hits.length
         if (respCount < 1) reject(new ElasticSearchError('Could not locate a record with that identifier'))
         else if (respCount > 1) reject(new ElasticSearchError('Returned multiple records, identifier lacks specificity'))
+        /* eslint-disable no-underscore-dangle */
+        removeInvalidEditions(resp.hits.hits[0]._source)
         Helpers.formatResponseEditionRange(resp)
-        // eslint-disable-next-line dot-notation
-        resolve(resp.hits.hits[0]['_source'])
+        resolve(resp.hits.hits[0]._source)
+        /* eslint-enable no-underscore-dangle */
       })
       .catch(error => reject(error))
   })
 }
 
-module.exports = { fetchWork, workEndpoints }
+const removeInvalidEditions = (source) => {
+  // eslint-disable-next-line no-param-reassign
+  source.instances = source.instances.filter(ed => (
+    (ed.items && ed.items.length > 0)
+      || ed.pub_date
+      || (ed.agents && ed.agents.length > 0)
+      || ed.pub_place
+  ))
+}
+
+module.exports = { fetchWork, workEndpoints, removeInvalidEditions }

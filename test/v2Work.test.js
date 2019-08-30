@@ -10,7 +10,7 @@ chai.use(chaiPromise)
 const { expect } = chai
 
 const Helpers = require('../helpers/esSourceHelpers')
-const { fetchWork } = require('../routes/v2/work')
+const { fetchWork, removeInvalidEditions } = require('../routes/v2/work')
 const { ElasticSearchError, MissingParamError } = require('../lib/errors')
 
 describe('v2 single work retrieval tests', () => {
@@ -40,6 +40,7 @@ describe('v2 single work retrieval tests', () => {
             _source: {
               uuid: 1,
               title: 'Test Work',
+              instances: [],
             },
           },
         ],
@@ -83,5 +84,35 @@ describe('v2 single work retrieval tests', () => {
     }
     const outcome = fetchWork(params, testApp)
     expect(outcome).to.eventually.throw(ElasticSearchError('Returned multiple records, identifier lacks specificity'))
+  })
+
+  describe('removeInvalidEditions()', () => {
+    it('should remove editions without proper metadata', (done) => {
+      const testSource = {
+        instances: [
+          {
+            items: [
+              'item1',
+            ],
+            pub_date: '2000',
+            agents: [
+              'agent1',
+            ],
+            pub_place: 'nowhere',
+          },
+          {
+            title: 'Empty Record',
+          },
+          {
+            pub_date: '1900',
+            pub_place: 'somewhere',
+          },
+        ],
+      }
+      removeInvalidEditions(testSource)
+      expect(testSource.instances.length).to.equal(2)
+      expect(testSource.instances[1].pub_place).to.equal('somewhere')
+      done()
+    })
   })
 })
