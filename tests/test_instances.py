@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock, call, DEFAULT
 
 from sfrCore.model import Instance
 from sfrCore.model.instance import AgentInstances
+from sfrCore.helpers.errors import DataError
 
 
 class InstanceTest(unittest.TestCase):
@@ -209,13 +210,45 @@ class InstanceTest(unittest.TestCase):
             {'identifier': 'id1', 'type': 'test'},
             {'identifier': 'id2', 'type': 'isbn'}
         ]
+        mockTestID = MagicMock()
+        mockTestID.type = 'test'
+        mockTestISBN = MagicMock()
+        mockTestISBN.type = 'isbn'
+        mockISBNValue = MagicMock()
+        mockISBNValue.value = 'testISBN'
+        mockTestISBN.isbn = [mockISBNValue]
+        mock_identifier.side_effect = [
+            mockTestID,
+            mockTestISBN
+        ]
 
         testInst.addIdentifiers()
-        mock_unglue.assert_called_once_with('id2')
+        mock_unglue.assert_called_once_with('testISBN')
         mock_identifier.assert_has_calls([
             call(testInst.tmp_identifiers[0]),
             call(testInst.tmp_identifiers[1])
         ])
+
+    @patch('sfrCore.model.instance.Identifier.returnOrInsert', return_value=1)
+    def test_identifier_upsert(self, mock_returnOrInsert):
+        testInst = Instance()
+        newIden = testInst.upsertIdentifier({
+            'type': 'test',
+            'identifier': 1
+        })
+        self.assertEqual(newIden, 1)
+
+    @patch(
+        'sfrCore.model.instance.Identifier.returnOrInsert',
+        side_effect=DataError('Test Error')
+    )
+    def test_identifier_upsert_err(self, mock_returnOrInsert):
+        testInst = Instance()
+        newIden = testInst.upsertIdentifier({
+            'type': 'test',
+            'identifier': 1
+        })
+        self.assertEqual(newIden, None)
 
     @patch('sfrCore.model.instance.AltTitle', return_value='test_title')
     @patch.object(Instance, 'alt_titles', return_value=set('test_title'))
