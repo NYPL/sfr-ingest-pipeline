@@ -82,6 +82,7 @@ class Subject(BaseInner):
 
 
 class Link(BaseInner):
+    unique_id = Integer(index=False)
     url = Keyword(index=False)
     media_type = Keyword()
     label = Text()
