@@ -134,7 +134,8 @@ class TestESManager(unittest.TestCase):
         testLink = TestDict(**{
             'url': 'test/url',
             'media_type': 'test',
-            'flags': '{\"local\": false}'
+            'flags': '{\"local\": false}',
+            'id': 1
         })
 
         linkRec = ESDoc.addLink(testLink)
