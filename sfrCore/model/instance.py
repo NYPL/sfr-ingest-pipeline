@@ -323,16 +323,31 @@ class Instance(Core, Base):
             logger.warning('Unable to read agent {}'.format(agent['name']))
 
     def addIdentifiers(self):
-        for iden in self.tmp_identifiers:
-            if iden['type'] == 'isbn':
-                self.fetchUnglueitSummary(iden['identifier'])
-            self.upsertIdentifier(iden)
+        """This method takes a list of potential new identifiers to associate
+        with this instance. New identifiers are added and if they are ISBNs
+        a summary from unglue.it is checked for.
+
+        Existing identifiers are skipped.
+        """
+        identifiers = {
+            self.upsertIdentifier(iden) for iden in self.tmp_identifiers
+        }
+
+        # This removes all existing identifiers from set, removing unnecessary
+        # operations
+        identifiers.difference_update(self.identifiers)
+
+        # Add new identifiers to set and check for summaries associated with
+        # new identifiers being associated with this instance
+        for iden in list(identifiers):
+            self.identifiers.add(iden)
+            if iden.type == 'isbn':
+                self.fetchUnglueitSummary(iden.isbn[0].value)
 
     def upsertIdentifier(self, iden):
         try:
-            self.identifiers.add(
-                Identifier.returnOrInsert(self.session, iden)
-            )
+            logger.debug('Adding {}'.format(iden['identifier']))
+            return Identifier.returnOrInsert(self.session, iden)
         except DataError as err:
             logger.warning('Received invalid identifier')
             logger.debug(err)
