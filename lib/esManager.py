@@ -195,6 +195,7 @@ class ESDoc():
             field: getattr(link, field, None) for field in Link.getFields()
         }
         newLink = Link(**linkData)
+        newLink.unique_id = link.id
 
         linkFlags = getattr(link, 'flags', {})
         if isinstance(linkFlags, str): linkFlags = json.loads(linkFlags)
@@ -305,7 +306,7 @@ class ESDoc():
 
         esInstance.items = [
             ESDoc.addItem(item) 
-            for item in instance.items
+            for item in instance.items if len(item.links) > 0
         ]
 
         esInstance.rights = [
