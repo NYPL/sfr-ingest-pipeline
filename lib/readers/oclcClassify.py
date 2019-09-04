@@ -42,10 +42,10 @@ def classifyRecord(searchType, searchFields, workUUID):
     # Parse response, and if it is a Multi-Work response, parse further
     logger.debug('Parsing Classify Response')
 
-    return parseClassify(rawData, workUUID, classifyQuery.title)
+    return parseClassify(rawData, workUUID, classifyQuery.title, classifyQuery.author)
 
 
-def parseClassify(rawXML, workUUID, checkTitle):
+def parseClassify(rawXML, workUUID, checkTitle, checkAuthor):
     """Parses results received from Classify. Response is based of the code
     recieved from the service, generically it will response with the XML of a
     work record or None if it recieves a different response code.
@@ -77,18 +77,22 @@ def parseClassify(rawXML, workUUID, checkTitle):
     elif responseCode == 4:
         logger.debug('Got Multiwork response, iterate through works to get details')
         works = parseXML.findall('.//work', namespaces=NAMESPACE)
-
         for work in works:
             oclcID = work.get('wi')
             oclcTitle = work.get('title', None)
+            oclcAuthors = work.get('author', None)
             if checkTitle is not None:
-                if titleCheck(checkTitle.lower(), oclcTitle.lower()) is False:
-                    logger.info('Found title mismatch between {} and {}. Skipping'.format(
+                if authorTitleCheck(
+                    checkTitle.lower(),
+                    checkAuthor.lower(),
+                    oclcTitle.lower(),
+                    oclcAuthors.lower()
+                ) is False:
+                    logger.info('Found author/title mismatch between {} and {}. Skipping'.format(
                         checkTitle,
                         oclcTitle
                     ))
                     continue
-                
             if OutputManager.checkRecentQueries('classify/oclc/{}'.format(oclcID)) is False:
                 OutputManager.putQueue({
                     'type': 'identifier',
@@ -103,14 +107,31 @@ def parseClassify(rawXML, workUUID, checkTitle):
     else:
         raise OCLCError('Recieved unexpected response {} from Classify'.format(responseCode))
 
+def getJaccardScore(title, mainTitle):
+    tGrams = ngrams(title, n=3)
+    mGrams = ngrams(mainTitle, n=3)
+    return float(len(tGrams & mGrams)) / len(tGrams | mGrams)
 
-def titleCheck(startTitle, oclcTitle):
-    compTitles = ['collected', 'complete', 'compilation']
-    for coll in compTitles:
-        if coll in oclcTitle and coll not in startTitle:
-            return False
-    
-    return True
+def ngrams(string, n=3):
+    ngrams = zip(*[string[i:] for i in range(n)])
+    return set([''.join(ngram) for ngram in ngrams])
+
+def authorTitleCheck(startTitle, startAuthor, oclcTitle, oclcAuthor):
+    jaccScore = getJaccardScore(oclcTitle, startTitle)
+    innerAuthor, outerAuthor = sortStrings(startAuthor, oclcAuthor)
+    if jaccScore >= 0.75 and innerAuthor in outerAuthor:
+        logger.debug('Found match for {} with score {}'.format(
+            oclcTitle, jaccScore
+        ))
+        return True
+
+    return False
+
+def sortStrings(str1, str2):
+    if len(str1) < len(str2):
+        return (str1, str2)
+    else:
+        return (str2, str1)
 
 
 class QueryManager():
