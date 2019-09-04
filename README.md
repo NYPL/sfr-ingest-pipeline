@@ -1,10 +1,11 @@
 # OCLC Classify Enhancer (Step 1 of FRBR-ization)
+
+[![Build Status](https://travis-ci.com/NYPL/sfr-oclc-classify-frbrize.svg?branch=development)](https://travis-ci.com/NYPL/sfr-oclc-classify-frbrize)
+[![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-oclc-classify-frbrize.svg)](https://badge.fury.io/gh/nypl%2Fsfr-oclc-classify-frbrize)
+
 This lambda takes a set of metadata conforming to the SFR Data Model (to be documented) and queries the [OCLC Classify](https://www.oclc.org/developer/develop/web-services/classify.en.html) for additional metadata pertaining to Works, Instances and Agents(Entities). This data is merged into the original metadata record and then passed on to the next stage in the enhancement pipeline.
 
 The Classify service provides both basic Work level data (official title, identifiers and author/contributor information), as well as a full list of all potential editions that OCLC is aware of. This list of editions contains many possible duplicates, but those will be reduced/combined as necessary in future steps.
-
-## Version
-v0.0.1
 
 ## Note
 This code is based on the [Python Lambda Boilerplate](https://github.com/NYPL/python-lambda-boilerplate), and as a result can be run through the `make` commands detailed there such as `make test` and `make local-run`
