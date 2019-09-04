@@ -96,7 +96,8 @@ class OutputManager():
         
         cls.REDIS_CLIENT.set(
             queryString, 
-            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S')
+            datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
+            ex=60*60*24*7
         )
         return False
 
