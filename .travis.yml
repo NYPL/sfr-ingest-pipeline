@@ -7,7 +7,6 @@ install:
 - pip install --upgrade pip
 - pip install -r requirements.txt
 - pip install -r dev-requirements.txt
-before_script: mkdir config && touch config/development.yaml
 script: make test
 after_success:
 - ENVIRONMENT_NAME=$TRAVIS_BRANCH
