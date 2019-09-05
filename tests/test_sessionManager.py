@@ -1,11 +1,19 @@
+from base64 import b64encode
+from botocore.exceptions import ClientError
+import os
 import unittest
 from unittest.mock import patch, MagicMock
 
 from sfrCore.lib import SessionManager
 
+
 class SessionTest(unittest.TestCase):
     @patch('sfrCore.lib.sessionManager.createLog')
-    def test_init_local_vars(self, mock_log):
+    @patch('sfrCore.lib.sessionManager.SessionManager.decryptEnvVar')
+    def test_init_local_vars(self, mock_log, mock_decrypt):
+        def returnVal(value):
+            return value
+        mock_decrypt.side_effect = returnVal
         testManager = SessionManager(
             user='test',
             pswd='pswd',
@@ -87,3 +95,32 @@ class SessionTest(unittest.TestCase):
         mock_commit.assert_called_once()
         mock_session.close.assert_called_once()
         mock_engine.dispose.assert_called_once()
+
+    @patch.dict(
+        os.environ,
+        {'testing': b64encode('testing'.encode('utf-8')).decode('utf-8')}
+    )
+    @patch('sfrCore.lib.sessionManager.boto3')
+    def test_env_decryptor_success(self, mock_boto):
+        mock_boto.client().decrypt.return_value = {
+            'Plaintext': 'testing'.encode('utf-8')
+        }
+        outEnv = SessionManager.decryptEnvVar('testing')
+        self.assertEqual(outEnv, 'testing')
+
+    @patch.dict(os.environ, {'testing': 'testing'})
+    @patch('sfrCore.lib.sessionManager.boto3')
+    def test_env_decryptor_non_encoded(self, mock_boto):
+        mock_boto.client().decrypt.return_value = {'Plaintext': 'testing'}
+        outEnv = SessionManager.decryptEnvVar('testing')
+        self.assertEqual(outEnv, 'testing')
+
+    @patch.dict(
+        os.environ,
+        {'testing': b64encode('testing'.encode('utf-8')).decode('utf-8')}
+    )
+    @patch('sfrCore.lib.sessionManager.boto3')
+    def test_env_decryptor_boto_error(self, mock_boto):
+        mock_boto.client().decrypt.side_effect = ClientError
+        outEnv = SessionManager.decryptEnvVar('testing')
+        self.assertEqual(outEnv, 'testing')
