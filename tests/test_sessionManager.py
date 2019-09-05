@@ -1,4 +1,5 @@
 from base64 import b64encode
+from botocore.exceptions import ClientError
 import os
 import unittest
 from unittest.mock import patch, MagicMock
@@ -118,6 +119,8 @@ class SessionTest(unittest.TestCase):
         os.environ,
         {'testing': b64encode('testing'.encode('utf-8')).decode('utf-8')}
     )
-    def test_env_decryptor_boto_error(self):
+    @patch('sfrCore.lib.sessionManager.boto3')
+    def test_env_decryptor_boto_error(self, mock_boto):
+        mock_boto.client().decrypt.side_effect = ClientError
         outEnv = SessionManager.decryptEnvVar('testing')
         self.assertEqual(outEnv, 'testing')
