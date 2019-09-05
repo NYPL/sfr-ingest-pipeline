@@ -75,6 +75,6 @@ class SessionManager():
             # If region is not set, assume us-east-1
             regionName = os.environ.get('AWS_REGION', 'us-east-1')
             return boto3.client('kms', region_name=regionName)\
-                .decrypt(CiphertextBlob=decoded)['Plaintext'].decode('utf-8')
+                .decrypt(CiphertextBlob=decoded)['Plaintext'].decode('latin-1')
         except (ClientError, TypeError):
-            return decoded.decode('utf-8')
+            return decoded.decode('latin-1')
