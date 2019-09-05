@@ -6,7 +6,7 @@ help:
 	@echo "    run pytest unit tests"
 	@echo "make build-layer"
 	@echo "    build new version of AWS Lambda Layer and deploy to AWS"
-	@echo "    select branch to build with as BRANCH=[branch_name]
+	@echo "    select branch to build with as BRANCH=[branch_name]"
 	@echo "make rebuild-docker"
 	@echo "    rebuild docker image with supplied keys at the provided name"
 	@echo "    This should use the following variables:"
@@ -23,8 +23,8 @@ ifeq ($(BRANCH),)
 BRANCH = master
 endif
 build-layer:
-	@echo "Building AWS Layer from Branch: $(BRANCH)
-	docker run -e GIT_URL=git+https://github.com/NYPL/sfr-db-core.git@$(BRANCH)#egg=sfrCore -e LAYER_NAME=sfr-db-core-python-36-37-dev sfrcore
+	@echo "Building AWS Layer from Branch: $(BRANCH)"
+	docker run -e GIT_URL=git+https://github.com/NYPL/sfr-db-core.git@$(BRANCH)\#egg=sfrCore -e LAYER_NAME=sfr-db-core-python-36-37-dev sfrcore
 
 rebuild-docker:
 	docker build -t sfrcore --build-arg accesskey=$(ACCESS_KEY) --build-arg secretkey=$(SECRET_KEY) --build-arg region=$(REGION) sfrCore
