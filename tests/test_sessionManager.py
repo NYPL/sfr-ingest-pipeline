@@ -98,12 +98,12 @@ class SessionTest(unittest.TestCase):
 
     @patch.dict(
         os.environ,
-        {'testing': b64encode('testing'.encode('latin-1')).decode('latin-1')}
+        {'testing': b64encode('testing'.encode('utf-8')).decode('utf-8')}
     )
     @patch('sfrCore.lib.sessionManager.boto3')
     def test_env_decryptor_success(self, mock_boto):
         mock_boto.client().decrypt.return_value = {
-            'Plaintext': 'testing'.encode('latin-1')
+            'Plaintext': 'testing'.encode('utf-8')
         }
         outEnv = SessionManager.decryptEnvVar('testing')
         self.assertEqual(outEnv, 'testing')
@@ -117,10 +117,10 @@ class SessionTest(unittest.TestCase):
 
     @patch.dict(
         os.environ,
-        {'testing': b64encode('testing'.encode('latin-1')).decode('latin-1')}
+        {'testing': b64encode('testing'.encode('utf-8')).decode('utf-8')}
     )
     @patch('sfrCore.lib.sessionManager.boto3')
     def test_env_decryptor_boto_error(self, mock_boto):
         mock_boto.client().decrypt.side_effect = ClientError
         outEnv = SessionManager.decryptEnvVar('testing')
-        self.assertEqual(outEnv, 'testing')
+        self.assertEqual(outEnv, b64encode('testing'.encode('utf-8')).decode('utf-8'))

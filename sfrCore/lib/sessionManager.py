@@ -68,13 +68,9 @@ class SessionManager():
 
         try:
             decoded = b64decode(encrypted)
-        except (TypeError, base64Error):
-            return encrypted
-
-        try:
             # If region is not set, assume us-east-1
             regionName = os.environ.get('AWS_REGION', 'us-east-1')
             return boto3.client('kms', region_name=regionName)\
-                .decrypt(CiphertextBlob=decoded)['Plaintext'].decode('latin-1')
-        except (ClientError, TypeError):
-            return decoded.decode('latin-1')
+                .decrypt(CiphertextBlob=decoded)['Plaintext'].decode('utf-8')
+        except (ClientError, base64Error, TypeError):
+            return encrypted
