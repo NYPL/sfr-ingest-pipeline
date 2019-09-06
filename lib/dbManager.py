@@ -66,8 +66,13 @@ def importRecord(session, record):
             instanceData.pop('primary_identifier', None)
         )
         if existingID is None:
-            logger.warning('Could not locate instance, skipping record')
-            raise DBError('instances', 'Could not locate instance in database, skipping')
+            logger.warning('Could not locate instance, placing at end of queue')
+            OutputManager.putKinesis(
+                instanceData,
+                os.environ['UPDATE_STREAM'],
+                recType='instance'
+            )
+            raise DBError('instances', 'Could not locate instance in database, moving to end of queue')
 
         existing = session.query(Instance).get(existingID)
 
