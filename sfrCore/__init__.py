@@ -2,7 +2,7 @@ from .model import (
     Agent,
     AltTitle,
     DateField,
-    Equivalent,
+    Edition,
     Identifier,
     Instance,
     Item,
