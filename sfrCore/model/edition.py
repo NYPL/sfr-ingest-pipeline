@@ -81,7 +81,7 @@ class Edition(Core, Base):
     def loadPublishers(self):
         publishers = set()
         for instance in self.instances:
-            for agent in instance.instance_agents:
+            for agent in instance.agent_instances:
                 if agent.role == 'publisher':
                     publishers.add(agent.agent.name)
 

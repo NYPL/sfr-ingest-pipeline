@@ -64,13 +64,13 @@ class EditionTest(unittest.TestCase):
         mockAgent1.agent.name = 'Test, Tester'
         mockAgent2 = MagicMock()
         mockAgent2.role = 'other'
-        mockInst1.instance_agents = [mockAgent1, mockAgent2]
+        mockInst1.agent_instances = [mockAgent1, mockAgent2]
 
         mockInst2 = MagicMock()
-        mockInst2.instance_agents = [mockAgent1]
+        mockInst2.agent_instances = [mockAgent1]
 
         testEdition = Edition()
         testEdition.instances = {mockInst1, mockInst2}
         publishers = testEdition.loadPublishers()
-        
+
         self.assertEqual(publishers, 'Test, Tester')
