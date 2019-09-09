@@ -46,10 +46,15 @@ class Instance(Core, Base):
     summary = Column(Unicode)
 
     work_id = Column(Integer, ForeignKey('works.id'))
+    edition_id = Column(Integer, ForeignKey('editions.id'))
 
     work = relationship(
         'Work',
         back_populates='instances'
+    )
+    combined_edition = relationship(
+        'Edition',
+        backref=backref('instances', collection_class=set)
     )
     items = relationship(
         'Item',

@@ -71,8 +71,7 @@ class TestIdentifiers(unittest.TestCase):
         result = Identifier.getByIdentifier(mock_instance, mock_session, ids)
         self.assertEqual(result, 1)
     
-    @patch.object(Identifier, '_getTopMatchAndSetEquivalencies', return_value=1)
-    def test_multi_identifier(self, mock_equivalent):
+    def test_multi_identifier(self):
         mock_session = MagicMock()
         mock_session.query().join().filter().all.side_effect = [
             [(1,), (2,)],
@@ -91,7 +90,6 @@ class TestIdentifiers(unittest.TestCase):
         ]
 
         result = Identifier.getByIdentifier(mock_instance, mock_session, ids)
-        mock_equivalent.assert_called_once()
         self.assertEqual(result, 1)
 
     def test_clean_id(self):
@@ -103,47 +101,6 @@ class TestIdentifiers(unittest.TestCase):
         with self.assertRaises(DataError):
             testIden = {'identifier': 'NAN'}
             Identifier._cleanIdentifier(testIden)
-    
-    @patch.object(Identifier, '_setEquivalencies')
-    def test_top_match(self, mock_equiv):
-        testMatches = [
-            (1, 2),
-            (2, 1)
-        ]
-        testTop = Identifier._getTopMatchAndSetEquivalencies(
-            'session',
-            testMatches,
-            'testing',
-            'identifiers'
-        )
-        self.assertEqual(testTop, 1)
-    
-    @patch.object(Identifier, '_setEquivalencies')
-    def test_top_match_equiv(self, mock_equiv):
-        testMatches = [
-            (1, 1),
-            (2, 1)
-        ]
-        testTop = Identifier._getTopMatchAndSetEquivalencies(
-            'session',
-            testMatches,
-            'testing',
-            'identifiers'
-        )
-        self.assertEqual(testTop, 1)
-    
-    @patch.object(Identifier, '_setEquivalencies')
-    def test_top_match_single(self, mock_equiv):
-        testMatches = [
-            (1, 1)
-        ]
-        testTop = Identifier._getTopMatchAndSetEquivalencies(
-            'session',
-            testMatches,
-            'testing',
-            'identifiers'
-        )
-        self.assertEqual(testTop, 1)
     
     def test_assign_recs(self):
         testRecs = [

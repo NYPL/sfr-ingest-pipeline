@@ -12,7 +12,6 @@ from sqlalchemy.orm import relationship, selectinload
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
 
 from .core import Base, Core
-from .equivalent import Equivalent
 
 from ..helpers import createLog, DBError, DataError
 
@@ -308,7 +307,6 @@ class Identifier(Base):
         if found and raise an error if multiple matching records are found."""
         matchingRecs = defaultdict(int)
         sortedMatches = []
-        topMatch = None
         for ident in cls._orderIdentifiers(identifiers):
             try:
                 cls._cleanIdentifier(ident)
@@ -329,48 +327,16 @@ class Identifier(Base):
                 .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
                 .all()
             Identifier._assignRecs(records, matchingRecs)
-        
-        sortedMatches = sorted(matchingRecs.items(), key=lambda x: x[1], reverse=True)
-        
-        if len(sortedMatches) > 0:
-            topMatch = Identifier._getTopMatchAndSetEquivalencies(
-                session,
-                sortedMatches,
-                model.__tablename__,
-                identifiers
-            )
 
-        return topMatch
-
-    @classmethod
-    def _getTopMatchAndSetEquivalencies(cls, session, matches, table, identifiers):
-        topMatch = matches.pop(0)
-        try:
-            if topMatch[1] <= matches[0][1]:
-                logger.warning('Could not find distinct match for record')
-                logger.debug(matches)
-                Identifier._setEquivalencies(
-                    session,
-                    topMatch[0],
-                    matches,
-                    table,
-                    identifiers
-                )
-        except IndexError:
-            pass
-        logger.debug('Found Match to record {}'.format(topMatch))
-        return topMatch[0]
-    
-    @classmethod
-    def _setEquivalencies(cls, session, topMatch, matches, table, identifiers):
-        logger.debug('Adding equivalency records for additional matches')
-        Equivalent.addEquivalencies(
-            session,
-            topMatch,
-            matches,
-            table,
-            identifiers
+        sortedMatches = sorted(
+            matchingRecs.items(),
+            key=lambda x: x[1],
+            reverse=True
         )
+        if len(sortedMatches) > 0:
+            return sortedMatches.pop(0)[0]
+        
+        return None
 
     @classmethod
     def _assignRecs(cls, records, matches):

@@ -22,3 +22,6 @@ class RawData(Core, Base):
 
     def __repr__(self):
         return '<ImportJSON(id={}, work={})>'.format(self.id, self.work)
+
+    def __init__(self, data):
+        self.data = data
