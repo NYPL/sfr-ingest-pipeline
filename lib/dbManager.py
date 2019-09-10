@@ -58,7 +58,7 @@ def importRecord(session, record):
     elif record['type'] == 'instance':
         logger.info('Ingesting instance record')
         instanceData = record['data']
-
+        attempts = int(record.get('attempts', 0))
         existingID = Instance.lookup(
             session,
             instanceData.get('identifiers', []),
@@ -66,14 +66,27 @@ def importRecord(session, record):
             instanceData.pop('primary_identifier', None)
         )
         if existingID is None:
-            logger.warning('Could not locate instance, placing at end of queue')
-            OutputManager.putKinesis(
-                instanceData,
-                os.environ['UPDATE_STREAM'],
-                recType='instance'
-            )
-            raise DBError('instances', 'Could not locate instance in database, moving to end of queue')
-
+            if attempts < 3:
+                logger.warning(
+                    'Attempt {} Could not locate instance, placing at end of queue'.format(
+                        attempts + 1
+                    )
+                )
+                OutputManager.putKinesis(
+                    instanceData,
+                    os.environ['UPDATE_STREAM'],
+                    recType='instance',
+                    attempts=attempts + 1
+                )
+                raise DBError(
+                    'instances',
+                    'Could not locate instance in database, moving to end of queue'
+                )
+            else:
+                raise DBError(
+                    'instances',
+                    'Failed to match instance to work. Dropping'
+                )
         existing = session.query(Instance).get(existingID)
 
         epubsToLoad = existing.update(session, instanceData)
