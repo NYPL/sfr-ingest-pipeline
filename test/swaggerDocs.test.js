@@ -24,7 +24,7 @@ describe('Testing Swagger Documentation', () => {
     await req.get('/research-now/swagger-test')
       .expect(200)
       .then((resp) => {
-        expect(resp.text).to.equal('API name: ResearchNow Search API, Version: v0.2.4')
+        expect(resp.text).to.equal('API name: ResearchNow Search API, Version: v0.2.2')
       })
   })
 
