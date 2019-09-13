@@ -15,24 +15,74 @@ const { ElasticSearchError } = require('../lib/errors')
 describe('v2 utility endpoints', () => {
   describe('language list utility', () => {
     describe('fetchLangs()', () => {
-      it('should call execQuery() with ES query', (done) => {
-        const buildStub = sinon.stub(Utils, 'buildQuery')
-        const execQuery = sinon.stub(Utils, 'execQuery')
-        const bodyStub = sinon.fake()
+      let buildStub
+      let execQuery
+      let parseStub
+      let bodyStub
+
+      beforeEach(() => {
+        buildStub = sinon.stub(Utils, 'buildQuery')
+        execQuery = sinon.stub(Utils, 'execQuery')
+        parseStub = sinon.stub(Utils, 'parseLanguageAgg')
+        bodyStub = sinon.fake()
         bodyStub.build = () => 'testBodyBuild'
         buildStub.returns(bodyStub)
+      })
 
+      afterEach(() => {
+        buildStub.restore()
+        execQuery.restore()
+        parseStub.restore()
+      })
+
+      it('should call execQuery() with ES query', async () => {
+        const testResp = {
+          hits: {
+            total: 0,
+            max_score: 0,
+            hits: [],
+          },
+          aggregations: {
+            language_inner: {
+              doc_count: 1,
+              unique_language: {
+                buckets: [],
+              },
+            },
+          },
+        }
+        execQuery.returns(testResp)
         const checkQuery = {
           index: process.env.ELASTICSEARCH_INDEX_V2,
           body: 'testBodyBuild',
         }
 
-        Utils.fetchLangs('app', { total: true })
+        await Utils.fetchLangs('app', { total: true })
         expect(buildStub).to.have.been.calledOnceWith(true)
         expect(execQuery).to.have.been.calledOnceWith('app', checkQuery, true)
-        buildStub.restore()
-        execQuery.restore()
-        done()
+        // eslint-disable-next-line no-unused-expressions
+        expect(parseStub).to.have.been.calledOnce
+      })
+
+      it('should raise ElasticSearchError if no docs are returned', async () => {
+        const testResp = {
+          hits: {
+            total: 0,
+            max_score: 0,
+            hits: [],
+          },
+          aggregations: {
+            language_inner: {
+              doc_count: 0,
+              unique_language: {
+                buckets: [],
+              },
+            },
+          },
+        }
+        execQuery.returns(testResp)
+        const resp = Utils.fetchLangs('app', { total: true })
+        expect(resp).to.eventually.be.rejectedWith(new ElasticSearchError('Could not load language aggregations'))
       })
     })
 
@@ -57,108 +107,6 @@ describe('v2 utility endpoints', () => {
         // eslint-disable-next-line no-unused-expressions
         expect(testBody.aggs.language_inner.aggs.unique_languages.aggs).to.be.undefined
         done()
-      })
-    })
-
-    describe('execQuery()', () => {
-      let parseStub = null
-      beforeEach(() => {
-        parseStub = sinon.stub(Utils, 'parseLanguageAgg')
-      })
-
-      afterEach(() => {
-        parseStub.restore()
-      })
-
-      it('should return language array on successful query', async () => {
-        const testResp = {
-          hits: {
-            total: 10,
-            max_score: 0,
-            hits: [],
-          },
-          aggregations: {
-            language_inner: {
-              doc_count: 10,
-              unique_languages: {
-                buckets: [
-                  {
-                    key: 'Test1',
-                    inner_count: {
-                      doc_count: 5,
-                    },
-                  }, {
-                    key: 'Test2',
-                    inner_count: {
-                      doc_count: 3,
-                    },
-                  }, {
-                    key: 'Test3',
-                    inner_count: {
-                      doc_count: 2,
-                    },
-                  },
-                ],
-              },
-            },
-          },
-        }
-        const fakeApp = sinon.fake()
-        const fakeClient = sinon.fake()
-        const fakeSearch = sinon.fake.resolves(testResp)
-        fakeClient.search = fakeSearch
-        fakeApp.client = fakeClient
-        parseStub.returns(testResp.aggregations.language_inner.unique_languages.buckets)
-
-        const execResp = await Utils.execQuery(fakeApp, {}, true)
-        expect(execResp).to.be.instanceOf(Array)
-        expect(execResp[1].key).to.equal('Test2')
-        expect(execResp[0].inner_count.doc_count).to.equal(5)
-      })
-
-      it('should raise ElasticSearchError if no docs are returned', async () => {
-        const testResp = {
-          hits: {
-            total: 0,
-            max_score: 0,
-            hits: [],
-          },
-          aggregations: {
-            language_inner: {
-              doc_count: 0,
-              unique_language: {
-                buckets: [],
-              },
-            },
-          },
-        }
-        const fakeApp = sinon.fake()
-        const fakeClient = sinon.fake()
-        const fakeSearch = sinon.fake.resolves(testResp)
-        fakeClient.search = fakeSearch
-        fakeApp.client = fakeClient
-        const result = Utils.execQuery(fakeApp, {}, true)
-        expect(result).to.eventually.throw(new ElasticSearchError('Could not load language aggregations'))
-        // eslint-disable-next-line no-unused-expressions
-        expect(parseStub).to.not.be.called
-      })
-
-      it('should reject on a generic error', async () => {
-        const testResp = {
-          error: 'testError',
-        }
-        const fakeApp = sinon.fake()
-        const fakeClient = sinon.fake()
-        const fakeSearch = sinon.fake.rejects(testResp)
-        fakeClient.search = fakeSearch
-        fakeApp.client = fakeClient
-        try {
-          await Utils.execQuery(fakeApp, {}, true)
-        } catch (err) {
-          expect(err).to.be.instanceOf(Error)
-        }
-        // eslint-disable-next-line no-unused-expressions
-        expect(parseStub).to.not.be.called
       })
     })
 
@@ -205,13 +153,143 @@ describe('v2 utility endpoints', () => {
         done()
       })
     })
+  })
 
-    describe('formatLanguageResponse()', () => {
-      it('should return respone object containing array', (done) => {
-        const testResp = Utils.formatLanguageResponse('testArray')
+  describe('Count fetch utility', () => {
+    describe('fetchCounts()', () => {
+      let bodyStub
+      let execStub
+      let parseStub
+
+      beforeEach(() => {
+        execStub = sinon.stub(Utils, 'execQuery')
+        parseStub = sinon.stub(Utils, 'parseTotalCounts')
+        bodyStub = sinon.fake()
+        bodyStub.build = () => 'testBodyBuild'
+      })
+
+      afterEach(() => {
+        execStub.restore()
+        parseStub.restore()
+      })
+
+      it('should return parsed count object', async () => {
+        execStub.returns('elasticResponse')
+        parseStub.returns('totalCounts')
+        const outObject = await Utils.fetchCounts('app', { instances: 'true' })
+        // eslint-disable-next-line no-unused-expressions
+        expect(execStub).to.be.calledOnce
+        expect(parseStub).to.be.calledOnceWith('elasticResponse')
+        expect(outObject).to.equal('totalCounts')
+      })
+    })
+
+    describe('parseTotalCounts()', () => {
+      it('should return only work total if no aggregations are made', (done) => {
+        const testCounts = {
+          hits: {
+            total: 10,
+          },
+        }
+        const parsedCounts = Utils.parseTotalCounts(testCounts)
+        expect(parsedCounts.works).to.equal(10)
+        expect(Object.keys(parsedCounts).length).to.equal(1)
+        done()
+      })
+
+      it('should return additional counts if aggregations present', (done) => {
+        const testCounts = {
+          hits: {
+            total: 10,
+          },
+          aggregations: {
+            test_inner: {
+              doc_count: 20,
+            },
+            test2_inner: {
+              doc_count: 30,
+            },
+          },
+        }
+        const parsedCounts = Utils.parseTotalCounts(testCounts)
+        expect(Object.keys(parsedCounts).length).to.equal(3)
+        expect(parsedCounts.test2).to.equal(30)
+        expect(parsedCounts.works).to.equal(10)
+        done()
+      })
+    })
+  })
+
+  describe('shared utility methods', () => {
+    describe('formatResponse()', () => {
+      it('should return response object containing array', (done) => {
+        const testResp = Utils.formatResponse({ languages: 'testArray' })
         expect(testResp.status).to.equal(200)
         expect(testResp.data.languages).to.equal('testArray')
         done()
+      })
+    })
+
+    describe('execQuery()', () => {
+      it('should return ElasticSearch response on successful query', async () => {
+        const testResp = {
+          hits: {
+            total: 10,
+            max_score: 0,
+            hits: [],
+          },
+          aggregations: {
+            language_inner: {
+              doc_count: 10,
+              unique_languages: {
+                buckets: [
+                  {
+                    key: 'Test1',
+                    inner_count: {
+                      doc_count: 5,
+                    },
+                  }, {
+                    key: 'Test2',
+                    inner_count: {
+                      doc_count: 3,
+                    },
+                  }, {
+                    key: 'Test3',
+                    inner_count: {
+                      doc_count: 2,
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        }
+        const fakeApp = sinon.fake()
+        const fakeClient = sinon.fake()
+        const fakeSearch = sinon.fake.resolves(testResp)
+        fakeClient.search = fakeSearch
+        fakeApp.client = fakeClient
+
+        const execResp = await Utils.execQuery(fakeApp, {}, true)
+        expect(execResp).to.be.instanceOf(Object)
+        expect(execResp.hits.total).to.equal(10)
+        expect(execResp.aggregations.language_inner.doc_count).to.equal(10)
+      })
+
+      it('should reject on a generic error', async () => {
+        const testResp = {
+          error: 'testError',
+        }
+        const fakeApp = sinon.fake()
+        const fakeClient = sinon.fake()
+        const fakeSearch = sinon.fake.rejects(testResp)
+        fakeClient.search = fakeSearch
+        fakeApp.client = fakeClient
+        try {
+          await Utils.execQuery(fakeApp, {}, true)
+        } catch (err) {
+          expect(err).to.be.instanceOf(Error)
+        }
       })
     })
   })

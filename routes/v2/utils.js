@@ -1,5 +1,5 @@
 const bodybuilder = require('bodybuilder')
-const { ElasticSearchError } = require('../../lib/errors')
+const { ElasticSearchError, MissingParamError } = require('../../lib/errors')
 
 /**
  * Handler function for utility endpoints. These will provide various supporting
@@ -20,12 +20,86 @@ const utilEndpoints = (app, respond, handleError) => {
     const params = req.query
     try {
       const langArray = await fetchLangs(app, params)
-      const langRes = formatLanguageResponse(langArray)
+      const langRes = formatResponse({ languages: langArray })
       respond(res, langRes, params)
     } catch (err) {
       handleError(res, err)
     }
   })
+
+  /**
+   * Count response utility. Responds with counts of works, and if parameters are
+   * supplied, counts of other record types from the database. Currently supported
+   * are: instances, items, links and subjects
+   */
+  app.get('/sfr/utils/totals', async (req, res) => {
+    const params = req.query
+    try {
+      const totalCounts = await fetchCounts(app, params)
+      const totalRes = formatResponse({ counts: totalCounts })
+      respond(res, totalRes, params)
+    } catch (err) {
+      handleError(res, err)
+    }
+  })
+}
+
+/**
+ * The main function that builds the count utility. It relies on conducting a search
+ * with a response size of zero(0) to quickly return a count of works in the index.
+ * The params object can contain sub-documents to be counted as well
+ *
+ * @param {Object} app Express application
+ * @param {Object} params Query parameters
+ *
+ * @returns {Object} A parsed count object containing only the requested data
+ */
+const fetchCounts = async (app, params) => {
+  const body = bodybuilder()
+  body.size(0)
+  const nestedDict = {
+    instances: 'instances',
+    items: 'instances.items',
+    links: 'instances.items.links',
+    subjects: 'subjects',
+  }
+  Object.keys(params).forEach((key) => {
+    if (!(key.toLowerCase() in nestedDict)) {
+      throw new MissingParamError('This parameter is not a valid nested doctype')
+    }
+    if (params[key].toLowerCase() === 'true') {
+      body.agg('nested', { path: nestedDict[key] }, `${key}_inner`)
+    }
+  })
+  const esQuery = {
+    index: process.env.ELASTICSEARCH_INDEX_V2,
+    body: body.build(),
+  }
+  const docCounts = await module.exports.execQuery(app, esQuery)
+  return module.exports.parseTotalCounts(docCounts)
+}
+
+/**
+ * Parse the ElasticSearch response to extract the work count from the hits block,
+ * and if other counts were requested, those counts from the aggregations block
+ * This method also simplifies these keys for clearer responses
+ *
+ * @param {Object} counts An object containing work counts, and potentially others
+ *
+ * @returns {Object} A simplified version of the ElasticSearch response object
+ */
+const parseTotalCounts = (counts) => {
+  const totals = {
+    works: counts.hits.total,
+  }
+  if ('aggregations' in counts) {
+    Object.keys(counts.aggregations).forEach((agg) => {
+      const outKey = agg.replace('_inner', '')
+      totals[outKey] = counts.aggregations[agg].doc_count
+    })
+  }
+
+  return totals
 }
 
 /**
@@ -39,7 +113,7 @@ const utilEndpoints = (app, respond, handleError) => {
  *
  * @returns {Object} The raw ElasticSearch response resolved by execQuery()
  */
-const fetchLangs = (app, params) => {
+const fetchLangs = async (app, params) => {
   const { total } = params
 
   // Construct the ElasticSearch query using the BodyBuilder library
@@ -52,7 +126,11 @@ const fetchLangs = (app, params) => {
   }
 
   // Execute ElasticSearch query
-  return module.exports.execQuery(app, esQuery, total)
+  const esResponse = await module.exports.execQuery(app, esQuery, total)
+  // Raise an error if no aggregations were returned
+  const docCount = esResponse.aggregations.language_inner.doc_count
+  if (docCount < 1) throw new ElasticSearchError('Could not load language aggregations')
+  return module.exports.parseLanguageAgg(esResponse.aggregations.language_inner, total)
 }
 
 /**
@@ -90,17 +168,12 @@ const buildQuery = (total) => {
  *
  * @param {Object} app Express application
  * @param {Object} esQuery Object containing ES index and built query object
- * @param {Boolean} total Toggle for the return of total works associated with each language
  */
-const execQuery = (app, esQuery, total) => (
+const execQuery = (app, esQuery) => (
   new Promise((resolve, reject) => {
     app.client.search(esQuery)
       .then((resp) => {
-        // Raise an error if no aggregations were returned
-        const docCount = resp.aggregations.language_inner.doc_count
-        if (docCount < 1) reject(new ElasticSearchError('Could not load language aggregations'))
-        const langArray = module.exports.parseLanguageAgg(resp.aggregations.language_inner, total)
-        resolve(langArray)
+        resolve(resp)
       })
       .catch(error => reject(error))
   }))
@@ -130,20 +203,20 @@ const parseLanguageAgg = (mainAgg, total) => {
  *
  * @returns {Object} Response object with standard status and data fields
  */
-const formatLanguageResponse = langArr => (
+const formatResponse = dataObj => (
   {
     status: 200,
-    data: {
-      languages: langArr,
-    },
+    data: dataObj,
   }
 )
 
 module.exports = {
   utilEndpoints,
   fetchLangs,
+  fetchCounts,
   buildQuery,
   execQuery,
   parseLanguageAgg,
-  formatLanguageResponse,
+  formatResponse,
+  parseTotalCounts,
 }
