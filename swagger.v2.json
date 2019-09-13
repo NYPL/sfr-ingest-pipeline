@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "v0.2.3",
+    "version": "v0.2.2",
     "title": "ResearchNow Search API",
     "description": "REST API for Elasticsearch index for the ResearchNow Project"
   },
@@ -541,6 +541,77 @@
           }
         }
       }
+    },
+    "/v0.1/research-now/v2/utils/totals": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) GET Work/Record Counts",
+        "description": "Returns an object of total counts for records in the ElasticSeach index. By default only counts works, but can include others",
+        "parameters": [
+          {
+            "name": "instances",
+            "in": "query",
+            "description": "Toggle, provide to return total count of instances",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "items",
+            "in": "query",
+            "description": "Toggle, provide to return total count of items",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "links",
+            "in": "query",
+            "description": "Toggle, provide to return total count of links",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "subjects",
+            "in": "query",
+            "description": "Toggle, provide to return total count of subjects",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing the record counts",
+            "schema": {
+              "$ref": "#/definitions/TotalResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
     }
   },
   "definitions": {
@@ -818,6 +889,48 @@
           "type": "integer",
           "example": "10",
           "description": "Count of the number of works associated with this language"
+        }
+      }
+    },
+    "TotalResponse": {
+      "title": "Count Utility Response",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "example": "200",
+          "description": "API status code"
+        },
+        "data": {
+          "type": "object",
+          "$ref": "#/definitions/TotalObject",
+          "description": "Data block for the count utility"
+        }
+      }
+    },
+    "TotalObject": {
+      "title": "Total Object",
+      "type": "object",
+      "properties": {
+        "works": {
+          "type": "integer",
+          "description": "Total count of the works"
+        },
+        "instances": {
+          "type": "integer",
+          "description": "Total count of the instances"
+        },
+        "items": {
+          "type": "integer",
+          "description": "Total count of the items"
+        },
+        "links": {
+          "type": "integer",
+          "description": "Total count of the links"
+        },
+        "subjects": {
+          "type": "integer",
+          "description": "Total count of the subjects"
         }
       }
     },
