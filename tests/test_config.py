@@ -15,36 +15,30 @@ from helpers.configHelpers import (
 
 class TestConfig(unittest.TestCase):
 
-    @patch('yaml.load', return_value={'testing': True})
+    @patch('yaml.full_load', return_value={'testing': True})
     def test_load_env_success(self, mock_yaml):
         resDict = loadEnvFile('development', None)
         self.assertTrue(resDict['testing'])
 
-    @patch('yaml.load', return_value={'testing': True})
+    @patch('yaml.full_load', return_value={'testing': True})
     def test_load_env_config_success(self, mock_yaml):
         resDict = loadEnvFile('development', 'config/{}.yaml')
         self.assertTrue(resDict['testing'])
 
-    @patch('yaml.load', side_effect={'testing': True})
+    @patch('yaml.full_load', side_effect={'testing': True})
     def test_load_env_failure(self, mock_yaml):
-        try:
-            loadEnvFile('development', 'missing/{}.yaml')
-        except FileNotFoundError:
-            pass
-        self.assertRaises(FileNotFoundError)
+        resDict = loadEnvFile('development', 'missing/{}.yaml')
+        self.assertEqual(resDict, {})
 
-    @patch('yaml.load', return_value=None)
+    @patch('yaml.full_load', return_value=None)
     def test_load_empty_env(self, mock_yaml):
         resDict = loadEnvFile('development', None)
         self.assertEqual(resDict, {})
 
-    @patch('yaml.load', side_effect=YAMLError)
+    @patch('yaml.full_load', side_effect=YAMLError)
     def test_read_env_failure(self, mock_yaml):
-        try:
+        with self.assertRaises(YAMLError):
             loadEnvFile('development', 'config/{}.yaml')
-        except YAMLError:
-            pass
-        self.assertRaises(YAMLError)
 
     mockReturns = {
         **{},
