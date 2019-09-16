@@ -145,3 +145,12 @@ The API also supports a `utils` route that can provide additional functionality 
 ### Language List: (`utils/languages`) [`GET`]
 
 This endpoint returns a list of all languages that currently exist in the ResearchNow database. This allows the advanced search interface to present users with an array of all languages they might filter their results by. This accepts a single query parameter: `total` which accepts a boolean value (`false` by default) and which returns the total count of `Work` records associated with each language when enabled. This allows API users to quickly obtain a list of `Work` counts by language, enabling insights into the data and potential use as a visualization/feature.
+
+### Record Counts: (`utils/totals`) [`GET`]
+
+This returns the total counts of records in the ElasticSearch index in a simple format for easy review/display. By default it will only return a count for `work` records, the most relevant for most users. By passing parameters the following record types can also be displayed. Each can be passed as a simple boolean toggle:
+
+- instances
+- items
+- links
+- subjects

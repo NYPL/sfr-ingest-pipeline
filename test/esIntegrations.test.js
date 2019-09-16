@@ -194,7 +194,7 @@ describe('Testing ElasticSearch Integration', () => {
             },
           },
         })
-      req.get('/v2/sfr/utils/languages')
+      await req.get('/v2/sfr/utils/languages')
         .then((resp) => {
           expect(resp.body.status).to.equal(200)
           expect(resp.body.data.languages[1].language).to.equal('Test2')
@@ -240,13 +240,44 @@ describe('Testing ElasticSearch Integration', () => {
             },
           },
         })
-      req.get('/v2/sfr/utils/languages?total=true')
+      await req.get('/v2/sfr/utils/languages?total=true')
         .then((resp) => {
           expect(resp.body.status).to.equal(200)
           expect(resp.body.data.languages[2].language).to.equal('Test3')
           expect(resp.body.data.languages[2].count).to.equal(2)
           // eslint-disable-next-line no-unused-expressions
           expect(langMock.isDone()).to.be.true
+        })
+    })
+
+    it('should return an object of document counts on utils/totals', async () => {
+      const totalMock = nock(process.env.ELASTICSEARCH_HOST)
+        .post('/sfr_test/_search')
+        .reply(200, {
+          took: 0,
+          timed_out: false,
+          hits: {
+            total: 2,
+            max_score: 0,
+            hits: [],
+          },
+          aggregations: {
+            instances_inner: {
+              doc_count: 10,
+            },
+            items_inner: {
+              doc_count: 20,
+            },
+          },
+        })
+      await req.get('/v2/sfr/utils/totals?instances=true&items=true')
+        .then((resp) => {
+          expect(resp.body.status).to.equal(200)
+          expect(resp.body.data.counts.works).to.equal(2)
+          expect(resp.body.data.counts.instances).to.equal(10)
+          expect(resp.body.data.counts.items).to.equal(20)
+          // eslint-disable-next-line no-unused-expressions
+          expect(totalMock.isDone()).to.be.true
         })
     })
   })

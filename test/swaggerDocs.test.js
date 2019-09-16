@@ -21,20 +21,20 @@ describe('Testing Swagger Documentation', () => {
   })
 
   it('test Swagger docs for well formed-ness', async () => {
-    req.get('/research-now/swagger-test')
+    await req.get('/research-now/swagger-test')
       .expect(200)
       .then((resp) => {
-        expect(resp.text).to.equal('API name: ResearchNow Search API, Version: v0.2.3')
+        expect(resp.text).to.equal('API name: ResearchNow Search API, Version: v0.2.2')
       })
   })
 
   it('should return all paths in swagger docs', async () => {
-    req.get('/research-now/swagger')
+    await req.get('/research-now/swagger')
       .expect(200)
       .then((resp) => {
         const apiPaths = []
         Object.keys(resp.body.paths).map(path => apiPaths.push(path))
-        expect(apiPaths.length).to.equal(6)
+        expect(apiPaths.length).to.equal(7)
       })
   })
 })
