@@ -67,19 +67,23 @@ class TestHandler(object):
     def test_parseRecord_success(self, mocker, mockManager):
         mockCluster = mocker.patch('service.ClusterManager')()
         mockElastic = mocker.patch('service.ElasticManager')()
-        mockElastic.work = 'testWork'
+        mockCluster.work = MagicMock()
+        mockCluster.work.uuid = 'uuid'
+        mockCluster.work.title = 'title'
         testRec = {
             'body': json.dumps({'type': 'test', 'identifier': 'xxxxxxxxx'})
         }
         res = mockManager[2](testRec, 'session')
-        assert res == ('success', 'testWork')
+        assert res == ('success', 'uuid|title')
     
     def test_parseRecord_failure(self, mocker, mockManager):
         mockCluster = mocker.patch('service.ClusterManager')()
-        mockCluster.work = 'testWork'
+        mockCluster.work = MagicMock()
+        mockCluster.work.uuid = 'uuid'
+        mockCluster.work.title = 'title'
         mockCluster.storeEditions.side_effect = Exception
         res = mockManager[2]({'body': json.dumps({'identifier': 'xxxxxxxxx'})}, 'session')
-        assert res == ('failure', 'testWork')
+        assert res == ('failure', 'uuid|title')
     
     def test_parseRecord_json_err(self, mocker, mockManager):
         mockCluster = mocker.patch('service.ClusterManager')()

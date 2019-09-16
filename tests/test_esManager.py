@@ -101,7 +101,7 @@ class TestElasticManager(object):
             addInstances=DEFAULT,
             _loadDates=mockDateLoader
         ) as esMocks:
-            testManager.enhancedWork()
+            testManager.enhanceWork()
             esMocks['addInstances'].assert_called_once()
         
         assert testManager.work.issued_date == '1999'
