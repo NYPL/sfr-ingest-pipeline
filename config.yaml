@@ -20,7 +20,7 @@ subnet_ids: ['subnet-12aa8a65']
 security_group_ids: ['sg-5521ef32']
 
 # If tags are used they will overwrite all existing tags at deployment time
-#tags:
+tags:
   sfr: sfr
 
 # Build options
