@@ -187,6 +187,8 @@ class KModel:
             except ConvergenceWarning:
                 self.LOGGER.info('Exceeded number of distinct clusters, break')
                 break
+            except Exception:
+                pass
         
         x1, y1 = wcss[0][1], wcss[0][0]
         x2, y2 = wcss[len(wcss) - 1][1], wcss[(len(wcss) - 1)][0]
