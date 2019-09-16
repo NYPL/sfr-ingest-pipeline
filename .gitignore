@@ -6,4 +6,3 @@ __pycache__/
 *.pyc
 .coverage
 setup.cfg
-config.yaml
