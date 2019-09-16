@@ -1,0 +1,7 @@
+boto3
+python-lambda
+flake8
+pytest
+pytest-mock
+pyyaml
+git+https://github.com/NYPL/sfr-db-core.git@development#egg=sfrCore

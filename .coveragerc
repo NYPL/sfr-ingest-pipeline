@@ -1,0 +1,9 @@
+[run]
+omit =
+  tests/*
+  */site-packages/*
+  */.virtualenvs/*
+
+[report]
+exclude_lines =
+  if __name__ == .__main__.:
