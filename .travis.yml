@@ -1,29 +1,23 @@
 language: python
 dist: xenial
 python:
-  - 3.6
-  - 3.7
+- 3.6
+- 3.7
 install:
-  - pip install --upgrade pip
-  - pip install -r requirements.txt
-# IMPORTANT: Remove the following line when implementing this package, otherwise
-# your config file will not be set when running tests/deploying from CI.
-before_script: cp config.yaml.sample config.yaml
-script: make lint && make test
-#
-# The travis configuration deploy will deploy this lambda to the function defined
-# in your config.yaml file. This behavior can be defined for any of the
-# development/qa/production environments.
-#
-# after_success:
-#  - ENVIRONMENT_NAME=$TRAVIS_BRANCH
-#  - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
-# deploy:
-#  - provider: script
-#    skip_cleanup: true
-#    script: "make deploy ENV=$ENVIRONMENT_NAME"
-#    on:
-#      branch: development
-#
-# If you are deploying an NYPL Lambda, see the engineering documentation in
-# github for instructions on adding encrypted variables to you travis scripts
+- pip install --upgrade pip
+- pip install -r requirements.txt
+- pip install -r dev-requirements.txt
+script: make test
+after_success:
+- ENVIRONMENT_NAME=$TRAVIS_BRANCH
+- if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: make deploy ENV=$ENVIRONMENT_NAME
+  on:
+    branch: development
+env:
+  global:
+  - secure: Wo1++rhBrbzrwh2mC0JoJjWpqQnuyOz5+6lUhhJSW8mfq7/qZVkuPn8PBxB25ItBH4YkOM1EaYhZ4SYBPirqaYFz8rBlm1M7Pgz2Ej0GnxW1Ichfoev3QDXUVo9Sb3atdsLQ8NyXemqqdJv2MtlZYV99lMMBjQDpf+/5JA497vq3g4jpv/E9KG5XpKs1THb6bEnqk5SU1YmjPuiy1hqHmdW9zCl+qDAVCYAcK/CjmBzzNy1UpMUk2XOZpw9rOYfQKBAtxigxZ71Rt2wIIMpB4WOpVJqmLl2DUOEAr7m3yYO4k5kwtFTaeq6gDw3j5PvfNoohuObJunbrECRfMMz9bqesdwHI2523ZN8UhhNyaATFZS4o19ifM6dfdnsEX65eP6/xfsPYnOw4ALQSWPLTHpTT3acPrTi2fHwtLO0dtQDGiJ3SangDmypbfDNUTHiya+Dhg5cZ8T+0iA/lTQc8Tw044labHiZc0TDPnU8imyIQd/tCcxVizQq7/jBiav0ts2AYCghB1/P+9Wf85Bt8P5tkUX/vgcq/m1GdG1Dpt4dmxkIsq3KOA7qb0pZ2DE42eYCgcRRn05ZScY3/zcJC+cYRHjCpTMiBz+lLNjgDd52WSYEHIt6mhhk+Y45bT56bd3NJhWWVmLzsiEUyeY4UYC44DigFOH4riNsWH3vmn/U=
+  - secure: O3F4Oh8SRUqhFabUiP6JvIdPaz/UcIQtCoV1cFUjguJaKokoLip4rw+ioEU8vUb24obiT8ELplz+T6mxL7ET4AYSo1jt3k5Y/SqcE1aml2iDAY0fsCxAUYXC26zlpdvMArvamf/7vj1fcF4r1TlCqMHLzt4YJVX9SVovA6MPzRTtQbbSpCbkdCUJCPXYBLN0mvwxnasZRcg55tGLr2Q4ZwItITcy3hoMgtB16F9akKUXLCBWUkJh+WVqhgtFSN2w24Yh1znWvS/0LWY97wru6UrLvw04hi/BZiTNKc4Iy8omzSDpYC924OtZVcvJxe6RwS1g3CnI9wTKT8srbddblUT5GFo4KGBQ5Gh1o9BJFMcaMFTHWDas4tSpMpi5Aslzt3EP+KTB1KDK/iWHrrxrWiwMXyYkqCmnwJ4nhD8VvNVD8ljKupKtbEtzB1pO4rAYgT+luMKLHDj/xN6Xid9+Oivf+k87ajQqNoU8npSp8RrFGkoC3/qEDDOTYMfuKRyNnyMK5+Sojf52LDaZtuoQwU5Xj4pCYMz4oY/wwrouiRpp/ieiTUvsBa5ZVTck++O3QZ405Zz/mjVBtg3UisUvif2SVWaBLUt5TJ5Q/DQKeGUS4IlaLPpHXh24c4+q0vWciT1OjIziA4PN/zZW5Cc2FIlTI//l9dj1NdfXk2WlqiA=
