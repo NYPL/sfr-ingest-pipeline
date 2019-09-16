@@ -244,8 +244,8 @@ describe('v2 simple search tests', () => {
       testSearch.addFilters()
       testBody = testSearch.query.build()
       expect(testBody).to.have.property('query')
-      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
-      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte.getTime()).to.equal(new Date('2000-12-31T12:00:00.000+00:00').getTime())
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T00:00:00.000+00:00').getTime())
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte.getTime()).to.equal(new Date('2000-12-31T24:00:00.000+00:00').getTime())
       done()
     })
 
@@ -258,7 +258,7 @@ describe('v2 simple search tests', () => {
       testSearch.addFilters()
       testBody = testSearch.query.build()
       expect(testBody).to.have.property('query')
-      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T12:00:00.000+00:00').getTime())
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T00:00:00.000+00:00').getTime())
       // eslint-disable-next-line no-unused-expressions
       expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte).to.be.undefined
       done()
