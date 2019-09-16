@@ -70,7 +70,7 @@ class ClusterManager:
             out = {**out, **cleanInst}
             out['rowIDs'].append(rowID)
         
-        out['edition_statement'] = out.pop('edition')
+        out['edition_statement'] = out.pop('edition', None)
         if int(edition[0]) != 0:
             out['pubDate'] = '[{}-01-01,{}-12-31]'.format(
                 int(edition[0]), int(edition[0])

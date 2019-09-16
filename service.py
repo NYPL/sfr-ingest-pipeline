@@ -89,13 +89,19 @@ def parseRecord(encodedRec, session):
             ))
             logger.debug(err)
             logger.debug(traceback.format_exc())
-            return ('failure', clustManager.work)
+            return ('failure', '{}|{}'.format(
+                clustManager.work.uuid,
+                clustManager.work.title
+            ))
         
 
         esManager = ElasticManager(clustManager.work)
         esManager.enhanceWork()
         esManager.saveWork()
-        return ('success', esManager.work)
+        return ('success', '{}|{}'.format(
+            clustManager.work.uuid,
+            clustManager.work.title
+        ))
 
     except json.decoder.JSONDecodeError as jsonErr:
         logger.error('Invalid JSON block received')

@@ -1,5 +1,6 @@
 import json
 import boto3
+from botocore.exceptions import ParamValidationError
 
 from helpers.logHelpers import createLog
 from helpers.configHelpers import loadEnvVars, loadEnvFile
@@ -114,7 +115,7 @@ def updateEventMapping(client, mapping, configDict):
         details.
     """
     listSourceKwargs = {
-        'EventSourceArn': mapping['EventSourceArn'],
+        'EventSourceArn': mapping.pop('EventSourceArn'),
         'FunctionName': configDict['function_name'],
         'MaxItems': 1
     }

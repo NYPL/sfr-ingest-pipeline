@@ -2,7 +2,9 @@ boto3
 coverage
 python-lambda
 flake8
+pandas
 pytest
 pytest-mock
 pyyaml
+scikit-learn
 git+https://github.com/NYPL/sfr-db-core.git@development#egg=sfrCore

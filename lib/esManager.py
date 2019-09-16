@@ -95,7 +95,7 @@ class ElasticManager():
             logger.debug('Updating work field {} with {}'.format(key, value))
             setattr(work, key, value)
 
-    def enhancedWork(self):
+    def enhanceWork(self):
         """Build an ElasticSearch object from the provided postgresql ORM
         object. This builds a single object from the related tables of the 
         db object that can be indexed and searched in ElasticSearch.
@@ -157,7 +157,7 @@ class ElasticManager():
             field: getattr(language, field, None)
             for field in Language.getFields()
         }
-        logger.debug('Adding language {}'.format(language['iso_3']))
+        logger.debug('Adding language {}'.format(language.iso_3))
         return Language(**languageData)
 
     @staticmethod

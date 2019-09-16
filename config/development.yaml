@@ -2,7 +2,7 @@
 # === ENVIRONMENT_VARIABLES ===
 environment_variables:
     LOG_LEVEL: debug
-    PYTHONPATH: /opt/python
+    PYTHONPATH: /opt/python:/opt/python/lib/python3.7/site-packages:$PYTHONPATH
 
     DB_HOST: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQFS0Isq8hTqldHZQzUgP2ESAAAAoTCBngYJKoZIhvcNAQcGoIGQMIGNAgEAMIGHBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDHzShifJFRgWwJNUxQIBEIBaw6esXHPhPo72yKfXMhjQBiRRgzMwxDENRL5/7/qbiBCS6SYeeCEzOZBLwmyrQgCsZzRu2AMWThnEAv20EYWbQ2AWN7cFXQFNQknXb9lHihFfm0rXsjES7qMe
     DB_PORT: '5432'

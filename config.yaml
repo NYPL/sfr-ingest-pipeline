@@ -25,7 +25,7 @@ tags:
 
 # Build options
 build:
-  source_directories: lib, helpers
+  source_directories: lib, helpers, model
 
 # Environment Variables
 # Any variables set here will be carried across all environments, unless

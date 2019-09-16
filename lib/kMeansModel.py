@@ -4,11 +4,8 @@ import re
 import string
 
 import pandas as pd
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.cluster import KMeans
-from sklearn.mixture import GaussianMixture
-from sklearn.metrics import adjusted_rand_score, classification_report
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.base import BaseEstimator, TransformerMixin
