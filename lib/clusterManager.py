@@ -43,8 +43,8 @@ class ClusterManager:
         self.logger.info('Creating edition for {}'.format(self.work))
         merged = self.mergeInstances(edition)
         self.logger.debug('Merged edition for {}|{}'.format(
-            merged['pubPlace'],
-            merged['pubDate']
+            merged.get('pubPlace', ''),
+            merged.get('pubDate', '')
         ))
         return Edition.createEdition(
             merged,

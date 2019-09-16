@@ -2,6 +2,7 @@ from collections import defaultdict
 from math import sqrt
 import re
 import string
+import warnings
 
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
@@ -9,6 +10,7 @@ from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.exceptions import ConvergenceWarning
 
 from helpers.logHelpers import createLog
 
@@ -177,7 +179,15 @@ class KModel:
         self.LOGGER.info('Calculating number of clusters, max {}'.format(
             self.maxK
         ))
-        wcss = [(self.cluster(i, score=True), i) for i in range(1, self.maxK)]
+        warnings.filterwarnings('error')
+        wcss = []
+        for i in range(1, self.maxK):
+            try:
+                wcss.append((self.cluster(i, score=True), i))
+            except ConvergenceWarning:
+                self.LOGGER.info('Exceeded number of distinct clusters, break')
+                break
+        
         x1, y1 = wcss[0][1], wcss[0][0]
         x2, y2 = wcss[len(wcss) - 1][1], wcss[(len(wcss) - 1)][0]
 
