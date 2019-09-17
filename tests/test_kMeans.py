@@ -208,6 +208,7 @@ class TestKMeansModel(object):
     def test_generateClusters_multiple(self, mocker, testModel):
         mockGetK = mocker.patch.object(KModel, 'getK')
         testModel.k = 2
+        testModel.maxK = 3
 
         mockCluster = mocker.patch.object(KModel, 'cluster')
         mockCluster.return_value = [
@@ -229,6 +230,7 @@ class TestKMeansModel(object):
         mockCluster.side_effect = ValueError
         testModel.instances = ['row1']
         testModel.df = DataFrame(['row1'])
+        testModel.maxK = 3
 
         testModel.generateClusters()
         assert testModel.clusters[0][0].iloc[0][0] == 'row1'        

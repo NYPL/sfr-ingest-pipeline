@@ -12,7 +12,20 @@ Python 3.6+ (written with Python 3.7)
 
 - elasticsearch-dsl==6.3.1 (for ElasticSearch-6.X.X installations)
 - pandas
-- sklearn
+- scikit-learn
+
+### Deployment Requirements
+
+Due to restrictions on the total size of the upload package to AWS Lambda, and requirements of running python libraries that invoke C libraries in the Lambda environment, this function must deployed in a specific way.
+
+The easiest way around these restrictions is to deploy the `pandas` and `scikit-learn` dependencies as lambda layers. In addition the official AWS layer that includes `numpy` and `scipy` can be used to include those dependencies. For
+this function this means that the following layers should be included:
+
+1) Official AWS Layer for `scipy` and `numpy`
+2) Custom layer installing `pandas` and `scikit-learn`
+3) Custom layer installing `sfrCore`
+
+To invoke these layers the `PYTHONPATH` of the lambda function needs to be updated to `/opt/python:/opt/python/lib/python3.7/site-packages:$PYTHONPATH` to place the required libraries on the path
 
 ## Getting Started
 

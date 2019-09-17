@@ -5,6 +5,7 @@ import string
 import warnings
 
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
 from sklearn.cluster import KMeans
 from sklearn.pipeline import Pipeline, FeatureUnion
@@ -161,7 +162,20 @@ class KModel:
     def generateClusters(self):
         self.LOGGER.info('Generating Clusters from instances')
         try:
-            self.getK()
+            # Calculate the step for the first run at determining k
+            # Use the natural log of the value to get a reasonable scale
+            # for different values
+            step = int(np.log(self.maxK))
+            # First pass at finding best value for k, using the step value
+            # derived above
+            self.getK(1, self.maxK, step)
+            # Get narrower band of possible k values, based off the initial
+            # step value
+            startK = self.k - (step - 1) if self.k > (step - 1) else 1
+            stopK = self.k + step if (self.k + step) <= self.maxK else self.maxK
+            # Get the final k value by iterating through the much narrower
+            # range returned above
+            self.getK(startK, stopK, 1)
             self.LOGGER.debug('Setting K to {}'.format(self.k))
         except ZeroDivisionError:
             self.LOGGER.debug('Single instance found setting K to 1')
@@ -175,20 +189,21 @@ class KModel:
         for n, item in enumerate(labels):
             self.clusters[item].append(self.df.loc[[n]])
     
-    def getK(self):
+    def getK(self, start, stop, step):
         self.LOGGER.info('Calculating number of clusters, max {}'.format(
             self.maxK
         ))
-        warnings.filterwarnings('error')
+        warnings.filterwarnings('error', category=ConvergenceWarning)
         wcss = []
-        for i in range(1, self.maxK):
+        for i in range(start, stop, step):
             try:
                 wcss.append((self.cluster(i, score=True), i))
             except ConvergenceWarning:
                 self.LOGGER.info('Exceeded number of distinct clusters, break')
                 break
-            except Exception:
-                pass
+            except ValueError:
+                self.k = 1
+                return None
         
         x1, y1 = wcss[0][1], wcss[0][0]
         x2, y2 = wcss[len(wcss) - 1][1], wcss[(len(wcss) - 1)][0]
@@ -203,6 +218,7 @@ class KModel:
             distances.append(numerator/denominator)
         
         self.k = distances.index(max(distances)) + 2
+        return None
     
     def cluster(self, k, score=False):
         self.currentK = k
