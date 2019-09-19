@@ -1,0 +1,1859 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "v0.3.0",
+    "title": "ResearchNow Search API",
+    "description": "REST API for Elasticsearch index for the ResearchNow Project"
+  },
+  "host": "platform.nypl.org",
+  "basePath": "/api",
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "tags": [
+    {
+      "name": "research-now",
+      "description": "ResearchNow Search API"
+    }
+  ],
+  "paths": {
+    "/v0.1/research-now/work": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "Single Work return of item in the SFR collection",
+        "description": "Accepts a single record identifier and returns a single work record",
+        "parameters": [
+          {
+            "name": "recordID",
+            "in": "query",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was received in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses received",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/works": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "Simple Search FRBRized holdings of Project Gutenberg, HathiTrust and Open Access Library",
+        "description": "Basic Elasticsearch queries can be sent against all fields and indexes",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "description": "Keyword terms to match in all fields and indexes",
+            "required": true,
+            "type": "string"
+          },{
+            "name": "per_page",
+            "in": "query",
+            "description": "Results to return per page. Defaults to 10",
+            "required": false,
+            "type": "integer"
+          },{
+            "name": "page",
+            "in": "query",
+            "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "Advanced Search for ResearchNow holdings",
+        "description": "Full ElasticSearch DSL queries (using bodybuilder) for full text or single field queries. This endpoint also enables, filtering and sorting results",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "body",
+            "description": "ElasticSearch DSL block containing a ResearchNow query",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/MainQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was received in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/viaf-lookup": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "Looks up agent names in the OCLC VIAF API",
+        "description": "Queries the OCLC VIAF API for agent records, including a controlled version of the agent's name along with VIAF and LCNAF IDs. These responses are cached in a Redis cluster for faster responses to known agents.",
+        "parameters": [
+          {
+            "name": "queryName",
+            "in": "query",
+            "description": "Name of agent to query in VIAF API. Can be an individual or organization.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing a response in the body parameter, in a serialized JSON string.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "404": {
+            "description": "A message stating that a matching VIAF record could not be found.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "500": {
+            "description": "Indicates that an error was encountered in VIAF API, Redis cluster, or other upstream service.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "502": {
+            "description": "An internal server error, either in the Lambda function or the API Gateway integration",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          },
+          "504": {
+            "description": "A malformed response was received from the Lambda function.",
+            "schema": {
+              "$ref": "#/definitions/VIAFResultResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v2/work": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) GET Single work",
+        "description": "Accepts a single work identifier, passed through a GET request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) POST Single Work",
+        "description": "Accepts a single work identifier in a POST request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "body",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SingleQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v2/search-api": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) GET Simple Search Endpoint",
+        "description": "Makes basic search queries against ElasticSearch index of Project Gutenberg, HathiTrust and Directory of Open Access Books data",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "query",
+            "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
+            "required": true,
+            "type": "string",
+            "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
+          },{
+            "name": "query",
+            "in": "query",
+            "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
+            "required": true,
+            "type": "string"
+          },{
+            "name": "per_page",
+            "in": "query",
+            "description": "Results to return per page.",
+            "required": false,
+            "type": "integer",
+            "default": 10
+          },{
+            "name": "page",
+            "in": "query",
+            "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm.",
+            "required": false,
+            "type": "integer"
+          },{
+            "name": "prev_page_sort",
+            "in": "query",
+            "description": "The first `sort` parameter from the current result set. If provided will retrieve the results from the previous page.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },{
+            "name": "next_page_sort",
+            "in": "query",
+            "description": "The last `sort` parameter from the current result set. If provided will retrieve the next page of results.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },{
+            "name": "total",
+            "in": "query",
+            "description": "The total number of results for the current result set. Used to retrieve arbitrary results pages. This is optional but increases the speed of query responses",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) POST Simple Search Endpoint",
+        "description": "Will construct basic ElasticSearch DSL queries against the SFR index. Supports basic search endpoints",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "body",
+            "description": "ElasticSearch DSL block containing a ResearchNow query",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v2MainQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An Elasticsearch JSON object",
+            "schema": {
+              "$ref": "#/definitions/ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v2/utils/languages": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) GET Distinct Language Lookup",
+        "description": "Returns an array of unique languages in the ResearchNow database",
+        "parameters": [
+          {
+            "name": "total",
+            "in": "query",
+            "description": "Toggle, if true will return total number of works associated with each language",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing the languages array",
+            "schema": {
+              "$ref": "#/definitions/LanguageResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v2/utils/totals": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v2) GET Work/Record Counts",
+        "description": "Returns an object of total counts for records in the ElasticSeach index. By default only counts works, but can include others",
+        "parameters": [
+          {
+            "name": "instances",
+            "in": "query",
+            "description": "Toggle, provide to return total count of instances",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "items",
+            "in": "query",
+            "description": "Toggle, provide to return total count of items",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "links",
+            "in": "query",
+            "description": "Toggle, provide to return total count of links",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "subjects",
+            "in": "query",
+            "description": "Toggle, provide to return total count of subjects",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing the record counts",
+            "schema": {
+              "$ref": "#/definitions/TotalResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v3/work": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) GET Single work",
+        "description": "Accepts a single work identifier, passed through a GET request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "query",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "type": "string"
+          },{
+            "name": "recordType",
+            "in": "query",
+            "description": "Internal record type to return with the work. Either instances or editions",
+            "required": false,
+            "type": "string",
+            "enum": ["instances", "editions"]
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A workRecord response object",
+            "schema": {
+              "$ref": "#/definitions/v3WorkRecord"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) POST Single Work",
+        "description": "Accepts a single work identifier in a POST request and retrieves a single work record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "identifier",
+            "in": "body",
+            "description": "Identifier to lookup, either UUID, or other identifier (oclc, isbn, etc)",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SingleQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A workRecord response object",
+            "schema": {
+              "$ref": "#/definitions/v3WorkRecord"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "522": {
+            "description": "An ElasticSearch error, commonly none or too many responses recieved",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v3/search-api": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) GET Simple Search Endpoint",
+        "description": "Makes basic search queries against ElasticSearch index of Project Gutenberg, HathiTrust and Directory of Open Access Books data",
+        "parameters": [
+          {
+            "name": "field",
+            "in": "query",
+            "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
+            "required": true,
+            "type": "string",
+            "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
+          },{
+            "name": "query",
+            "in": "query",
+            "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
+            "required": true,
+            "type": "string"
+          },{
+            "name": "recordType",
+            "in": "query",
+            "description": "Internal record type to return with the work. Either instances or editions",
+            "required": false,
+            "type": "string",
+            "enum": ["instances", "editions"]
+          },{
+            "name": "per_page",
+            "in": "query",
+            "description": "Results to return per page.",
+            "required": false,
+            "type": "integer",
+            "default": 10
+          },{
+            "name": "page",
+            "in": "query",
+            "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm.",
+            "required": false,
+            "type": "integer"
+          },{
+            "name": "prev_page_sort",
+            "in": "query",
+            "description": "The first `sort` parameter from the current result set. If provided will retrieve the results from the previous page.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },{
+            "name": "next_page_sort",
+            "in": "query",
+            "description": "The last `sort` parameter from the current result set. If provided will retrieve the next page of results.",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },{
+            "name": "total",
+            "in": "query",
+            "description": "The total number of results for the current result set. Used to retrieve arbitrary results pages. This is optional but increases the speed of query responses",
+            "required": false,
+            "type": "integer"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A searchResult object",
+            "schema": {
+              "$ref": "#/definitions/v3ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) POST Simple Search Endpoint",
+        "description": "Will construct basic ElasticSearch DSL queries against the SFR index. Supports basic search endpoints",
+        "parameters": [
+          {
+            "name": "query",
+            "in": "body",
+            "description": "ElasticSearch DSL block containing a ResearchNow query",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v2MainQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An searchResultObject",
+            "schema": {
+              "$ref": "#/definitions/v3ResultResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v3/utils/languages": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) GET Distinct Language Lookup",
+        "description": "Returns an array of unique languages in the ResearchNow database",
+        "parameters": [
+          {
+            "name": "total",
+            "in": "query",
+            "description": "Toggle, if true will return total number of works associated with each language",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing the languages array",
+            "schema": {
+              "$ref": "#/definitions/v3LanguageResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
+    "/v0.1/research-now/v3/utils/totals": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) GET Work/Record Counts",
+        "description": "Returns an object of total counts for records in the ElasticSeach index. By default only counts works, but can include others",
+        "parameters": [
+          {
+            "name": "instances",
+            "in": "query",
+            "description": "Toggle, provide to return total count of instances",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "items",
+            "in": "query",
+            "description": "Toggle, provide to return total count of items",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "links",
+            "in": "query",
+            "description": "Toggle, provide to return total count of links",
+            "required": false,
+            "type": "boolean"
+          },
+          {
+            "name": "subjects",
+            "in": "query",
+            "description": "Toggle, provide to return total count of subjects",
+            "required": false,
+            "type": "boolean"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A JSON object containing the record counts",
+            "schema": {
+              "$ref": "#/definitions/v3TotalResponse"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "VIAFResultResponse": {
+      "type": "object",
+      "properties": {
+        "statusCode": {
+          "type": "integer"
+        },
+        "header": {
+          "$ref": "#/definitions/VIAFHeader"
+        },
+        "body": {
+          "type": "string"
+        },
+        "isBase64Encoded": {
+          "type": "boolean"
+        }
+      }
+    },
+    "VIAFHeader": {
+      "type": "object",
+      "properties": {
+        "req-time": {
+          "type": "number"
+        }
+      }
+    },
+    "ResultResponse": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string",
+          "enum": [
+            "searchResult"
+          ]
+        },
+        "result": {
+          "$ref": "#/definitions/Result"
+        }
+      }
+    },
+    "Result": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "object",
+          "items": {
+            "type": "string"
+          },
+          "description": "An Elasticsearch JSON object"
+        }
+      }
+    },
+    "v3ResultResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "responseType": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/v3DataObject"
+        }
+      }
+    },
+    "v3WorkRecord": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "responseType": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/v3WorkObject"
+        }
+      }
+    },
+    "v3DataObject": {
+      "type": "object",
+      "properties": {
+        "totalWorks": {
+          "type": "integer"
+        },
+        "facets": {
+          "$ref": "#/definitions/FacetBlock"
+        },
+        "paging": {
+          "$ref": "#/definitions/PagingBlock"
+        },
+        "works": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3WorkObject"
+          }
+        }
+      }
+    },
+    "FacetBlock": {
+      "type": "object",
+      "properties": {
+        "facet": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FacetOption"
+          }
+        }
+      }
+    },
+    "FacetOption": {
+      "type": "object",
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "count": {
+          "type": "integer"
+        }
+      }
+    },
+    "PagingBlock": {
+      "type": "object",
+      "properties": {
+        "prev_page_sort": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "next_page_sort": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "fields": {
+          "type": "string"
+        }
+      }
+    },
+    "v3WorkObject": {
+      "type": "object",
+      "properties": {
+        "date_modified": {
+          "type": "date-time"
+        },
+        "date_created": {
+          "type": "date-time"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "uuid": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sort_title": {
+          "type": "string"
+        },
+        "sub_title": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "medium": {
+          "type": "string"
+        },
+        "series": {
+          "type": "string"
+        },
+        "series_position": {
+          "type": "integer"
+        },
+        "edition_count": {
+          "type": "integer"
+        },
+        "edition_range": {
+          "type": "string"
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3AgentObject"
+          }
+        },
+        "alt_titles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3InstanceObject"
+          }
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3LanguageObject"
+          }
+        },
+        "editions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3EditionObject"
+          }
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3IdentifierObject"
+          }
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3SubjectObject"
+          }
+        },
+        "measurements": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3MeasurementObject"
+          }
+        }
+      }
+    },
+    "v3IdentifierObject": {
+      "type": "object",
+      "properties": {
+        "id_type": {
+          "type": "string"
+        },
+        "identifier": {
+          "type": "string"
+        }
+      }
+    },
+    "v3SubjectObject": {
+      "type": "object",
+      "properties": {
+        "subject": {
+          "type": "string"
+        },
+        "authority": {
+          "type": "string"
+        },
+        "uri": {
+          "type": "string"
+        }
+      }
+    },
+    "v3MeasurementObject": {
+      "type": "object",
+      "properties": {
+        "quantity": {
+          "type": "string"
+        },
+        "value": {
+          "type": "integer"
+        },
+        "weight": {
+          "type": "float"
+        },
+        "taken_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "v3AgentObject": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "sort_name": {
+          "type": "string"
+        },
+        "viaf": {
+          "type": "string"
+        },
+        "lcnaf": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string"
+        },
+        "birth_date_display": {
+          "type": "string"
+        },
+        "death_date_display": {
+          "type": "string"
+        }
+      }
+    },
+    "v3EditionObject": {
+      "type": "object",
+      "properties": {
+        "date_modified": {
+          "type": "date-time"
+        },
+        "date_created": {
+          "type": "date-time"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "publication_place": {
+          "type": "string"
+        },
+        "publication_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "edition": {
+          "type": "string"
+        },
+        "edition_statement": {
+          "type": "string"
+        },
+        "volume": {
+          "type": "string"
+        },
+        "table_of_contents": {
+          "type": "string"
+        },
+        "extent": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "work_id": {
+          "type": "integer"
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3AgentObject"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3ItemObject"
+          }
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3LanguageObject"
+          }
+        }
+      }
+    },
+    "v3InstanceObject": {
+      "type": "object",
+      "properties": {
+        "date_modified": {
+          "type": "date-time"
+        },
+        "date_created": {
+          "type": "date-time"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "sort_title": {
+          "type": "string"
+        },
+        "sub_title": {
+          "type": "string"
+        },
+        "pub_place": {
+          "type": "string"
+        },
+        "edition": {
+          "type": "string"
+        },
+        "edition_statement": {
+          "type": "string"
+        },
+        "volume": {
+          "type": "string"
+        },
+        "table_of_contents": {
+          "type": "string"
+        },
+        "copyright_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "extent": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "work_id": {
+          "type": "integer"
+        },
+        "edition_id": {
+          "type": "integer"
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3AgentObject"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3ItemObject"
+          }
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3LanguageObject"
+          }
+        }
+      }
+    },
+    "v3ItemObject": {
+      "type": "object",
+      "properties": {
+        "source": {
+          "type": "string"
+        },
+        "content_type": {
+          "type": "string"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "drm": {
+          "type": "string"
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3LinkObject"
+          }
+        }
+      }
+    },
+    "v3LinkObject": {
+      "type": "object",
+      "properties": {
+        "url": {
+          "type": "string"
+        },
+        "media_type": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "thumbnail": {
+          "type": "string"
+        },
+        "local": {
+          "type": "boolean"
+        },
+        "download": {
+          "type": "boolean"
+        },
+        "images": {
+          "type": "boolean"
+        },
+        "ebook": {
+          "type": "boolean"
+        }
+      }
+    },
+    "v3LanguageObject": {
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string"
+        },
+        "iso_2": {
+          "type": "string"
+        },
+        "iso_3": {
+          "type": "string"
+        }
+      }
+    },
+    "v3LanguageResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "responseType": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/LanguageData"
+        }
+      }
+    },
+    "v3TotalResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "responseType": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/TotalObject"
+        }
+      }
+    },
+    "SingleQuery": {
+      "title": "SingleQuery",
+      "type": "object",
+      "properties": {
+        "identifier": {
+          "type": "string",
+          "example": "000000-0000-0000-0000-00000000000",
+          "description": "Most frequently an UUID, can also be an OCLC, LCCN, ISBN or other identifier."
+        },
+        "recordType": {
+          "type": "string",
+          "example": "editions",
+          "description": "Either editions or instances to control the type of inner document returned",
+          "enum": ["editions", "instances"]
+        }
+      }
+    },
+    "v2MainQuery": {
+      "title": "MainQuery (v2)",
+      "type": "object",
+      "properties": {
+        "field": {
+          "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
+          "type": "string",
+          "example": "keyword",
+          "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
+        },
+        "query": {
+          "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
+          "example": "\"Civil War\" OR Lincoln",
+          "type": "string"
+        },
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v2QueryBlock"
+          }
+        },
+        "recordType": {
+          "type": "string",
+          "example": "editions",
+          "description": "Either editions or instances to control the type of inner document returned",
+          "enum": ["editions", "instances"]
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FilterBlock"
+          }
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SortBlock"
+          }
+        },
+        "per_page": {
+          "description": "Results to return per page. Defaults to 10",
+          "example": 10,
+          "type": "integer"
+        },
+        "page": {
+          "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+          "example": 0,
+          "type": "integer"
+        },
+        "prev_page_sort": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "next_page_sort": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "total":{
+          "description": "The total number of results for the current result set. Used to retrieve arbitrary results pages. This is optional but increases the speed of query responses",
+          "example": 1000,
+          "type": "integer"
+        }
+      }
+    },
+    "MainQuery": {
+      "title": "MainQuery",
+      "type": "object",
+      "properties": {
+        "queries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/QueryBlock"
+          }
+        },
+        "filters": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/FilterBlock"
+          }
+        },
+        "sort": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/SortBlock"
+          }
+        },
+        "per_page": {
+          "description": "Results to return per page. Defaults to 10",
+          "example": 10,
+          "type": "integer"
+        },
+        "page": {
+          "description": "The page of results to return. By default the results will be sorted by the ElasticSearch sorting algorithm",
+          "example": 0,
+          "type": "integer"
+        }
+      }
+    },
+    "SortBlock": {
+      "title": "Sort",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "example": "title",
+          "description": "An ElasticSearch field to sort results by",
+          "enum": ["title", "author", "date"]
+        },
+        "dir": {
+          "type": "string",
+          "example": "asc",
+          "enum": ["asc", "desc"],
+          "description": "The direction in which to sort results"
+        }
+      }
+    },
+    "FilterBlock": {
+      "title": "Filter",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "enum": ["language", "years", "show_all", "format"],
+          "description": "Field on which to match results by (effectively exact-match search)"
+        },
+        "value": {
+          "type": "object",
+          "$ref": "#/definitions/FilterObject",
+          "description": "Value on which to filter. Can be a string (for term filters such as language or format), a boolean value (for show_all), or an object such as {start: 1900, end: 2000} for years"
+        }
+      },
+      "example": [
+        {
+          "field": "language",
+          "value": "Spanish"
+        },{
+          "field": "years",
+          "value": {"start": 1800, "end": 2000}
+        }
+    ]
+    },
+    "QueryBlock": {
+      "title": "Query",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "example": "title",
+          "description": "Field to query"
+        },
+        "value": {
+          "type": "string",
+          "example": "divina",
+          "description": "Query value"
+        }
+      }
+    },
+    "FilterObject": {},
+    "LanguageResponse": {
+      "title": "Language Utility Response",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "example": "200",
+          "description": "API status code"
+        },
+        "data": {
+          "type": "object",
+          "$ref": "#/definitions/LanguageData",
+          "description": "Data block for the language utility"
+        }
+      }
+    },
+    "LanguageData": {
+      "title": "Language Data Block",
+      "type": "object",
+      "properties": {
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/LanguageObject"
+          }
+        }
+      }
+    },
+    "LanguageObject": {
+      "title": "Language Object",
+      "type": "object",
+      "properties": {
+        "language": {
+          "type": "string",
+          "example": "Spanish",
+          "description": "Full text string of the language"
+        },
+        "count": {
+          "type": "integer",
+          "example": "10",
+          "description": "Count of the number of works associated with this language"
+        }
+      }
+    },
+    "TotalResponse": {
+      "title": "Count Utility Response",
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "example": "200",
+          "description": "API status code"
+        },
+        "data": {
+          "type": "object",
+          "$ref": "#/definitions/TotalObject",
+          "description": "Data block for the count utility"
+        }
+      }
+    },
+    "TotalObject": {
+      "title": "Total Object",
+      "type": "object",
+      "properties": {
+        "works": {
+          "type": "integer",
+          "description": "Total count of the works"
+        },
+        "instances": {
+          "type": "integer",
+          "description": "Total count of the instances"
+        },
+        "items": {
+          "type": "integer",
+          "description": "Total count of the items"
+        },
+        "links": {
+          "type": "integer",
+          "description": "Total count of the links"
+        },
+        "subjects": {
+          "type": "integer",
+          "description": "Total count of the subjects"
+        }
+      }
+    },
+    "v2QueryBlock": {
+      "title": "v2 Query",
+      "type": "object",
+      "properties": {
+        "field": {
+          "type": "string",
+          "example": "keyword",
+          "description": "Field to query",
+          "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
+        },
+        "query": {
+          "type": "string",
+          "example": "\"Civil War\" OR Lincoln",
+          "description": "Text of the query. Can contain standard boolean search syntax"
+        }
+      }
+    }
+  }
+}
