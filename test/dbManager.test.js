@@ -16,7 +16,6 @@ describe('DBConnection manager tests', () => {
     let testDB
     beforeEach(() => {
       testDB = new DBConnection(sinon.mock())
-      mockDB.mock(testDB.pg)
     })
 
     afterEach(() => {
@@ -36,7 +35,6 @@ describe('DBConnection manager tests', () => {
     const dbTracker = mockDB.getTracker()
     beforeEach(() => {
       testDB = new DBConnection(sinon.mock())
-      mockDB.mock(testDB.pg)
       dbTracker.install()
     })
 

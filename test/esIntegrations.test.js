@@ -5,11 +5,6 @@ const chai = require('chai')
 const sinonChai = require('sinon-chai')
 const nock = require('nock')
 const mockDB = require('mock-knex')
-const { DBConnection } = require('../lib/db')
-
-// Mock db connection
-const dbConn = new DBConnection()
-mockDB.mock(dbConn.pg)
 
 chai.should()
 chai.use(sinonChai)
@@ -246,7 +241,6 @@ describe('Testing ElasticSearch Integration', () => {
             recordType: 'editions',
           })
           .then((resp) => {
-            console.log(resp.body)
             expect(resp.body.status).to.equal(200)
             expect(resp.body.data.totalWorks).to.equal(1)
             expect(resp.body.data.works[0].id).to.equal(1)
@@ -396,7 +390,6 @@ describe('Testing ElasticSearch Integration', () => {
         await req.post('/v3/sfr/work')
           .send({ identifier: 'testIdentifier' })
           .then((resp) => {
-            console.log(resp.body)
             expect(resp.body.status).to.equal(200)
             expect(resp.body.data.id).to.equal(1)
             expect(resp.body.data.title).to.equal('Found Work')
