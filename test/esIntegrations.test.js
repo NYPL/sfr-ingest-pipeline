@@ -246,6 +246,8 @@ describe('Testing ElasticSearch Integration', () => {
             recordType: 'editions',
           })
           .then((resp) => {
+            console.log(resp.body)
+            expect(resp.body.status).to.equal(200)
             expect(resp.body.data.totalWorks).to.equal(1)
             expect(resp.body.data.works[0].id).to.equal(1)
             expect(resp.body.responseType).to.equal('searchResults')
@@ -394,6 +396,7 @@ describe('Testing ElasticSearch Integration', () => {
         await req.post('/v3/sfr/work')
           .send({ identifier: 'testIdentifier' })
           .then((resp) => {
+            console.log(resp.body)
             expect(resp.body.status).to.equal(200)
             expect(resp.body.data.id).to.equal(1)
             expect(resp.body.data.title).to.equal('Found Work')
