@@ -4,6 +4,12 @@ const request = require('supertest')
 const chai = require('chai')
 const sinonChai = require('sinon-chai')
 const nock = require('nock')
+const mockDB = require('mock-knex')
+const { DBConnection } = require('../lib/db')
+
+// Mock db connection
+const dbConn = new DBConnection()
+mockDB.mock(dbConn.pg)
 
 chai.should()
 chai.use(sinonChai)
@@ -162,6 +168,281 @@ describe('Testing ElasticSearch Integration', () => {
           // eslint-disable-next-line no-unused-expressions
           expect(v2Mock.isDone()).to.be.true
         })
+    })
+  })
+
+  describe('v3 API search/work Endpoints', () => {
+    const dbTracker = mockDB.getTracker()
+    describe('v3 Search integration', () => {
+      let v3Mock
+      beforeEach(() => {
+        v3Mock = nock(process.env.ELASTICSEARCH_HOST).post('/_count').reply(200, { count: 1 })
+        dbTracker.install()
+      })
+
+      afterEach(() => {
+        dbTracker.uninstall()
+      })
+      it('should respond with standard response object on success', async () => {
+        v3Mock.post('/sfr_v3/_search')
+          .reply(200, {
+            took: 0,
+            timed_out: false,
+            hits: {
+              total: 1,
+              max_score: 1,
+              hits: [
+                {
+                  _index: 'sfr_test',
+                  _type: 'test',
+                  _id: 32,
+                  _score: 1,
+                  _source: {
+                    instances: [],
+                    agents: [
+                      {
+                        name: 'Other Tester, Test',
+                        sort_name: 'other tester, test',
+                        roles: ['editor'],
+                      },
+                    ],
+                  },
+                  sort: [
+                    'sort1',
+                    'sort2',
+                  ],
+                },
+              ],
+            },
+            aggregations: {},
+          })
+
+        dbTracker.on('query', (query, step) => {
+          [
+            () => {
+              expect(query.sql).to.contain('from "works" where "uuid"')
+              query.response({
+                id: 1,
+                title: 'tester',
+              })
+            },
+            () => {
+              expect(query.sql).to.contain('from "editions" where 1')
+              query.response([
+                {
+                  id: 4,
+                  pub_place: 'Testtown',
+                  items: [],
+                },
+              ])
+            },
+          ][step - 1]()
+        })
+
+        await req.post('/v3/sfr/search')
+          .send({
+            query: 'the',
+            field: 'keyword',
+            recordType: 'editions',
+          })
+          .then((resp) => {
+            expect(resp.body.data.totalWorks).to.equal(1)
+            expect(resp.body.data.works[0].id).to.equal(1)
+            expect(resp.body.responseType).to.equal('searchResults')
+          })
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(v3Mock.isDone()).to.be.true
+      })
+
+      it('should respond with standard error message if ElasticSearch errors', async () => {
+        v3Mock.post('/sfr_v3/_search')
+          .reply(400, {
+            name: 'ElasticError',
+            response: {
+              error: {
+                failed_shards: [
+                  {
+                    reason: {
+                      caused_by: {
+                        reason: 'Generic ElasticSearch Error',
+                        type: 'testingError',
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          })
+
+        await req.post('/v3/sfr/search')
+          .send({
+            query: 'the',
+            field: 'keyword',
+            recordType: 'editions',
+          })
+          .then((resp) => {
+            expect(resp.body.status).to.equal(500)
+            expect(resp.body.name).to.equal('BadRequest')
+            expect(resp.body.type).to.equal('testingError')
+            expect(resp.body.reason).to.equal('Generic ElasticSearch Error')
+          })
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(v3Mock.isDone()).to.be.true
+      })
+
+      it('should respond with error if query is missing', async () => {
+        await req.post('/v3/sfr/search')
+          .send({
+            field: 'keyword',
+            recordType: 'editions',
+          })
+          .then((resp) => {
+            expect(resp.body.status).to.equal(500)
+            expect(resp.body.name).to.equal('MissingParamError')
+            expect(resp.body.error).to.equal('Your request must include either a query object or an array of queries')
+          })
+      })
+    })
+
+    describe('v3 Work Integration', () => {
+      const v3Work = nock(process.env.ELASTICSEARCH_HOST)
+      beforeEach(() => {
+        dbTracker.install()
+      })
+
+      afterEach(() => {
+        dbTracker.uninstall()
+      })
+      it('should return a single work record on success', async () => {
+        v3Work.post('/sfr_v3/_search')
+          .reply(200, {
+            took: 0,
+            timed_out: false,
+            hits: {
+              total: 1,
+              max_score: 1,
+              hits: [
+                {
+                  _index: 'sfr_test',
+                  _type: 'test',
+                  _id: 32,
+                  _score: 1,
+                  _source: {
+                    title: 'Found Work',
+                    instances: [],
+                    agents: [
+                      {
+                        name: 'Other Tester, Test',
+                        sort_name: 'other tester, test',
+                        roles: ['editor'],
+                      },
+                    ],
+                  },
+                  sort: [
+                    'sort1',
+                    'sort2',
+                  ],
+                },
+              ],
+            },
+            aggregations: {},
+          })
+
+        dbTracker.on('query', (query, step) => {
+          [
+            () => {
+              expect(query.sql).to.contain('from "works" where "uuid"')
+              query.response({
+                id: 1,
+                title: 'Found Work',
+              })
+            },
+            () => {
+              expect(query.sql).to.contain('work_identifiers')
+              query.response([
+                {
+                  ids: [5, 6],
+                  type: 'test',
+                },
+              ])
+            },
+            () => {
+              expect(query.sql).to.contain('test')
+              query.response([
+                {
+                  value: 'id1',
+                }, {
+                  value: 'id2',
+                },
+              ])
+            },
+            () => {
+              expect(query.sql).to.contain('editions')
+              query.response([
+                {
+                  id: 4,
+                  pub_place: 'Testtown',
+                  items: [],
+                },
+              ])
+            },
+          ][step - 1]()
+        })
+
+        await req.post('/v3/sfr/work')
+          .send({ identifier: 'testIdentifier' })
+          .then((resp) => {
+            expect(resp.body.status).to.equal(200)
+            expect(resp.body.data.id).to.equal(1)
+            expect(resp.body.data.title).to.equal('Found Work')
+            expect(resp.body.responseType).to.equal('workRecord')
+          })
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(v3Work.isDone()).to.be.true
+      })
+
+      it('should return an error if multiple works are found', async () => {
+        v3Work.post('/sfr_v3/_search')
+          .reply(200, {
+            took: 0,
+            timed_out: false,
+            hits: {
+              total: 1,
+              max_score: 1,
+              hits: [
+                {
+                  _index: 'sfr_test',
+                  _type: 'test',
+                  _id: 32,
+                  _score: 1,
+                  _source: {},
+                },
+                {
+                  _index: 'sfr_test',
+                  _type: 'test',
+                  _id: 56,
+                  _score: 1,
+                  _source: {},
+                },
+              ],
+            },
+            aggregations: {},
+          })
+
+        await req.post('/v3/sfr/work')
+          .send({ identifier: 'multiTest' })
+          .then((resp) => {
+            expect(resp.body.status).to.equal(500)
+            expect(resp.body.name).to.equal('ElasticSearchError')
+            expect(resp.body.error).to.equal('Returned multiple records, identifier lacks specificity')
+          })
+
+        // eslint-disable-next-line no-unused-expressions
+        expect(v3Work.isDone()).to.be.true
+      })
     })
   })
 
