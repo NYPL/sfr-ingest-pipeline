@@ -1,5 +1,4 @@
 const bodybuilder = require('bodybuilder')
-const Helpers = require('../../helpers/esSourceHelpers')
 const { ElasticSearchError, MissingParamError } = require('../../lib/errors')
 const { V3Work } = require('../../lib/v3Work')
 
@@ -21,7 +20,6 @@ const workEndpoints = (app, respond, handleError) => {
       const workRes = await fetchWork(params, app)
       respond(res, workRes, params, 'workRecord')
     } catch (err) {
-      console.log(err)
       handleError(res, err)
     }
   })

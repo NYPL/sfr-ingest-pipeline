@@ -70,7 +70,7 @@ const handleError = (res, error, errType, errReason) => {
   }
   res.status(statusCode).send({
     status: statusCode,
-    name: error.name,
+    name: error.displayName || error.name,
     error: error.message ? error.message : error,
     type: errType || 'unknown',
     reason: errReason || 'unknown',

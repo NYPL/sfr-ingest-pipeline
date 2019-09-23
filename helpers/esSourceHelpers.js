@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /**
  * Generates a year range for the publication dates of the editions associated
  * with a specific work.
@@ -147,7 +148,7 @@ const parseLinks = (work, nestedType) => {
   })
 }
 
-module.exports = { 
+module.exports = {
   formatResponseEditionRange,
   formatSingleResponseEditionRange,
   getEditionRangeValue,

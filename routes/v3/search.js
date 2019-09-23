@@ -17,18 +17,17 @@ const searchEndpoints = (app, respond, handleError) => {
 
     try {
       searcher.buildSearch()
-      // await searcher.addPaging()
+      await searcher.addPaging()
       const searchRes = await searcher.execSearch()
       respond(res, searchRes, params, 'searchResults')
     } catch (err) {
       let errReason
       let errType
       try {
-        const errResp = JSON.parse(err.response)
-        errReason = errResp.error.failed_shards[0].reason.caused_by.reason
-        errType = errResp.error.failed_shards[0].reason.caused_by.type
-      } catch (jsonErr) {
-        console.log(jsonErr)
+        errReason = err.body.response.error.failed_shards[0].reason.caused_by.reason
+        errType = err.body.response.error.failed_shards[0].reason.caused_by.type
+      } catch (innerErr) {
+        // Unable to find specific error type or reason. pass
       }
       handleError(res, err, errType, errReason)
     }
@@ -43,7 +42,7 @@ const searchEndpoints = (app, respond, handleError) => {
       searcher.buildSearch()
       await searcher.addPaging()
       const searchRes = await searcher.execSearch()
-      respond(res, parseElasticResponse(searchRes), params, 'searchResults')
+      respond(res, searchRes, params, 'searchResults')
     } catch (err) {
       let errReason
       let errType
@@ -52,21 +51,11 @@ const searchEndpoints = (app, respond, handleError) => {
         errReason = errResp.error.failed_shards[0].reason.caused_by.reason
         errType = errResp.error.failed_shards[0].reason.caused_by.type
       } catch (jsonErr) {
-        console.log(jsonErr)
+        // Unable to parse json error
       }
       handleError(res, err, errType, errReason)
     }
   })
-}
-
-const parseElasticResponse = (resp) => {
-
-  return {
-    works: resp.hits.hits,
-    works_total: resp.hits.total,
-    paging: resp.paging,
-    facets: resp.facets,
-  }
 }
 
 module.exports = { searchEndpoints }

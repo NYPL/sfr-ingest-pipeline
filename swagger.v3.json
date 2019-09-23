@@ -1173,10 +1173,12 @@
       "type": "object",
       "properties": {
         "date_modified": {
-          "type": "date-time"
+          "type": "string",
+          "format": "date-time"
         },
         "date_created": {
-          "type": "date-time"
+          "type": "string",
+          "format": "date-time"
         },
         "id": {
           "type": "integer"
@@ -1302,7 +1304,7 @@
           "type": "integer"
         },
         "weight": {
-          "type": "float"
+          "type": "number"
         },
         "taken_at": {
           "type": "string",
@@ -1340,10 +1342,12 @@
       "type": "object",
       "properties": {
         "date_modified": {
-          "type": "date-time"
+          "type": "string",
+          "format": "date-time"
         },
         "date_created": {
-          "type": "date-time"
+          "type": "string",
+          "format": "date-time"
         },
         "id": {
           "type": "integer"
@@ -1400,10 +1404,12 @@
       "type": "object",
       "properties": {
         "date_modified": {
-          "type": "date-time"
+          "type": "string",
+          "format": "date-time"
         },
         "date_created": {
-          "type": "date-time"
+          "type": "string",
+          "format": "date-time"
         },
         "id": {
           "type": "integer"
