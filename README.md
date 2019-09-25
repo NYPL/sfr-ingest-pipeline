@@ -5,7 +5,7 @@
 
 Provides access to the SFR ElasticSearch index. Currently supports basic search on `keyword`, `title`, `author` and `subject` fields, as well as single record retrieval by `identifier`.
 
-View Swagger documentation for [v2](https://dev-platformdocs.nypl.org)
+View Swagger documentation for [v3](https://dev-platformdocs.nypl.org)
 
 View the Endpoint descriptions in [Confluence](https://confluence.nypl.org/display/SFR/Search+API)
 

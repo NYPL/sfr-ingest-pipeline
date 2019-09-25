@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 /**
  * Generates a year range for the publication dates of the editions associated
  * with a specific work.
@@ -19,6 +20,20 @@ const formatResponseEditionRange = (resp) => {
     // eslint-disable-next-line no-param-reassign, no-underscore-dangle
     hit._source.edition_range = editionRange
   })
+}
+
+const formatSingleResponseEditionRange = (hit) => {
+  const startYear = module.exports.getEditionRangeValue(hit, 'gte', 1)
+  const endYear = module.exports.getEditionRangeValue(hit, 'lte', -1)
+
+  let editionRange = ''
+  if (startYear !== endYear) {
+    editionRange = `${startYear} - ${endYear}`
+  } else {
+    editionRange = startYear
+  }
+
+  return editionRange
 }
 
 /**
@@ -92,4 +107,52 @@ const startEndCompare = (startEnd, sortFlip) => {
   return dateComparison
 }
 
-module.exports = { formatResponseEditionRange, getEditionRangeValue, startEndCompare }
+const parseAgents = (work, nestedType) => {
+  const setDates = (agent) => {
+    if (agent.dates) {
+      agent.dates.forEach((date) => {
+        // eslint-disable-next-line no-param-reassign
+        agent[`${date.date_type}_display`] = date.display_date
+      })
+    }
+    delete agent.dates
+  }
+
+  if (work.agents) {
+    work.agents.forEach(agent => setDates(agent))
+  }
+  work[nestedType].forEach((inner) => {
+    if (inner.agents) {
+      inner.agents.forEach(agent => setDates(agent))
+    }
+  })
+}
+
+const parseLinks = (work, nestedType) => {
+  work[nestedType].forEach((inner) => {
+    if (inner.items) {
+      inner.items.forEach((items) => {
+        items.links.forEach((link) => {
+          try {
+            const flags = JSON.parse(link.flags)
+            Object.keys(flags).forEach((key) => {
+              link[key] = flags[key]
+            })
+          } catch (err) {
+            // If no flags are set this can be safely ignored
+          }
+          delete link.flags
+        })
+      })
+    }
+  })
+}
+
+module.exports = {
+  formatResponseEditionRange,
+  formatSingleResponseEditionRange,
+  getEditionRangeValue,
+  startEndCompare,
+  parseAgents,
+  parseLinks,
+}

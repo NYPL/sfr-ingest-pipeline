@@ -24,7 +24,7 @@ describe('Testing Swagger Documentation', () => {
     await req.get('/research-now/swagger-test')
       .expect(200)
       .then((resp) => {
-        expect(resp.text).to.equal('API name: ResearchNow Search API, Version: v0.2.2')
+        expect(resp.text).to.equal('API name: ResearchNow Search API, Version: v0.3.0')
       })
   })
 
@@ -34,7 +34,7 @@ describe('Testing Swagger Documentation', () => {
       .then((resp) => {
         const apiPaths = []
         Object.keys(resp.body.paths).map(path => apiPaths.push(path))
-        expect(apiPaths.length).to.equal(7)
+        expect(apiPaths.length).to.equal(11)
       })
   })
 })
