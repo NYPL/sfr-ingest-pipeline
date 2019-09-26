@@ -2,6 +2,7 @@ import csv
 import gzip
 import os
 from math import ceil
+import sys
 import requests
 from datetime import datetime
 from multiprocessing import Process, Pipe
@@ -31,6 +32,8 @@ def handler(event, context):
     records in the same manner
     """
 
+    csv.field_size_limit(sys.maxsize)
+
     logger.info('Starting Lambda Execution')
     logger.info('Checking type of invocation {}'.format(
         event.get('source', 'scheduled'))
@@ -39,7 +42,7 @@ def handler(event, context):
     # Check if the event is set to have certain local-only characteristics
     # if it does, this is being run in a non-scheduled way on a local file.
     # Load the local file defined in the event, otherwise fetch file from Hathi
-
+    
     columns = [
             'htid',
             'access',
@@ -114,11 +117,9 @@ def loadLocalCSV(localFile):
         raise ProcessingError('loadLocalCSV', 'Could not open local CSV file')
 
     with hathiFile:
-        hathiReader = csv.reader(hathiFile)
-        for row in hathiReader:
-            if row[0] == 'htid':
-                continue
-            rows.append(row)
+        rightsSkips = ['ic', 'icus', 'ic-world', 'und']
+        hathiReader = csv.reader(hathiFile, delimiter='\t')
+        rows = [ r for r in hathiReader if r[2] not in rightsSkips ]
     logger.debug('Loaded {} rows from {}'.format(str(len(rows)), localFile))
     return rows
 
