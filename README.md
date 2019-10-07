@@ -1,5 +1,9 @@
 # ResearchNow Book Cover s3 Storage
 
+[![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-covers-to-s3.svg)](https://badge.fury.io/gh/nypl%2Fsfr-covers-to-s3)
+
+[![Build Status](https://travis-ci.com/NYPL/sfr-covers-to-s3.svg?branch=development)](https://travis-ci.com/NYPL/sfr-covers-to-s3)
+
 ## Summary
 
 This lambda function reads from a SQS queue of image URLs that correspond to cover images for instance records from the ResearchNow data pipeline. It takes these original URLs, stores the image files in an s3 bucket and returns the resulting URL to the update Kinesis stream where the new URL will be stored in the database.
