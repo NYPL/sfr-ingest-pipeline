@@ -1,17 +1,16 @@
 # SFR Database Updater
 
-[![Build Status](https://travis-ci.com/NYPL/sfr-db-updater.svg?token=Fv4twsPZbkerqgdJB89v&branch=development)](https://travis-ci.com/NYPL/sfr-db-updater)
+[![Build Status](https://travis-ci.com/NYPL/sfr-db-updater.svg?token=Fv4twsPZbkerqgdJB89v&branch=development)](https://travis-ci.com/NYPL/sfr-db-updater) [![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-db-updater.svg)](https://badge.fury.io/gh/nypl%2Fsfr-db-updater)
 
 This is a Lambda function that manages updating exsting records within postgres. This manages updates to records that currently *exist* within the database and which should be updated or overwritten in any way. These messages are received either from the sfr-db-manager or from Lambda functions further along in the ingest pipeline.
 
-## Version
-v0.1.0
-
 ## Deployment
+
 This function should be deployed through an instance of Amazon's AMI, as that layer is necessary to properly compile several dependencies for the Lambda environment. This can be done either via an EC2 isntance deployed with the AMI or via a Docker container created via Amazon's Linux image.
 
 
 ## Environment Variables
+
 This function can be configured to connect to a AWS RDS database running in the proper VPC
 
 - LOG_LEVEL: Set the relevant log level (will appear in the cloudwatch logs)
@@ -22,6 +21,7 @@ This function can be configured to connect to a AWS RDS database running in the 
 - DB_PASS: Password for above user
 
 ## Dependencies
+
 - pyscopg2-binary
 - pycountry
 - pyyaml
