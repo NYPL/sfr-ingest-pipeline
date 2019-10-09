@@ -1,5 +1,6 @@
-import json
 import base64
+import binascii
+import json
 import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
@@ -50,11 +51,8 @@ def parseRecords(records):
     """Iterator for handling multiple incoming messages"""
     logger.debug('Parsing Messages')
 
-    logger.debug('Creating Session')
-    session = MANAGER.createSession()
-
     try:
-        parseResults = [ parseRecord(r) for r in records ]
+        parseResults = [parseRecord(r) for r in records]
         logger.debug('Parsed {} records. Committing results'.format(
             str(len(parseResults))
         ))
@@ -90,13 +88,13 @@ def parseRecord(encodedRec):
         logger.error('Invalid JSON block received')
         logger.error(jsonErr)
         raise DataError('Invalid JSON block')
-    except UnicodeDecodeError as b64Err:
+    except (UnicodeDecodeError, binascii.Error) as b64Err:
         logger.error('Invalid data found in base64 encoded block')
         logger.debug(b64Err)
         raise DataError('Error in base64 encoding of record')
 
     try:
-        MANAGER.startSession() # Start transaction
+        MANAGER.startSession()  # Start transaction
         record = importRecord(MANAGER.session, record)
         MANAGER.commitChanges()
         return record
@@ -104,7 +102,7 @@ def parseRecord(encodedRec):
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
-        MANAGER.session.rollback() # Rollback current record only
+        MANAGER.session.rollback()  # Rollback current record only
         logger.error('Failed to store record')
         logger.debug(err)
         logger.debug(traceback.format_exc())

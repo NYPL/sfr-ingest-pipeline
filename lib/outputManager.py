@@ -48,7 +48,7 @@ class OutputManager():
 
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
-        
+
         partKey = OutputManager._createPartitionKey(data)
 
         try:
@@ -58,7 +58,7 @@ class OutputManager():
                 PartitionKey=partKey
             )
 
-        except:
+        except:  # noqa: E722
             logger.error('Kinesis Write error!')
             raise OutputError('Failed to write result to output stream!')
 
@@ -78,10 +78,10 @@ class OutputManager():
                 QueueUrl=outQueue,
                 MessageBody=messageData
             )
-        except:
+        except:  # noqa: E722
             logger.error('SQS Write error!')
             raise OutputError('Failed to write result to output stream!')
-    
+
     @classmethod
     def checkRecentQueries(cls, queryString):
         queryTime = cls.REDIS_CLIENT.get(queryString)
@@ -90,14 +90,16 @@ class OutputManager():
             queryTime
         ))
         currentTime = datetime.utcnow() - timedelta(days=1)
-        if  (
-                queryTime is not None and
-                datetime.strptime(queryTime.decode('utf-8'), '%Y-%m-%dT%H:%M:%S') >= currentTime
-            ):
+        if (
+            queryTime is not None and
+            datetime.strptime(
+                queryTime.decode('utf-8'), '%Y-%m-%dT%H:%M:%S'
+            ) >= currentTime
+        ):
             return True
-        
+
         cls.REDIS_CLIENT.set(
-            queryString, 
+            queryString,
             datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S'),
             ex=60*60*24*7
         )
@@ -110,30 +112,30 @@ class OutputManager():
         from an object using the vars() builtin."""
         try:
             jsonStr = json.dumps(
-                obj, 
-                ensure_ascii=False, 
+                obj,
+                ensure_ascii=False,
                 default=lambda x: vars(x)
             )
         except TypeError:
             jsonStr = json.dumps(obj, ensure_ascii=False)
 
         return jsonStr
-    
+
     @staticmethod
     def _createPartitionKey(obj):
         try:
             return str(obj['primary_identifier']['identifier'])
         except KeyError:
             pass
-        
+
         try:
             return str(obj['identifiers'][0]['identifier'])
         except KeyError:
             pass
-        
+
         try:
             return str(obj['id'])
         except KeyError:
             pass
-        
+
         return '0'
