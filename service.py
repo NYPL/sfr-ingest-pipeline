@@ -51,6 +51,8 @@ def parseRecords(records):
     """Iterator for handling multiple incoming messages"""
     logger.debug('Parsing Messages')
 
+    MANAGER.createSession()
+
     try:
         parseResults = [parseRecord(r) for r in records]
         logger.debug('Parsed {} records. Committing results'.format(
