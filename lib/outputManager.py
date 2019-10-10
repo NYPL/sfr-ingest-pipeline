@@ -88,10 +88,10 @@ class OutputManager():
             queryTime
         ))
         currentTime = datetime.utcnow() - timedelta(days=1)
-        if  (
-                queryTime is not None and
-                datetime.strptime(queryTime.decode('utf-8'), '%Y-%m-%dT%H:%M:%S') >= currentTime
-            ):
+        if (
+            queryTime is not None and
+            datetime.strptime(queryTime.decode('utf-8'), '%Y-%m-%dT%H:%M:%S') >= currentTime
+        ):
             return True
         
         cls.REDIS_CLIENT.set(

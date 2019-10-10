@@ -77,7 +77,8 @@ def getIdentifiers(session, work):
             .join(Identifier, WORK_IDENTIFIERS, Work)\
             .filter(Work.id == work.id)\
             .all()
-        if len(typeIDs) < 1: continue
+        if len(typeIDs) < 1:
+            continue
         lookupIDs[source] = [i[0] for i in typeIDs]
 
     return lookupIDs
@@ -94,9 +95,12 @@ def getAuthors(agentWorks):
 
     return ', '.join(agents)
 
+
 def createClassifyQuery(classifyQuery, queryType, uuid):
     queryStr = [value for key, value in classifyQuery.items()]
-    if OutputManager.checkRecentQueries('{}'.format('/'.join(queryStr))) is False:
+    if OutputManager.checkRecentQueries(
+        '{}'.format('/'.join(queryStr))
+    ) is False:
         OutputManager.putQueue({
             'type': queryType,
             'uuid': uuid,

@@ -1,102 +1,150 @@
-import os
 import unittest
-from unittest.mock import patch, MagicMock, DEFAULT
+from unittest.mock import patch, DEFAULT
 
-from lib.dbManager import importRecord
+from lib.dbManager import (
+    importRecord,
+    WorkImporter,
+    InstanceImporter,
+    ItemImporter,
+    AccessReportImporter
+)
+
 
 class TestDBManager(unittest.TestCase):
-    @patch('lib.dbManager.queryWork')
-    @patch('lib.dbManager.OutputManager.putKinesis')
-    @patch.dict(os.environ, {'EPUB_STREAM': 'test'})
-    def test_insert_work(self, mock_put, mock_query):
-        mock_uuid=MagicMock()
-        mock_uuid.hex = 'newUUID'
-        mock_lookup = MagicMock()
-        mock_lookup.return_value = None
-        mock_insert = MagicMock()
-        mock_insert.return_value = ['epub1', 'epub2']
-        testData = {
-            'data': {
-                'identifiers': []
-            }
+    @patch.multiple(
+        WorkImporter,
+        parseData=DEFAULT,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_work_insert(self, parseData, lookupRecord, setInsertTime):
+        testWorkRecord = {
+            'data': 'data',
+            'type': 'work'
         }
-        with patch.multiple('lib.dbManager.Work',
-            insert=mock_insert,
-            lookupWork=mock_lookup,
-            uuid=mock_uuid
-        ):
-            testUUID = importRecord('session', testData)
-            self.assertEqual(testUUID, 'newUUID')
-    
-    @patch('lib.dbManager.OutputManager.putKinesis')
-    def test_update_work(self, mock_put):
-        mock_work = MagicMock()
-        mock_work.uuid.hex = 'oldUUID'
-        testData = {
-            'data': {
-                'data': {
-                    'identifiers': []
-                }
-            }
+        lookupRecord.return_value = 'insert'
+        result = importRecord('session', testWorkRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_called_once()
+        self.assertEqual(result, 'insert WORK #1')
+
+    @patch.multiple(
+        WorkImporter,
+        parseData=DEFAULT,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_work_update(self, parseData, lookupRecord, setInsertTime):
+        testWorkRecord = {
+            'data': 'data',
+            'type': 'work'
         }
-        with patch('lib.dbManager.Work.lookupWork', return_value=mock_work):
-            testReport = importRecord('session', testData)
-            self.assertEqual(testReport, 'Existing work {}'.format(mock_work.uuid))
-    
-    @patch('lib.dbManager.Identifier.getByIdentifier', return_value=None)
-    @patch('lib.dbManager.OutputManager.putKinesis')
-    @patch.dict(os.environ, {'EPUB_STREAM': 'test'})
-    def test_insert_instance(self, mock_put, mock_lookup):
-        mock_instance = MagicMock()
-        mock_instance.id = 1
-        testData = {
-            'type': 'instance',
-            'data': {
-                'identifiers': []
-            }
+        lookupRecord.return_value = 'update'
+        result = importRecord('session', testWorkRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_not_called()
+        self.assertEqual(result, 'update WORK #1')
+
+    @patch.multiple(
+        InstanceImporter,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_instance_insert(self, lookupRecord, setInsertTime):
+        testInstanceRecord = {
+            'data': 'data',
+            'type': 'instance'
         }
-        with patch(
-            'lib.dbManager.Instance.createNew',
-            return_value=(mock_instance, ['epub1', 'epub2'])
-        ):
-            newInst = importRecord('session', testData)
-            self.assertEqual(newInst, 'Instance #1')
-    
-    @patch('lib.dbManager.OutputManager.putKinesis')
-    def test_update_instance(self, mock_put):
-        testData = {
-            'type': 'instance',
-            'data': {
-                'identifiers': []
-            }
+        lookupRecord.return_value = 'insert'
+        result = importRecord('session', testInstanceRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_called_once()
+        self.assertEqual(result, 'insert INSTANCE #1')
+
+    @patch.multiple(
+        InstanceImporter,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_instance_update(self, lookupRecord, setInsertTime):
+        testInstanceRecord = {
+            'data': 'data',
+            'type': 'instance'
         }
-        with patch('lib.dbManager.Identifier.getByIdentifier', return_value=1):
-            testReport = importRecord('session', testData)
-            self.assertEqual(testReport, 'Existing instance Row ID 1')
-    
-    @patch('lib.dbManager.Identifier.getByIdentifier', return_value=None)
-    @patch('lib.dbManager.Instance.addItemRecord')
-    def test_insert_item(self, mock_lookup, mock_query):
-        mock_item = MagicMock()
-        mock_item.id = 1
-        testData = {
-            'type': 'item',
-            'data': {
-                'identifiers': []
-            }
+        lookupRecord.return_value = 'update'
+        result = importRecord('session', testInstanceRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_not_called()
+        self.assertEqual(result, 'update INSTANCE #1')
+
+    @patch.multiple(
+        ItemImporter,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_item_insert(self, lookupRecord, setInsertTime):
+        testItemRecord = {
+            'data': 'data',
+            'type': 'item'
         }
-        with patch('lib.dbManager.Item.createItem', return_value=mock_item):
-            newInst = importRecord('session', testData)
-            self.assertEqual(newInst, 'Item #1')
-    
-    @patch('lib.dbManager.OutputManager.putKinesis')
-    def test_update_instance(self, mock_put):
-        testData = {
-            'type': 'instance',
-            'data': {
-                'identifiers': []
-            }
+        lookupRecord.return_value = 'insert'
+        result = importRecord('session', testItemRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_called_once()
+        self.assertEqual(result, 'insert ITEM #1')
+
+    @patch.multiple(
+        ItemImporter,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_item_update(self, lookupRecord, setInsertTime):
+        testItemRecord = {
+            'data': 'data',
+            'type': 'item'
         }
-        with patch('lib.dbManager.Identifier.getByIdentifier', return_value=1):
-            testReport = importRecord('session', testData)
-            self.assertEqual(testReport, 'Existing instance Row ID 1')
+        lookupRecord.return_value = 'update'
+        result = importRecord('session', testItemRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_not_called()
+        self.assertEqual(result, 'update ITEM #1')
+
+    @patch.multiple(
+        AccessReportImporter,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_report_insert(self, lookupRecord, setInsertTime):
+        testAccessRecord = {
+            'data': 'data',
+            'type': 'access_report'
+        }
+        lookupRecord.return_value = 'insert'
+        result = importRecord('session', testAccessRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_called_once()
+        self.assertEqual(result, 'insert ACCESS_REPORT #1')
+
+    @patch.multiple(
+        AccessReportImporter,
+        lookupRecord=DEFAULT,
+        setInsertTime=DEFAULT,
+        identifier=1
+    )
+    def test_insert_report_update(self, lookupRecord, setInsertTime):
+        testAccessRecord = {
+            'data': 'data',
+            'type': 'access_report'
+        }
+        lookupRecord.return_value = 'update'
+        result = importRecord('session', testAccessRecord)
+        lookupRecord.assert_called_once()
+        setInsertTime.assert_not_called()
+        self.assertEqual(result, 'update ACCESS_REPORT #1')
