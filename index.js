@@ -25,16 +25,32 @@ exports.getRepoData = async (repoInfo, lcRels) => {
   return rdfValue
 }
 
-exports.handler = async (event, context, callback) => {
-  const success = await exports.retrieveRepos()
+exports.loadSequentialRepos = async (repoStart, repoCount) => {
+  let success = false
+  let tries = 0
+  do {
+    logger.notice(`Attempting to load ${repoCount} GITenberg repos starting at ${ repoStart }`)
+    success = GitFetch.getRepoRange(repoStart, repoCount)
+    tries++
+  } while (success === false && tries < 5)
 
-  if (success === false) {
+  return success
+}
+
+exports.handler = async (event, context, callback) => {
+  let repoInfo = null
+  if (event.source === 'local.bulk') {
+    repoInfo = await exports.loadSequentialRepos(event.repos.start, event.repos.count)
+  } else {
+    repoInfo = await exports.retrieveRepos()
+  }
+
+  if (repoInfo === false) {
     logger.error('Github API request returned too many 5XX errors')
     return callback(new Error('Github API request returned too many 5XX errors'))
   }
 
   const lcRels = await Helpers.loadLCRels()
-  const repoInfo = success
   if (repoInfo.length === 0) {
     logger.notice('No updates made in the fetch period to GITenberg')
     const emptyResult = {
