@@ -1,4 +1,6 @@
-import { getRDF, getRepos, addCoverFile } from './src/githubDataFetch'
+import {
+  getRDF, getRepos, addCoverFile, getRepoRange,
+} from './src/githubDataFetch'
 import Kinesis from './src/kinesisOutput'
 import Helpers from './src/fetchHelpers'
 import logger from './src/helpers/logger'
@@ -29,9 +31,9 @@ exports.loadSequentialRepos = async (repoStart, repoCount) => {
   let success = false
   let tries = 0
   do {
-    logger.notice(`Attempting to load ${repoCount} GITenberg repos starting at ${ repoStart }`)
-    success = GitFetch.getRepoRange(repoStart, repoCount)
-    tries++
+    logger.notice(`Attempting to load ${repoCount} GITenberg repos starting at ${repoStart}`)
+    success = getRepoRange(repoStart, repoCount)
+    tries += 1
   } while (success === false && tries < 5)
 
   return success
@@ -66,7 +68,7 @@ exports.handler = async (event, context, callback) => {
     // eslint-disable-next-line no-await-in-loop
     const metadataRec = await exports.getRepoData(repoInfo[i], lcRels)
     logger.debug('Processed GITenberg record')
-    // Kinesis.resultHandler(metadataRec)
+    Kinesis.resultHandler(metadataRec)
   }
 
   logger.notice('Successfully updated records')

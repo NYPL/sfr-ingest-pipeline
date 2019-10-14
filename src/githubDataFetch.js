@@ -108,31 +108,7 @@ const getRepos = () => {
   })
 }
 
-exports.getRepoRange = async (startPos, repoCount) => {
-  const repoIDs = []
-  const startPage = (startPos - (startPos % 100)) / 100
-  let endPage = (((startPos + repoCount) - ((startPos + repoCount) % 100)) / 100)
-  const finalPageSize = repoCount % 100 === 0 ? 100 : repoCount % 100
-  let pageSize = 100
-  if (endPage === startPage) { endPage += 1 }
-  console.log(startPage, endPage)
-  for (let i = startPage; i < endPage; i += 1) {
-    try {
-      if (i === endPage - 1) {
-        pageSize = finalPageSize
-      }
-      // eslint-disable-next-line no-await-in-loop
-      const pageRepos = await exports.loadRepoPage(i, pageSize)
-      repoIDs.push(...pageRepos)
-    } catch (err) {
-      logger.error(err)
-      return false
-    }
-  }
-  return repoIDs
-}
-
-exports.loadRepoPage = (page, pageSize) => {
+const loadRepoPage = (page, pageSize) => {
   const repoIDs = []
   return new Promise((resolve, reject) => {
     logger.debug(`Loading page ${page} of GITenberg repositories`)
@@ -157,6 +133,30 @@ exports.loadRepoPage = (page, pageSize) => {
       })
       .catch((err) => reject(err))
   })
+}
+
+const getRepoRange = async (startPos, repoCount) => {
+  const repoIDs = []
+  const startPage = (startPos - (startPos % 100)) / 100
+  let endPage = (((startPos + repoCount) - ((startPos + repoCount) % 100)) / 100)
+  const finalPageSize = repoCount % 100 === 0 ? 100 : repoCount % 100
+  let pageSize = 100
+  if (endPage === startPage) { endPage += 1 }
+  console.log(startPage, endPage)
+  for (let i = startPage; i < endPage; i += 1) {
+    try {
+      if (i === endPage - 1) {
+        pageSize = finalPageSize
+      }
+      // eslint-disable-next-line no-await-in-loop
+      const pageRepos = await loadRepoPage(i, pageSize)
+      repoIDs.push(...pageRepos)
+    } catch (err) {
+      logger.error(err)
+      return false
+    }
+  }
+  return repoIDs
 }
 
 /* eslint-disable prefer-promise-reject-errors */
@@ -281,4 +281,5 @@ module.exports = {
   getRepos,
   getRDF,
   addCoverFile,
+  getRepoRange,
 }
