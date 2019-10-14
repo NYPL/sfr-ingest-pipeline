@@ -34,6 +34,10 @@ export class InstanceRecord {
   addRights(source, license, statement, reason){
     this.rights.push(new Rights(source, license, statement, reason))
   }
+
+  addLink(url, mediaType, flags) {
+    this.links.push(new Link(url, mediaType, flags))
+  }
 }
 
 export class Agent {

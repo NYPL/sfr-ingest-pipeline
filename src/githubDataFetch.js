@@ -5,9 +5,9 @@ import { onError } from 'apollo-link-error'
 import { createHttpLink } from 'apollo-link-http'
 import ApolloLinkTimeout from 'apollo-link-timeout'
 import Axios from 'axios'
-import fs from 'fs'
 import gql from 'graphql-tag'
 import fetch from 'node-fetch'
+import mime from 'mime-types'
 import moment from 'moment'
 import yaml from 'js-yaml'
 
@@ -213,16 +213,19 @@ const getRDF = (repo, lcRels) => new Promise((resolve) => {
   })
 })
 
-const fetchCoverFile = async (gutenPath, repoName, filePath) => {
+const fetchCoverFile = (gutenPath, filePath) => {
   const fileURL = gutenPath.replace('ebooks', 'files')
   const coverURL = `${fileURL}/${filePath}`
-  const fileWriter = fs.createWriteStream(repoName)
-  const fileResp = await Axios({ url: coverURL, method: 'GET', responseType: 'stream' })
-  fileResp.data.pipe(fileWriter)
-  return new Promise((resolve, reject) => {
-    fileWriter.on('finish', resolve(repoName))
-    fileWriter.on('error', reject)
-  })
+  const mimeType = mime.lookup(filePath)
+  const flags = {
+    cover: true,
+    temporary: true,
+  }
+  return {
+    url: coverURL,
+    mediaType: mimeType,
+    flags,
+  }
 }
 
 const getMetadataFile = (repo) => new Promise((resolve, reject) => {
@@ -264,10 +267,8 @@ const addCoverFile = async (repo, metadata) => {
     repoMetadata.covers.forEach(async (coverMeta) => {
       logger.debug(`Cover Type: ${coverMeta.cover_type} | Cover Path: ${coverMeta.image_path}`)
       if (coverMeta.cover_type !== 'generated') {
-        // eslint-disable-next-line no-underscore-dangle
-        const coverFile = await fetchCoverFile(repoMetadata.url, repoMetadata._repo, coverMeta.image_path)
-        // return coverFile
-        console.log(coverFile)
+        const coverFile = fetchCoverFile(repoMetadata.url, coverMeta.image_path)
+        metadata.data.instances[0].addLink(coverFile.url, coverFile.mediaType, coverFile.flags)
       }
     })
   }
