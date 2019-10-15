@@ -14,6 +14,7 @@ import yaml from 'js-yaml'
 import RDFParser from './parseRDF'
 import logger from './helpers/logger'
 import { LCSHYamlType, LCCYamlType } from './helpers/yaml'
+import VarDecryptor from './helpers/encryption'
 
 const httpLink = createHttpLink({
   uri: 'https://api.github.com/graphql',
@@ -36,9 +37,11 @@ const timeoutLink = new ApolloLinkTimeout(20000)
 
 const errorTimeoutHttpLink = timeoutLink.concat(errorHttpLink)
 
+const varDecrypt = new VarDecryptor()
+
 // eslint-disable-next-line no-unused-vars
-const authLink = setContext((_, { headers }) => {
-  const token = process.env.GITHUB_API_TOKEN
+const authLink = setContext(async (_, { headers }) => {
+  const token = await varDecrypt.decryptVar(process.env.GITHUB_API_TOKEN)
   return {
     headers: {
       authorization: token ? `Bearer ${token}` : '',
