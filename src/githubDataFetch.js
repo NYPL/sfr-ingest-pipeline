@@ -116,7 +116,6 @@ const loadRepoPage = (page, pageSize) => {
       .then((data) => {
         const repos = data.data
         if (repos === null || repos.length === 0) resolve(false)
-
         repos.forEach((repo) => {
           const { name } = repo
 
@@ -141,15 +140,16 @@ const getRepoRange = async (startPos, repoCount) => {
   let endPage = (((startPos + repoCount) - ((startPos + repoCount) % 100)) / 100)
   const finalPageSize = repoCount % 100 === 0 ? 100 : repoCount % 100
   let pageSize = 100
+
   if (endPage === startPage) { endPage += 1 }
-  console.log(startPage, endPage)
+
   for (let i = startPage; i < endPage; i += 1) {
     try {
       if (i === endPage - 1) {
         pageSize = finalPageSize
       }
       // eslint-disable-next-line no-await-in-loop
-      const pageRepos = await loadRepoPage(i, pageSize)
+      const pageRepos = await module.exports.loadRepoPage(i, pageSize)
       repoIDs.push(...pageRepos)
     } catch (err) {
       logger.error(err)
@@ -257,17 +257,17 @@ const addCoverFile = async (repo, metadata) => {
   const repoName = repo[0]
   let repoMetadata
   try {
-    repoMetadata = await getMetadataFile(repoName)
+    repoMetadata = await module.exports.getMetadataFile(repoName)
   } catch (err) {
     logger.error(err)
   }
-  if (repoMetadata.covers) {
+  if (repoMetadata && repoMetadata.covers) {
     logger.debug(`Found covers in ${repoName}`)
     // eslint-disable-next-line consistent-return
     repoMetadata.covers.forEach(async (coverMeta) => {
       logger.debug(`Cover Type: ${coverMeta.cover_type} | Cover Path: ${coverMeta.image_path}`)
       if (coverMeta.cover_type !== 'generated') {
-        const coverFile = fetchCoverFile(repoMetadata.url, coverMeta.image_path)
+        const coverFile = module.exports.fetchCoverFile(repoMetadata.url, coverMeta.image_path)
         metadata.data.instances[0].addLink(coverFile.url, coverFile.mediaType, coverFile.flags)
       }
     })
@@ -282,4 +282,7 @@ module.exports = {
   getRDF,
   addCoverFile,
   getRepoRange,
+  fetchCoverFile,
+  getMetadataFile,
+  loadRepoPage,
 }
