@@ -8,6 +8,7 @@ import moment from 'moment'
 import GithubFetch from '../src/githubDataFetch'
 import RDFParser from '../src/parseRDF'
 import { InstanceRecord } from '../src/sfrMetadataModel'
+import VarDecryptor from '../src/helpers/encryption'
 
 chai.should()
 chai.use(sinonChai)
@@ -15,6 +16,14 @@ chai.use(chaiAsPromised)
 const { expect } = chai
 
 describe('GitHub Data [githubDataFetch.js]', () => {
+  let kmsDecryptStub
+  beforeEach(() => {
+    kmsDecryptStub = sinon.stub(VarDecryptor.prototype, 'decryptVar')
+    kmsDecryptStub.resolves('test_api_key')
+  })
+  afterEach(() => {
+    kmsDecryptStub.restore()
+  })
   describe('exports.getRepos()', () => {
     it('should return false in response to an invalid (non-200) response', async () => {
       nock('https://api.github.com')
