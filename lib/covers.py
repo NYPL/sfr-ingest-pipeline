@@ -29,7 +29,7 @@ class CoverParse:
         if url[:4] != 'http':
             url = 'http://{}'.format(url)
         parsedURL = urlparse(url)
-        if not parsedURL.scheme or not parsedURL.netloc:
+        if not parsedURL.scheme or not parsedURL.netloc or not parsedURL.path:
             self.logger.error('Invalid URL provided, unable to access cover')
             raise InvalidParameter('Unable to validate URL {}'.format(url))
 
