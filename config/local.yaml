@@ -1,0 +1,17 @@
+# Uncomment the below/add additional env variables to add them to the lambda
+# === ENVIRONMENT_VARIABLES ===
+environment_variables:
+    LOG_LEVEL: debug
+    DB_HOST: sfr-ebook-metadata-dev.cicyc5fazypj.us-east-1.rds.amazonaws.com
+    DB_PORT: '5432'
+    DB_NAME: sfr_new
+    DB_USER: sfr
+    DB_PSWD: 'researchnow'
+
+    INDEX_QUEUE: https://sqs.us-east-1.amazonaws.com/224280085904/sfr-clustering-works
+    INDEX_PERIOD: '7200'
+
+    ES_HOST: vpc-search-sfr-development-3vgqce5wzyy3i3ywvsnz6xedum.us-east-1.es.amazonaws.com
+    ES_PORT: '80'
+    ES_TIMEOUT: '10'
+    ES_INDEX: sfr_test
