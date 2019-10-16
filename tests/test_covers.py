@@ -36,6 +36,15 @@ class TestCoverParse:
         with pytest.raises(InvalidParameter):
             CoverParse(testRecord)
 
+    def test_CoverParseInit_no_httpURL(self, testRecord):
+        outURL = testRecord['url']
+        testRecord['url'] = testRecord['url'][7:]
+        testParser = CoverParse(testRecord)
+        assert testParser.remoteURL == outURL
+        assert testParser.source == testRecord['source']
+        assert testParser.sourceID == testRecord['identifier']
+        assert testParser.s3CoverURL is None
+
     def test_CoverParseInit_missingURL(self, testRecord):
         testRecord.pop('url')
         with pytest.raises(InvalidParameter):
