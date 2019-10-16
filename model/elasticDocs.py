@@ -180,6 +180,7 @@ class Instance(BaseInner):
     links = Nested(Link)
     language = Nested(Language)
     rights = Nested(Rights)
+    covers = Nested(Link)
 
     @classmethod
     def getFields(cls):

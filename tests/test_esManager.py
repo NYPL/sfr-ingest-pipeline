@@ -164,6 +164,38 @@ class TestESManager(unittest.TestCase):
         self.assertEqual(langRec.language, 'test')
         self.assertEqual(langRec.iso_3, 'tes')
     
+    def test_add_cover_json_string(self):
+        testCover = TestDict(**{
+            'url': 'testURL',
+            'media_type': 'image/test',
+            'flags': '{"cover": true}'
+        })
+
+        coverRec = ESDoc.addCover(testCover)
+        self.assertEqual(coverRec.url, 'testURL')
+        self.assertEqual(coverRec.media_type, 'image/test')
+
+    def test_add_cover_json_object(self):
+        testCover = TestDict(**{
+            'url': 'testURL',
+            'media_type': 'image/test',
+            'flags': {'cover': True}
+        })
+
+        coverRec = ESDoc.addCover(testCover)
+        self.assertEqual(coverRec.url, 'testURL')
+        self.assertEqual(coverRec.media_type, 'image/test')
+
+    def test_add_cover_other_link(self):
+        testCover = TestDict(**{
+            'url': 'testURL',
+            'media_type': 'image/test',
+            'flags': {'cover': False}
+        })
+
+        coverRec = ESDoc.addCover(testCover)
+        self.assertEqual(coverRec, None)
+    
     def test_insert_instance_w_pub_date(self):
         testInstance = MagicMock()
         testDate = MagicMock()

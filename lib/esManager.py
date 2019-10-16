@@ -223,6 +223,20 @@ class ESDoc():
         return Language(**languageData)
 
     @staticmethod
+    def addCover(cover):
+        coverData = {
+            'url': cover.url,
+            'media_type': cover.media_type
+        }
+        try:
+            coverFlags = json.loads(cover.flags)
+        except TypeError:
+            coverFlags = cover.flags
+        if coverFlags.get('cover', False) is True:
+            return Link(**coverData) 
+        return None
+
+    @staticmethod
     def addRights(rights):
         rightsData = {
             field: getattr(rights, field, None) for field in Rights.getFields()
@@ -318,6 +332,11 @@ class ESDoc():
             ESDoc.addLanguage(lang)
             for lang in instance.language
         ]
+
+        esInstance.covers = filter(None, [
+            ESDoc.addCover(cover)
+            for cover in instance.links
+        ])
         
         return esInstance
     
