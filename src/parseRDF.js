@@ -3,7 +3,9 @@ import moment from 'moment'
 
 import logger from './helpers/logger'
 
-import { WorkRecord, InstanceRecord, Agent, Identifier, Format, Subject, Link, Measurement, Rights } from './sfrMetadataModel'
+import {
+  WorkRecord, Agent, Identifier, Format, Subject, Link, Rights,
+} from './sfrMetadataModel'
 
 const storeFields = [
   ['dcterms:title', 'title'],
@@ -11,21 +13,21 @@ const storeFields = [
   ['dcterms:publisher', 'publisher'],
   ['dcterms:rights', 'rights_statement'],
   ['pgterms:marc010', 'lccn'],
-  ['pgterms:marc901', 'coverImageUrl']
+  ['pgterms:marc901', 'coverImageUrl'],
 ]
 
 const workFields = [
   'title',
-  'alt_titles'
+  'alt_titles',
 ]
 
 const entityFields = [
-  ['pgterms:name', 'name']
+  ['pgterms:name', 'name'],
 ]
 
 const fileFields = [
   ['dcterms:modified', 'modified'],
-  ['dcterms:extent', 'size']
+  ['dcterms:extent', 'size'],
 ]
 
 const subjAuthRegex = /\/([A-Z]+)$/
@@ -34,17 +36,15 @@ const subjAuthRegex = /\/([A-Z]+)$/
 // It takes a raw object containing RDF text and converts this
 // into a parsed Object that conforms with the SFR Metadata Model
 exports.parseRDF = (data, gutenbergID, gutenbergURI, lcRels, callback) => {
-
   // Load RDF string from source object
-  let rdfData = data['data']['repository']['object']
-  let rdfText = rdfData['text']
+  const rdfData = data.data.repository.object
+  const rdfText = rdfData.text
   // Read XML/RDF string into javascript object
   parseString(rdfText, (err, result) => {
-
     if (err) return callback(err, null)
 
     // On success, parse resulting object into Metadata Model Object
-    let gutenbergData = exports.loadGutenbergRecord(result['rdf:RDF'], gutenbergID, lcRels)
+    const gutenbergData = exports.loadGutenbergRecord(result['rdf:RDF'], gutenbergID, lcRels)
     callback(null, gutenbergData)
   })
 }
@@ -54,27 +54,26 @@ exports.parseRDF = (data, gutenbergID, gutenbergURI, lcRels, callback) => {
 // It relies on models imported from sfrMetadataModel, which defines each
 // type of record created here
 exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
-
   // Load main metadata blocks from RDF
-  let ebook = rdf['pgterms:ebook'][0]
-  let work = rdf['cc:Work'][0]
+  const ebook = rdf['pgterms:ebook'][0]
+  const work = rdf['cc:Work'][0]
 
   // Create a new work record, where all metadata will be stored
-  let bibRecord = new WorkRecord()
+  const bibRecord = new WorkRecord()
 
   // Load basic Fields
-  let mainFields = {}
-  storeFields.map(field => {
+  const mainFields = {}
+  storeFields.forEach((field) => {
     mainFields[field[1]] = exports.getRecordField(ebook, field[0])
   })
 
   // Load language
-  let languageCont = ebook['dcterms:language'][0]['rdf:Description'][0]
-  let language = exports.getRecordField(languageCont, 'rdf:value')
+  const languageCont = ebook['dcterms:language'][0]['rdf:Description'][0]
+  const language = exports.getRecordField(languageCont, 'rdf:value')
   bibRecord.language = language
 
   // Add fields to work Record
-  workFields.map(field => {
+  workFields.forEach((field) => {
     bibRecord[field] = mainFields[field]
   })
   bibRecord.language = language
@@ -91,7 +90,7 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   bibRecord.rights.push(rightsStmt)
   // Add dates to the work
   if ('dcterms:issued' in ebook) {
-    let issued = exports.getRecordField(ebook, 'dcterms:issued')
+    const issued = exports.getRecordField(ebook, 'dcterms:issued')
     bibRecord.addDate(issued, issued, 'issued')
   }
   // Add the gutenberg ID, which is also assigned as the primary identifier
@@ -99,15 +98,15 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   bibRecord.primary_identifier = new Identifier('gutenberg', gutenbergID, 1)
 
   // If present, add LCCN identifier to the work
-  if (mainFields['lccn'] !== '') bibRecord.addIdentifier('lccn', mainFields['lccn'], 1)
+  if (mainFields.lccn !== '') bibRecord.addIdentifier('lccn', mainFields.lccn, 1)
 
   // Create an instance (which is what this Gutenberg record really is)
-  bibRecord.addInstance(mainFields['title'], language)
-  let gutenbergInstance = bibRecord.instances[0]
+  bibRecord.addInstance(mainFields.title, language)
+  const gutenbergInstance = bibRecord.instances[0]
 
   // Add formats to the instance
   gutenbergInstance.formats = exports.getFormats(ebook['dcterms:hasFormat'], bibRecord.license, gutenbergID)
-  gutenbergInstance.formats.map(format => {
+  gutenbergInstance.formats.forEach((format) => {
     format.addIdentifier('gutenberg', gutenbergID, 1)
   })
 
@@ -119,7 +118,7 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
 
   // Add rights information to instance and child items
   gutenbergInstance.rights.push(rightsStmt)
-  gutenbergInstance.formats.map(item => {
+  gutenbergInstance.formats.forEach((item) => {
     item.rights.push(rightsStmt)
   })
 
@@ -130,33 +129,26 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
 // This loads the special "creator" field as well as the arbitrarily defined
 // marcrel relationships, which it scans the document for
 exports.getAgents = (ebook, lcRels) => {
-
-  let agents = []
+  const agents = []
 
   // Try to load a creator. Not all RDF files have creators associated, so
   // this will catch any error if it does not exist
   try {
-
-    let creator = exports.getAgent(ebook['dcterms:creator'][0]['pgterms:agent'][0], 'author')
+    const creator = exports.getAgent(ebook['dcterms:creator'][0]['pgterms:agent'][0], 'author')
     agents.push(creator)
-
   } catch (e) {
-
     if (e instanceof TypeError) logger.notice('No creator associated')
     else throw e
-
   }
 
   // Search RDF document for all marcrel relationships and create Agents
-  lcRels.map((rel) => {
-
-    let roleTerm = 'marcrel:' + rel[0]
+  lcRels.forEach((rel) => {
+    const roleTerm = `marcrel:${rel[0]}`
 
     if (roleTerm in ebook) {
-      let ent = exports.getAgent(ebook[roleTerm][0]['pgterms:agent'][0], rel[1])
+      const ent = exports.getAgent(ebook[roleTerm][0]['pgterms:agent'][0], rel[1])
       agents.push(ent)
     }
-
   })
 
   return agents
@@ -165,36 +157,32 @@ exports.getAgents = (ebook, lcRels) => {
 
 // This function explicitly creates each agent
 exports.getAgent = (agent, role) => {
-
   // By default we know the role, and likely do not have a website/link
-  let entRec = {
-    'role': role,
-    'webpage': null
-  }
+  const entRec = { role, webpage: null }
 
   // Load the fields we will be storing, as defined at the top of this file
-  entityFields.map(field => {
+  entityFields.forEach((field) => {
     entRec[field[1]] = exports.getRecordField(agent, field[0])
   })
 
   // Aliases is an array, so it should be stored as such
-  entRec['aliases'] = agent['pgterms:alias']
+  entRec.aliases = agent['pgterms:alias']
   // If a webpage exists, create a Link object for that page
   if ('pgterms:webpage' in agent) {
-    let pageLink = exports.getFieldAttrib(agent['pgterms:webpage'][0], 'rdf:resource')
-    const bioFlags = {local: false, download: false, ebook: false}
-    entRec['link'] = new Link(pageLink, 'text/html', bioFlags)
+    const pageLink = exports.getFieldAttrib(agent['pgterms:webpage'][0], 'rdf:resource')
+    const bioFlags = { local: false, download: false, ebook: false }
+    entRec.link = new Link(pageLink, 'text/html', bioFlags)
   }
 
-  let newAgent = new Agent(entRec['name'], [entRec['role']], entRec['aliases'], entRec['link'])
+  const newAgent = new Agent(entRec.name, [entRec.role], entRec.aliases, entRec.link)
 
   if ('pgterms:birthdate' in agent) {
-    let birth = exports.getRecordField(agent, 'pgterms:birthdate')
+    const birth = exports.getRecordField(agent, 'pgterms:birthdate')
     newAgent.addDate(birth, birth, 'birth_date')
   }
 
   if ('pgterms:deathdate' in agent) {
-    let death = exports.getRecordField(agent, 'pgterms:deathdate')
+    const death = exports.getRecordField(agent, 'pgterms:deathdate')
     newAgent.addDate(death, death, 'death_date')
   }
 
@@ -202,17 +190,16 @@ exports.getAgent = (agent, role) => {
 }
 
 exports.getSubjects = (subjects) => {
-
-  let terms = []
+  const terms = []
   if (!subjects) return terms
 
-  subjects.map(subject => {
-    let subjRecord = subject['rdf:Description'][0]
-    let authURL = exports.getFieldAttrib(subjRecord['dcam:memberOf'][0], 'rdf:resource')
-    let authority = subjAuthRegex.exec(authURL)[1]
-    let term = exports.getRecordField(subjRecord, 'rdf:value')
+  subjects.forEach((subject) => {
+    const subjRecord = subject['rdf:Description'][0]
+    const authURL = exports.getFieldAttrib(subjRecord['dcam:memberOf'][0], 'rdf:resource')
+    const authority = subjAuthRegex.exec(authURL)[1]
+    const term = exports.getRecordField(subjRecord, 'rdf:value')
 
-    let sfrSubject = new Subject(authority, term, 1)
+    const sfrSubject = new Subject(authority, term, 1)
 
     terms.push(sfrSubject)
   })
@@ -225,26 +212,27 @@ exports.getFormats = (formats, license, gutenbergID) => {
 
   if (!formats) return epubs
 
-  formats.map(format => {
+  formats.forEach((format) => {
     const fileFormat = format['pgterms:file'][0]
     const url = exports.getFieldAttrib(fileFormat, 'rdf:about')
     if (url.includes('.epub')) {
       const epubImages = !url.includes('noimages')
-      const epubFlags = { local: false, download: true, ebook: true, images: epubImages }
+      const epubFlags = {
+        local: false, download: true, ebook: true, images: epubImages,
+      }
       const epubLink = new Link(url, 'application/epub+zip', epubFlags)
       const epub = {}
 
-      fileFields.map(field => {
+      fileFields.forEach((field) => {
         epub[field[1]] = exports.getRecordField(fileFormat, field[0])
       })
 
-      const sfrFormat = new Format('application/epub+zip', epubLink, epub['modified'])
-      sfrFormat.addMeasurement('bytes', epub['size'], 1, moment().format(), gutenbergID)
+      const sfrFormat = new Format('application/epub+zip', epubLink, epub.modified)
+      sfrFormat.addMeasurement('bytes', epub.size, 1, moment().format(), gutenbergID)
 
       sfrFormat.source = 'gutenberg'
-      
-      epubs.push(sfrFormat)
 
+      epubs.push(sfrFormat)
     }
   })
 
@@ -253,19 +241,15 @@ exports.getFormats = (formats, license, gutenbergID) => {
 
 exports.getRecordField = (rec, field) => {
   try {
-
     if (typeof rec[field][0] === 'object') return rec[field][0]._
-    else return rec[field][0]
-
+    return rec[field][0]
   } catch (e) {
-
     if (e instanceof TypeError) return ''
-    else throw e
-
+    throw e
   }
 }
 
 exports.getFieldAttrib = (field, attrib) => {
-  let attribs = field['$']
+  const attribs = field.$
   return attribs[attrib]
 }

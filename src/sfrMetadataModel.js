@@ -1,3 +1,5 @@
+/* eslint-disable no-use-before-define */
+/* eslint-disable max-classes-per-file */
 export class InstanceRecord {
   constructor(title, language) {
     this.title = title
@@ -19,20 +21,24 @@ export class InstanceRecord {
     this.rights = []
   }
 
-  addAgent(name, roles, aliases, birth, death, link){
+  addAgent(name, roles, aliases, birth, death, link) {
     this.agents.push(new Agent(name, roles, aliases, birth, death, link))
   }
 
-  addIdentifier(type, identifier, weight){
+  addIdentifier(type, identifier, weight) {
     this.identifiers.push(new Identifier(type, identifier, weight))
   }
 
-  addDate(display, range, type){
+  addDate(display, range, type) {
     this.dates.push(new Date(display, range, type))
   }
 
-  addRights(source, license, statement, reason){
+  addRights(source, license, statement, reason) {
     this.rights.push(new Rights(source, license, statement, reason))
+  }
+
+  addLink(url, mediaType, flags) {
+    this.links.push(new Link(url, mediaType, flags))
   }
 }
 
@@ -49,11 +55,10 @@ export class Agent {
     this.dates = []
   }
 
-  addDate(display, range, type){
+  addDate(display, range, type) {
     this.dates.push(new Date(display, range, type))
   }
 }
-
 
 
 export class Identifier {
@@ -77,39 +82,38 @@ export class Format {
     this.rights = []
 
     if (link instanceof Link || link == null) this.links = [link]
-    else this.links = this.setLink(link)
-
+    else this.links = Format.setLink(link)
   }
 
-  setLink(linkObj){
-    let formatLink = new Link(
+  static setLink(linkObj) {
+    const formatLink = new Link(
       linkObj.url,
       linkObj.mediaType,
-      linkObj.relType
+      linkObj.relType,
     )
-    if(linkObj.content) formatLink.content = linkObj.content
+    if (linkObj.content) formatLink.content = linkObj.content
 
-    if(linkObj.thumbnail) formatLink.thumbnail = linkObj.thumbnail
+    if (linkObj.thumbnail) formatLink.thumbnail = linkObj.thumbnail
 
     return [formatLink]
   }
 
-  addMeasurement(quantity, value, weight, takenAt, sourceID){
+  addMeasurement(quantity, value, weight, takenAt, sourceID) {
     this.measurements.push(new Measurement(quantity, value, weight, takenAt, sourceID))
   }
 
-  addIdentifier(type, identifier, weight){
+  addIdentifier(type, identifier, weight) {
     this.identifiers.push(new Identifier(type, identifier, weight))
   }
 
-  addRights(source, license, statement, reason){
+  addRights(source, license, statement, reason) {
     this.rights.push(new Rights(source, license, statement, reason))
   }
 }
 
 
 export class Link {
-  constructor(url, mediaType, flags){
+  constructor(url, mediaType, flags) {
     this.url = url
     this.media_type = mediaType
     this.content = null
@@ -120,7 +124,7 @@ export class Link {
 
 
 export class Subject {
-  constructor(subjectType, value, weight){
+  constructor(subjectType, value, weight) {
     this.authority = subjectType
     this.uri = null
     this.subject = value
@@ -130,7 +134,7 @@ export class Subject {
 
 
 export class Measurement {
-  constructor(quantity, value, weight, takenAt, sourceID){
+  constructor(quantity, value, weight, takenAt, sourceID) {
     this.quantity = quantity
     this.value = value
     this.weight = weight
@@ -140,7 +144,7 @@ export class Measurement {
 }
 
 export class Date {
-  constructor(date, range, type){
+  constructor(date, range, type) {
     this.display_date = date
     this.date_range = range
     this.date_type = type
@@ -148,7 +152,7 @@ export class Date {
 }
 
 export class Rights {
-  constructor(source, license, statement, reason){
+  constructor(source, license, statement, reason) {
     this.source = source
     this.license = license
     this.rights_statement = statement
@@ -156,7 +160,7 @@ export class Rights {
     this.dates = []
   }
 
-  addDate(display, range, type){
+  addDate(display, range, type) {
     this.dates.push(new Date(display, range, type))
   }
 }
@@ -182,31 +186,31 @@ export class WorkRecord {
     this.primary_identifier = null
   }
 
-  addIdentifier(type, identifier, weight){
+  addIdentifier(type, identifier, weight) {
     this.identifiers.push(new Identifier(type, identifier, weight))
   }
 
-  addInstance(title, language){
+  addInstance(title, language) {
     this.instances.push(new InstanceRecord(title, language))
   }
 
-  addSubject(subjectType, identifier, value, weight){
+  addSubject(subjectType, identifier, value, weight) {
     this.subjects.push(new Subject(subjectType, identifier, value, weight))
   }
 
-  addAgent(name, roles, aliases, birth, death, link){
+  addAgent(name, roles, aliases, birth, death, link) {
     this.agents.push(new Agent(name, roles, aliases, birth, death, link))
   }
 
-  addMeasurement(quantity, value, weight, takenAt, sourceID){
+  addMeasurement(quantity, value, weight, takenAt, sourceID) {
     this.measurements.push(new Measurement(quantity, value, weight, takenAt, sourceID))
   }
 
-  addDate(display, range, type){
+  addDate(display, range, type) {
     this.dates.push(new Date(display, range, type))
   }
 
-  addRights(source, license, statement, reason){
+  addRights(source, license, statement, reason) {
     this.rights.push(new Rights(source, license, statement, reason))
   }
 }

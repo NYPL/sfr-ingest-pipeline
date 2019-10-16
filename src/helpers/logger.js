@@ -1,4 +1,3 @@
-/* eslint-disable semi */
 import { createLogger, format, transports } from 'winston'
 
 // Set default NYPL agreed upon log levels
@@ -10,33 +9,29 @@ const levels = {
   warning: 4,
   notice: 5,
   info: 6,
-  debug: 7
-};
+  debug: 7,
+}
 
 // This is a basic format, further detail could be added to the messages
-const stdFormat = format.printf(info => {
-  return `${info.timestamp} [${info.level}] ${info.message}`
-})
+const stdFormat = format.printf((info) => `${info.timestamp} [${info.level}] ${info.message}`)
 
 const logger = createLogger({
   level: 'debug',
-  levels: levels,
+  levels,
   format: format.combine(
     format.timestamp(),
-    stdFormat
+    stdFormat,
   ),
-  transports: []
+  transports: [],
 })
 
 // If we are running tests, silence the logs
-var silent = false
+let silent = false
 if (process.env.NODE_ENV === 'test') {
   silent = true
 }
 
 // Add the winston transporter, more could be added here
-logger.add(new transports.Console({
-  silent: silent
-}))
+logger.add(new transports.Console({ silent }))
 
-module.exports = logger;
+module.exports = logger
