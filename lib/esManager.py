@@ -333,10 +333,10 @@ class ESDoc():
             for lang in instance.language
         ]
 
-        esInstance.covers = filter(None, [
+        esInstance.covers = list(filter(None, [
             ESDoc.addCover(cover)
             for cover in instance.links
-        ])
+        ]))
         
         return esInstance
     
