@@ -9,6 +9,7 @@ from lib.outputManager import OutputManager
 
 class WorkImporter(AbstractImporter):
     def __init__(self, record, session):
+        self.source = record.get('source', 'unknown')
         self.data = WorkImporter.parseData(record)
         self.work = None
         super().__init__(record, session)
@@ -70,7 +71,7 @@ class WorkImporter(AbstractImporter):
                     OutputManager.putQueue(
                         {
                             'url': link.url,
-                            'source': instance.items[0].source,
+                            'source': self.source,
                             'identifier': self.work.uuid.hex
                         },
                         os.environ['COVER_QUEUE']

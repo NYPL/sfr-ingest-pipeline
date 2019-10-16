@@ -91,7 +91,8 @@ class TestInstanceImporter(unittest.TestCase):
             {
                 'data': {
                     'identifiers': [{'identifier': 1}]
-                }
+                },
+                'source': 'testing'
             },
             'session'
         )
@@ -100,9 +101,6 @@ class TestInstanceImporter(unittest.TestCase):
         mockInstance.links = [mockLink]
         mockLink.flags = {'cover': True}
         mockLink.url = 'testing_url'
-        mockItem = MagicMock()
-        mockItem.source = 'testing'
-        mockInstance.items = [mockItem]
 
         testImporter.instance = mockInstance
 
