@@ -1,8 +1,6 @@
 # ResearchNow Book Cover s3 Storage
 
-[![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-covers-to-s3.svg)](https://badge.fury.io/gh/nypl%2Fsfr-covers-to-s3)
-
-[![Build Status](https://travis-ci.com/NYPL/sfr-covers-to-s3.svg?branch=development)](https://travis-ci.com/NYPL/sfr-covers-to-s3)
+[![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-covers-to-s3.svg)](https://badge.fury.io/gh/nypl%2Fsfr-covers-to-s3) [![Build Status](https://travis-ci.com/NYPL/sfr-covers-to-s3.svg?branch=development)](https://travis-ci.com/NYPL/sfr-covers-to-s3)
 
 ## Summary
 
