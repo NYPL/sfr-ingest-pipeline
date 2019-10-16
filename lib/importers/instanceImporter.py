@@ -9,6 +9,7 @@ from lib.outputManager import OutputManager
 
 class InstanceImporter(AbstractImporter):
     def __init__(self, record, session):
+        self.source = record.get('source', 'unknown')
         self.data = record['data']
         self.instance = None
         super().__init__(record, session)
@@ -65,7 +66,7 @@ class InstanceImporter(AbstractImporter):
                 OutputManager.putQueue(
                     {
                         'url': link.url,
-                        'source': self.instance.items[0].source,
+                        'source': self.source,
                         'identifier': self.data['identifiers'][0]['identifier']
                     },
                     os.environ['COVER_QUEUE']

@@ -83,7 +83,7 @@ class TestWorkImporter(unittest.TestCase):
     @patch.dict('os.environ', {'COVER_QUEUE': 'test_queue'})
     @patch.object(OutputManager, 'putQueue')
     def test_storeCovers_strFlags(self, mockPut):
-        testImporter = WorkImporter({'data': {}}, 'session')
+        testImporter = WorkImporter({'data': {}, 'source': 'test'}, 'session')
         mockWork = MagicMock()
         mockUUID = MagicMock()
         mockUUID.hex = 'test_uuid'
@@ -94,9 +94,6 @@ class TestWorkImporter(unittest.TestCase):
         mockInstance.links = [mockLink]
         mockLink.flags = json.dumps({'cover': True})
         mockLink.url = 'testing_url'
-        mockItem = MagicMock()
-        mockItem.source = 'testing'
-        mockInstance.items = [mockItem]
 
         testImporter.work = mockWork
 
@@ -104,7 +101,7 @@ class TestWorkImporter(unittest.TestCase):
         mockPut.assert_called_once_with(
             {
                 'url': 'testing_url',
-                'source': 'testing',
+                'source': 'test',
                 'identifier': 'test_uuid'
             },
             'test_queue'
@@ -113,7 +110,7 @@ class TestWorkImporter(unittest.TestCase):
     @patch.dict('os.environ', {'COVER_QUEUE': 'test_queue'})
     @patch.object(OutputManager, 'putQueue')
     def test_storeCovers_dictFlags(self, mockPut):
-        testImporter = WorkImporter({'data': {}}, 'session')
+        testImporter = WorkImporter({'data': {}, 'source': 'test'}, 'session')
         mockWork = MagicMock()
         mockUUID = MagicMock()
         mockUUID.hex = 'test_uuid'
@@ -124,9 +121,6 @@ class TestWorkImporter(unittest.TestCase):
         mockInstance.links = [mockLink]
         mockLink.flags = {'cover': True}
         mockLink.url = 'testing_url'
-        mockItem = MagicMock()
-        mockItem.source = 'testing'
-        mockInstance.items = [mockItem]
 
         testImporter.work = mockWork
 
@@ -134,7 +128,7 @@ class TestWorkImporter(unittest.TestCase):
         mockPut.assert_called_once_with(
             {
                 'url': 'testing_url',
-                'source': 'testing',
+                'source': 'test',
                 'identifier': 'test_uuid'
             },
             'test_queue'
