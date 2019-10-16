@@ -1,11 +1,11 @@
 # SFR ElasticSearch Manager
+
+[![Build Status](https://travis-ci.com/NYPL/sfr-elasticsearch-manager.svg?branch=development)](https://travis-ci.com/NYPL/sfr-elasticsearch-manager) [![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-elasticsearch-manager.svg)](https://badge.fury.io/gh/nypl%2Fsfr-elasticsearch-manager) 
+
 This Lambda function manages the SFR ElasticSearch index, reflecting updates from the postgreSQL persistence layer into an ElasticSearch index (used for record retrieval by APIs/the SFR front-end application)
 
-## Version
-
-v0.1.2
-
 ## Dependencies
+
 - coverage
 - flake8
 - psycopg2-binary
