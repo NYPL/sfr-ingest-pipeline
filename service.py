@@ -119,7 +119,10 @@ def loadLocalCSV(localFile):
     with hathiFile:
         rightsSkips = ['ic', 'icus', 'ic-world', 'und']
         hathiReader = csv.reader(hathiFile, delimiter='\t')
-        rows = [ r for r in hathiReader if r[2] not in rightsSkips ]
+        rows = [
+            r for r in hathiReader
+            if r[2] not in rightsSkips and r[0] != 'htid'
+        ]
     logger.debug('Loaded {} rows from {}'.format(str(len(rows)), localFile))
     return rows
 

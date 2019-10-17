@@ -44,24 +44,23 @@ class TestHandler(unittest.TestCase):
         self.assertTrue(resp)
 
     def test_local_csv_success(self):
-        mOpen = mock_open(read_data='row1\nrow2\n')
+        mOpen = mock_open(read_data='id1\tr1.2\tpd\nid2\tr2.2\tpd\n')
         mOpen.return_value.__iter__ = lambda self: self
         mOpen.return_value.__next__ = lambda self: next(iter(self.readline, ''))
         with patch('service.open', mOpen, create=True) as mCSV:
             rows = loadLocalCSV('localFile')
             mCSV.assert_called_once_with('localFile', newline='')
-            self.assertEqual(rows[0][0], 'row1')
+            self.assertEqual(rows[0][0], 'id1')
 
     def test_local_csv_header(self):
-        mOpen = mock_open(read_data='htid\nrow1\nrow2\n')
+        mOpen = mock_open(read_data='htid\tt1\tt2\nid1\tr1.2\tpd\nid2\tr2.2\tpd\n')
         mOpen.return_value.__iter__ = lambda self: self
         mOpen.return_value.__next__ = lambda self: next(iter(self.readline, ''))
         with patch('service.open', mOpen, create=True) as mCSV:
             rows = loadLocalCSV('localFile')
             mCSV.assert_called_once_with('localFile', newline='')
-            self.assertEqual(rows[0][0], 'row1')
+            self.assertEqual(rows[0][0], 'id1')
 
-    
     def test_local_csv_missing(self):
         with self.assertRaises(ProcessingError):
             loadLocalCSV('localFile')
