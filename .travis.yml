@@ -1,26 +1,21 @@
 language: python
 dist: xenial
 python:
-  - 3.6
-  - 3.7
+- 3.7
 install:
-  - pip install --upgrade pip
-  - pip install -r requirements.txt
+- pip install --upgrade pip
+- pip install -r requirements.txt
 script: make test
-#
-# The travis configuration beloy will deploy this lambda to the function defined
-# in your config.yaml file. This behavior can be defined for any of the
-# development/qa/production environments.
-#
-# after_success:
-#  - ENVIRONMENT_NAME=$TRAVIS_BRANCH
-#  - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
-# deploy:
-#  - provider: script
-#    skip_cleanup: true
-#    script: "make deploy ENV=$ENVIRONMENT_NAME"
-#    on:
-#      branch: development
-#
-# If you are deploying an NYPL Lambda, see the engineering documentation in
-# github for instructions on adding encrypted variables to you travis scripts
+after_success:
+- ENVIRONMENT_NAME=$TRAVIS_BRANCH
+- if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: make deploy ENV=$ENVIRONMENT_NAME
+  on:
+    branch: development
+env:
+  global:
+  - secure: QaWdwDqYvAz9+sS2SiCgM9a71CX7VMRPZS2PRVt7f7y67AR+AOuGmlrlWKooeRbnlEE+K72V3ZNGcppyVfop0htPJhAvphDSWxfEUwQAnT+dnGMRxzvmajIhDzursupRx/FTOHkhm0wY3XCkcrviqPbKo3AFEr8H1bm1f1f90MchWpEGJv+3NcGKiPaxnLJm7T4kXo08jxwnX84uUfnWnPusIcMlX3u7dI4jx3E+y3tU/bRf8y+3a+fX5cqLPZECDsfkfciW6Oj7q+6PBsD6JVB/RizymxuzcdUhU+caaCMh9MFU5aVYwLNpplcylp5X1HgKz3FSfugaIkmgr04WZgEU3caOMI+Y18miSJo6H2MP1I+sKKuVhUtnsZStRpAKk9syp6/joKJhJ8/bKRacoX8oYmLtU0qZ+j5UVuG1Brza1ihmUYZ+I4/EnW/9IupSUJ/7co70PhFf4JQP4anQq1xS8IpcYLKk5IzsZT0dTBVJHvXmLy0kD1Vy1M68JmWJJ/OVXztoATyzpmEHjmlfD4Y0iEob1BnKZlj75cglFAhSfdQ8p5tR1IKQv4lebkiacN2c8GOzdxropuW1BPZTirN7weyV/2F3c2pN0aMKbF4vPac8wfA0agl+OR6sUTD7QvllJPLEyDrMtYedJ+Zi6RbipGqxSZml/paRdZW77f4=
+  - secure: dTY+J2zBZaNhhZorKLsT01/IqVwVJqo99+/BZSMBKyT6k8qe+qdtONQeQpKoGLbgtX+yM3ijvM5zMxy/KSCnbAycFne/2RZKn1BUDyZMFd2j3ZL0hpspuzhCBPn4Y6MrAfucQ4u741ANJiWGMfGwaNbwPfQxNbu1D3AE/4kiwC29Oj6COhFKZFNGKgfpTgUfF67CjNoiZ+A7F7NzUnaE05ochuysIEnFBYgevoxuiEHcpCTeekBxAMfup3Ufxj4xSHpc7JAAdd2CY4u49B4au0g3bRVmHQINiXvcNXowZKMdA3uG9ngVOAZpcK8ao4v+DuGpe/P0Xd3Vo2VoRsvphSgr7LdVUOUkYX33N4pjgT2FNLJMrzV5+ey9WL1cdh+mUhNkcCfKFLCdslpR+AQWEqWflwIsR5+1tKZN5wrexE/c43j8TqKhNglrKUudcZNkDKPh4XYOq/Fw85Om0lKQunWjmy+4NQEHUBiDk+/9jQUNPJlm0Q0VZ1ipR0HnYei9SanOEsgPUygy62CHC5hfFRmHd7EEjPeF2ek3t93SMO3nLV9cpho9PJAmlwWki9CvCzs2zMESt8ozeEl3+WWiVi+zl44QvSoqInR75e92rwG5r6G1dcjLGrmrIfMJUCXzHJd48KbQNS/2LCHyhtJHwFRPuOwKn2NSCF69JQdrf+U=
