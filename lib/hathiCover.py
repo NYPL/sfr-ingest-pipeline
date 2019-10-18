@@ -12,9 +12,9 @@ class HathiCover():
     URI to the most relevant page image is ultimately returned.
     """
     HATHI_BASE_API = os.environ.get('HATHI_BASE_API', None)
-    HATHI_CLIENT_KEY = decryptEnvVar(os.environ.get('HATHI_CLIENT_KEY', None))
+    HATHI_CLIENT_KEY = decryptEnvVar(os.environ.get('HATHI_CLIENT_KEY', ''))
     HATHI_CLIENT_SECRET = decryptEnvVar(
-        os.environ.get('HATHI_CLIENT_SECRET', None)
+        os.environ.get('HATHI_CLIENT_SECRET', '')
     )
 
     def __init__(self, htid):
