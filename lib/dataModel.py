@@ -92,6 +92,7 @@ class InstanceRecord(DataObject):
         self.formats = []
         self.measurements = []
         self.dates = []
+        self.links = []
         self.rights = None
 
     def __repr__(self):

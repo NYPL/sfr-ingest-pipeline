@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 
+from lib.hathiCover import HathiCover
 from lib.dataModel import (
     WorkRecord,
     Identifier,
@@ -370,7 +371,6 @@ class HathiRecord():
             self.parseAuthor(self.ingest['author'])
         except KeyError:
             logger.warning('No author associated with record {}'.format(self.work))
-            
 
     def buildInstance(self, countryCodes):
         """Constrict an instance record from the Hathi data provided. As
@@ -401,6 +401,19 @@ class HathiRecord():
         logger.debug('Setting copyright date to {}'.format(
             self.ingest['copyright_date']
         ))
+
+        coverFetch = HathiCover(self.ingest['htid'])
+        pageURL = coverFetch.getPageFromMETS()
+        if pageURL is not None:
+            logger.debug('Add cover image {} to instance'.format(pageURL))
+            self.instance.addClassItem('links', Link, **{
+                'url': pageURL,
+                'media_type': 'image/jpeg',
+                'flags': {
+                    'cover': True,
+                    'temporary': True,
+                }
+            })
 
         self.parsePubInfo(self.ingest['publisher_pub_date'])
 

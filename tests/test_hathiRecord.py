@@ -1,7 +1,8 @@
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch, call
 from datetime import datetime
 
+from lib.hathiCover import HathiCover
 from lib.hathiRecord import HathiRecord
 from lib.dataModel import (
     WorkRecord,
@@ -9,7 +10,9 @@ from lib.dataModel import (
     Format,
     Identifier,
     Agent,
-    Rights
+    Rights,
+    Link,
+    Date
 )
 
 
@@ -93,8 +96,11 @@ class TestHathi(unittest.TestCase):
         self.assertIsInstance(workTest.work, WorkRecord)
         self.assertEqual(workTest.work.title, 'Work Test')
 
-    def test_build_instance(self):
+    @patch.object(HathiCover, 'getPageFromMETS', return_value='test_url')
+    @patch.object(InstanceRecord, 'addClassItem')
+    def test_build_instance_cover(self, mockAddItem, mockCover):
         testInstanceRow = {
+            'htid': 'test.1',
             'title': 'Instance Test',
             'language': 'en',
             'copyright_date': '2019',
@@ -108,6 +114,40 @@ class TestHathi(unittest.TestCase):
         instanceTest.parsePubPlace = MagicMock()
 
         instanceTest.buildInstance({})
+        mockCover.assert_called_once()
+        mockAddItem.assert_has_calls([
+            call('dates', Date, **{
+                'display_date': '2019',
+                'date_range': '2019',
+                'date_type': 'copyright_date'
+            }),
+            call('links', Link, **{
+                'url': 'test_url',
+                'media_type': 'image/jpeg',
+                'flags': {'cover': True, 'temporary': True}
+            })
+        ])
+        self.assertIsInstance(instanceTest.instance, InstanceRecord)
+        self.assertEqual(instanceTest.instance.language, 'en')
+
+    @patch.object(HathiCover, 'getPageFromMETS', return_value=None)
+    def test_build_instance_no_cover(self, mockCover):
+        testInstanceRow = {
+            'htid': 'test.1',
+            'title': 'Instance Test',
+            'language': 'en',
+            'copyright_date': '2019',
+            'publisher_pub_date': 'New York [2019]',
+            'pub_place': 'nyu',
+            'description': 'testing'
+        }
+        instanceTest = HathiRecord(testInstanceRow)
+        instanceTest.parseIdentifiers = MagicMock()
+        instanceTest.parsePubInfo = MagicMock()
+        instanceTest.parsePubPlace = MagicMock()
+
+        instanceTest.buildInstance({})
+        mockCover.assert_called_once_with()
         self.assertIsInstance(instanceTest.instance, InstanceRecord)
         self.assertEqual(instanceTest.instance.language, 'en')
         self.assertEqual(instanceTest.instance.title, 'Instance Test')
