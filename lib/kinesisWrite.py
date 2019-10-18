@@ -32,6 +32,6 @@ class KinesisOutput():
                 Data=kinesisStream,
                 PartitionKey=os.environ['OUTPUT_SHARD']
             )
-        except:
+        except:  # noqa: E722
             logger.error('Kinesis Write error!')
             raise KinesisError('Failed to write result to output stream!')

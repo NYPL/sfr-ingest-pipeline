@@ -24,7 +24,8 @@ class TestHathiCover(unittest.TestCase):
 
     @patch('lib.hathiCover.requests')
     @patch.multiple(HathiCover, generateOAuth=DEFAULT, parseMETS=DEFAULT)
-    def test_HathiCover_getPageFromMETS(self, mockReq, generateOAuth, parseMETS):
+    def test_HathiCover_getPageFromMETS(self,
+                                        mockReq, generateOAuth, parseMETS):
         generateOAuth.return_value = 'oauthHelper'
         testHathi = HathiCover('test.1')
 
@@ -59,8 +60,15 @@ class TestHathiCover(unittest.TestCase):
 
     @patch('lib.hathiCover.OAuth1', return_value='oauthHelper')
     @patch.object(HathiCover, 'getPageURL', return_value='test_page')
-    @patch.multiple(HathiPage, getPageNo=DEFAULT, parseFlags=DEFAULT, setScore=DEFAULT)
-    def test_cover_parseMETS(self, mockPage, mockOauth, getPageNo, parseFlags, setScore):
+    @patch.multiple(
+        HathiPage,
+        getPageNo=DEFAULT,
+        parseFlags=DEFAULT,
+        setScore=DEFAULT
+    )
+    def test_cover_parseMETS(self,
+                             mockPage, mockOauth, getPageNo, parseFlags,
+                             setScore):
         def createTestStruct():
             pages = []
             for i in range(25):
@@ -93,4 +101,7 @@ class TestHathiCover(unittest.TestCase):
         mockPage.page = 1
         testHathi.imagePage = mockPage
         testURL = testHathi.getPageURL()
-        self.assertEqual(testURL, 'None/volume/pageimage/test.1/1?format=jpeg&v=2')
+        self.assertEqual(
+            testURL,
+            'None/volume/pageimage/test.1/1?format=jpeg&v=2'
+        )

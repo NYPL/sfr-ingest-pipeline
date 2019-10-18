@@ -30,7 +30,13 @@ def loadCountryCodes():
     with countryXML as countryXML:
         countryTree = etree.parse(countryXML)
         codeList = countryTree.getroot()
-        
+
         logger.info('Retrieving country names from lib/marc_countries.xml')
         ns = '{info:lc/xmlns/codelist-v1}'
-        return dict([(c.find('{}code'.format(ns)).text, c.find('{}name'.format(ns)).text) for c in codeList.findall('.//{}country'.format(ns))])
+        return dict([
+            (
+                c.find('{}code'.format(ns)).text,
+                c.find('{}name'.format(ns)).text
+            )
+            for c in codeList.findall('.//{}country'.format(ns))
+        ])
