@@ -67,8 +67,16 @@ class WorkRecord(DataObject):
         self.rights = None
 
     def __repr__(self):
-        dispTitle = self.title[:50] + '...' if self.title is not None and len(self.title) > 50 else self.title
-        primaryID = None if self.primary_identifier is None else self.primary_identifier.identifier
+        if self.title is not None and len(self.title) > 50:
+            dispTitle = self.title[:50] + '...'
+        else:
+            dispTitle = self.title
+
+        if self.primary_identifier is None:
+            primaryID = None
+        else:
+            self.primary_identifier.identifier
+
         return '<Work(title={}, primary_id={})>'.format(
             dispTitle,
             primaryID
@@ -92,10 +100,14 @@ class InstanceRecord(DataObject):
         self.formats = []
         self.measurements = []
         self.dates = []
+        self.links = []
         self.rights = None
 
     def __repr__(self):
-        dispTitle = self.title[:50] + '...' if self.title is not None and len(self.title) > 50 else self.title
+        if self.title is not None and len(self.title) > 50:
+            dispTitle = self.title[:50] + '...'
+        else:
+            dispTitle = self.title
         return '<Instance(title={}, pub_place={})>'.format(
             dispTitle,
             self.pub_place
@@ -103,7 +115,8 @@ class InstanceRecord(DataObject):
 
 
 class Format(DataObject):
-    def __init__(self, source=None, contentType=None, link=None, modified=None):
+    def __init__(self,
+                 source=None, contentType=None, link=None, modified=None):
         super()
         self.source = source
         self.content_type = contentType
@@ -201,7 +214,9 @@ class Subject(DataObject):
 
 
 class Measurement(DataObject):
-    def __init__(self, quantity=None, value=None, weight=None, takenAt=None, sourceID=None):
+    def __init__(self,
+                 quantity=None, value=None, weight=None,
+                 takenAt=None, sourceID=None):
         super()
         self.quantity = quantity
         self.value = value
@@ -217,7 +232,10 @@ class Measurement(DataObject):
 
     @staticmethod
     def getValueForMeasurement(measurementList, quantity):
-        retMeasurement = list(filter(lambda x: x['quantity'] == quantity, measurementList))
+        retMeasurement = list(filter(
+            lambda x: x['quantity'] == quantity,
+            measurementList
+        ))
         return retMeasurement[0]['value']
 
 

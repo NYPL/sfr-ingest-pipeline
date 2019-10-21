@@ -1,7 +1,15 @@
 import unittest
 from unittest.mock import patch, mock_open, MagicMock, call
 
-from service import handler, loadLocalCSV, fetchHathiCSV, fileParser, rowParser, processChunk, generateChunks
+from service import (
+    handler,
+    loadLocalCSV,
+    fetchHathiCSV,
+    fileParser,
+    rowParser,
+    processChunk,
+    generateChunks
+)
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 
 
@@ -45,17 +53,19 @@ class TestHandler(unittest.TestCase):
 
     def test_local_csv_success(self):
         mOpen = mock_open(read_data='id1\tr1.2\tpd\nid2\tr2.2\tpd\n')
-        mOpen.return_value.__iter__ = lambda self: self
-        mOpen.return_value.__next__ = lambda self: next(iter(self.readline, ''))
+        mOpen.return_value.__iter__ = lambda s: s
+        mOpen.return_value.__next__ = lambda s: next(iter(s.readline, ''))
         with patch('service.open', mOpen, create=True) as mCSV:
             rows = loadLocalCSV('localFile')
             mCSV.assert_called_once_with('localFile', newline='')
             self.assertEqual(rows[0][0], 'id1')
 
     def test_local_csv_header(self):
-        mOpen = mock_open(read_data='htid\tt1\tt2\nid1\tr1.2\tpd\nid2\tr2.2\tpd\n')
-        mOpen.return_value.__iter__ = lambda self: self
-        mOpen.return_value.__next__ = lambda self: next(iter(self.readline, ''))
+        mOpen = mock_open(
+            read_data='htid\tt1\tt2\nid1\tr1.2\tpd\nid2\tr2.2\tpd\n'
+        )
+        mOpen.return_value.__iter__ = lambda s: s
+        mOpen.return_value.__next__ = lambda s: next(iter(s.readline, ''))
         with patch('service.open', mOpen, create=True) as mCSV:
             rows = loadLocalCSV('localFile')
             mCSV.assert_called_once_with('localFile', newline='')
@@ -89,8 +99,6 @@ class TestHandler(unittest.TestCase):
                     call('hathitrust.org/test/file.txt.gz')
                 ])
                 mock_gzip.assert_called_once()
-                
-
 
     @patch('service.loadCountryCodes', return_value={})
     @patch('service.Process')
@@ -124,7 +132,7 @@ class TestHandler(unittest.TestCase):
             mock_row.assert_any_call(['row3'], ['htid'], {})
             mock_row.assert_any_call(['row2'], ['htid'], {})
             mock_row.assert_any_call(['row1'], ['htid'], {})
-    
+
     def test_yield_chunks(self):
         testRows = ['row1', 'row2', 'row3', 'row4', 'row5', 'row6']
         for chunk in generateChunks(testRows, 2):

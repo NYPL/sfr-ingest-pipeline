@@ -6,3 +6,7 @@ environment_variables:
     OUTPUT_SHARD: '0'
 
     HATHI_DATAFILES: 'https://www.hathitrust.org/filebrowser/download/244651'
+
+    HATHI_BASE_API: https://babel.hathitrust.org/cgi/htd
+    HATHI_CLIENT_KEY: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQHa2gKvc2QKcOep+xbrcMAYAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM52egtZLslPmTvfTqAgEQgCW65p0pxAxWg5yrZCQp6auwHcUCXE7RZM60K0nwPJgkRwQofJu9
+    HATHI_CLIENT_SECRET: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQF8JJCoMShqcCiHjGeB+DWUAAAAejB4BgkqhkiG9w0BBwagazBpAgEAMGQGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMqG5epEn/klByQxx6AgEQgDfG7fU9bm1IqVCnVmlnGr21KfFTB/3y106k4LgmrjYvNsM3LenY0mJKnq4/53Iu/2kOClWGD7Ew

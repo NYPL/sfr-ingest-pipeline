@@ -4,3 +4,4 @@ lxml
 python-lambda
 pyyaml
 requests
+requests_oauthlib

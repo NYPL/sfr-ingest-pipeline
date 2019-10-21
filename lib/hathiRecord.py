@@ -1,6 +1,7 @@
 import re
 from datetime import datetime
 
+from lib.hathiCover import HathiCover
 from lib.dataModel import (
     WorkRecord,
     Identifier,
@@ -294,13 +295,17 @@ class HathiRecord():
         # We need a fallback modified date if none is provided
         if self.modified is None:
             self.modified = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            logger.debug('Assigning generated timestamp of {} to new record'.format(self.modified))
+            logger.debug(
+                'Assigning generated timestamp of {} to new record'.format(
+                    self.modified
+                )
+            )
         elif type(self.modified) is datetime:
             self.modified = self.modified.strftime('%Y-%m-%d %H:%M:%S')
 
     def __repr__(self):
         return '<Hathi(title={})>'.format(self.work.title)
-    
+
     def buildDataModel(self, countryCodes):
         logger.debug('Generating work record for bib record {}'.format(
             self.ingest['bib_key']
@@ -310,9 +315,11 @@ class HathiRecord():
         # been improperly formatted (generally fields out of order/misplaced)
         # Raise a warning but continue if this is found to be true
         if self.ingest['rights_statement'] not in HathiRecord.rightsReasons:
-            raise DataError('{} is malformed (columns missing or incorrect'.format(
-                self.ingest['htid']
-            ))
+            raise DataError(
+                '{} is malformed (columns missing or incorrect'.format(
+                    self.ingest['htid']
+                )
+            )
 
         self.buildWork()
 
@@ -325,7 +332,7 @@ class HathiRecord():
             self.ingest['htid']
         ))
         self.buildItem()
-        
+
         logger.debug('Generate a rights object for the associated rights statement {}'.format(
             self.ingest['rights']
         ))
@@ -337,7 +344,7 @@ class HathiRecord():
     def buildWork(self):
         """Construct the SFR Work object from the Hathi data"""
         self.work.title = self.ingest['title']
-        
+
         logger.info('Creating work record for {}'.format(self.work.title))
         # The primary identifier for this work is a HathiTrust bib reference
         self.work.primary_identifier = Identifier(
@@ -369,8 +376,9 @@ class HathiRecord():
         try:
             self.parseAuthor(self.ingest['author'])
         except KeyError:
-            logger.warning('No author associated with record {}'.format(self.work))
-            
+            logger.warning('No author associated with record {}'.format(
+                self.work
+            ))
 
     def buildInstance(self, countryCodes):
         """Constrict an instance record from the Hathi data provided. As
@@ -402,6 +410,19 @@ class HathiRecord():
             self.ingest['copyright_date']
         ))
 
+        coverFetch = HathiCover(self.ingest['htid'])
+        pageURL = coverFetch.getPageFromMETS()
+        if pageURL is not None:
+            logger.debug('Add cover image {} to instance'.format(pageURL))
+            self.instance.addClassItem('links', Link, **{
+                'url': pageURL,
+                'media_type': 'image/jpeg',
+                'flags': {
+                    'cover': True,
+                    'temporary': True,
+                }
+            })
+
         self.parsePubInfo(self.ingest['publisher_pub_date'])
 
         # Add instance to parent work
@@ -424,10 +445,15 @@ class HathiRecord():
         logger.debug('Setting htid {} for item'.format(self.ingest['htid']))
         self.parseIdentifiers(self.item, 'hathi', 'htid')
 
-        logger.debug('Storing direct and download links based on htid {}'.format(self.ingest['htid']))
+        logger.debug(
+            'Storing direct and download links based on htid {}'.format(
+                self.ingest['htid']
+            ))
         # The link to the external HathiTrust page
         self.item.addClassItem('links', Link, **{
-            'url': 'https://babel.hathitrust.org/cgi/pt?id={}'.format(self.ingest['htid']),
+            'url': 'https://babel.hathitrust.org/cgi/pt?id={}'.format(
+                self.ingest['htid']
+            ),
             'media_type': 'text/html',
             'flags': {
                 'local': False,
@@ -449,7 +475,9 @@ class HathiRecord():
             }
         })
 
-        logger.debug('Storing repository {} as agent'.format(self.ingest['source']))
+        logger.debug('Storing repository {} as agent'.format(
+            self.ingest['source']
+        ))
         self.item.addClassItem('agents', Agent, **{
             'name': self.ingest['source'],
             'roles': ['repository']
@@ -473,7 +501,6 @@ class HathiRecord():
 
         # Add item to parent instance
         self.instance.formats.append(self.item)
-
 
     def createRights(self):
         """HathiTrust contains a strong set of rights data per item, including
@@ -567,7 +594,10 @@ class HathiRecord():
                 dateType = 'death_date'
                 datePrefix = re.search(r' b(?: |\.)', authorStr)
                 if datePrefix is not None:
-                    authorRec.name = re.sub(r' b(?: |\.|$)', '', authorName).strip(' ,.')
+                    authorRec.name = re.sub(
+                        r' b(?: |\.|$)', '',
+                        authorName
+                    ).strip(' ,.')
                     logger.debug('Detected single birth_date (living author)')
                     dateType = 'birth_date'
 
