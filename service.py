@@ -5,7 +5,7 @@ from math import ceil
 import sys
 import requests
 from datetime import datetime
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, Lock
 
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 from helpers.logHelpers import createLog
@@ -194,7 +194,7 @@ def fileParser(fileRows, columns):
     # Vars for managing multiprocessing component
     outcomes = []
     processes = []
-    chunkSize = int(ceil(len(fileRows) / 4))
+    chunkSize = int(ceil(len(fileRows) / 6))
 
     for chunk in generateChunks(fileRows, chunkSize):
         logger.info('Starting child Process')
