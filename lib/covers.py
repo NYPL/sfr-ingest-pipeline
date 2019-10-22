@@ -1,5 +1,6 @@
 import re
 import requests
+from requests.exceptions import ReadTimeout
 from requests_oauthlib import OAuth1
 from urllib.parse import urlparse
 
@@ -57,7 +58,7 @@ class CoverParse:
             authObj = CoverParse.createAuth()
         try:
             imgResp = requests.get(self.remoteURL, auth=authObj, timeout=5)
-        except requests.exceptions.ReadTimeout:
+        except ReadTimeout:
             raise URLFetchError(
                 'URL request timed out',
                 504,

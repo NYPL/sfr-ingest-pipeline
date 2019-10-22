@@ -1,4 +1,5 @@
 import pytest
+from requests.exceptions import ReadTimeout
 from unittest.mock import MagicMock
 
 from lib.covers import CoverParse
@@ -10,7 +11,7 @@ class TestCoverParse:
     def testRecord(self, mocker):
         mocker.patch('lib.covers.createLog')
         return {
-            'url': 'http://researchnow-test.nypl.org/ebooks/123.epub',
+            'url': 'researchnow-test.nypl.org/ebooks/123.epub',
             'source': 'testing',
             'identifier': 'xxxxxx'
         }
@@ -26,7 +27,7 @@ class TestCoverParse:
 
     def test_CoverParseInit_success(self, testRecord):
         testParser = CoverParse(testRecord)
-        assert testParser.remoteURL == testRecord['url']
+        assert testParser.remoteURL == 'https://{}'.format(testRecord['url'])
         assert testParser.source == testRecord['source']
         assert testParser.sourceID == testRecord['identifier']
         assert testParser.s3CoverURL is None
@@ -36,11 +37,10 @@ class TestCoverParse:
         with pytest.raises(InvalidParameter):
             CoverParse(testRecord)
 
-    def test_CoverParseInit_no_httpURL(self, testRecord):
-        outURL = testRecord['url']
-        testRecord['url'] = testRecord['url'][7:]
+    def test_CoverParseInit_httpURL(self, testRecord):
+        testRecord['url'] = 'http://{}'.format(testRecord['url'])
         testParser = CoverParse(testRecord)
-        assert testParser.remoteURL == outURL
+        assert testParser.remoteURL == testRecord['url']
         assert testParser.source == testRecord['source']
         assert testParser.sourceID == testRecord['identifier']
         assert testParser.s3CoverURL is None
@@ -83,7 +83,33 @@ class TestCoverParse:
         with pytest.raises(URLFetchError):
             testParser.storeCover()
 
+    def test_storeCover_failure_timeout(self, mocker, testRecord):
+        mockRequest = mocker.patch('lib.covers.requests')
+        mockRequest.get.side_effect = ReadTimeout
+        testParser = CoverParse(testRecord)
+        with pytest.raises(URLFetchError):
+            testParser.storeCover()
+
+    def test_storeCover_hathi(self, mocker, testRecord, mockRequest):
+        mockKey = mocker.patch.object(CoverParse, 'createKey')
+        testRecord['url'] = testRecord['url'].replace('ebooks', 'hathitrust')
+        mockAuth = mocker.patch.object(CoverParse, 'createAuth', return_value='auth')
+        testParser = CoverParse(testRecord)
+        mockS3 = mocker.patch('lib.covers.s3Client')()
+        mockS3.checkForFile.return_value = 'existingImageURL'
+        testParser.storeCover()
+        mockKey.assert_called_once()
+        mockAuth.assert_called_once()
+        mockS3.checkForFile.assert_called_once()
+        assert testParser.s3CoverURL == 'existingImageURL'
+
     def test_createKey(self, testRecord):
         testParser = CoverParse(testRecord)
         testKey = testParser.createKey()
         assert testKey == 'testing/xxxxxx_123.epub'
+
+    def test_createKey_hathi(self, testRecord):
+        testRecord['url'] = 'hathitrust.org/pageview/test.123456/1?format=jpeg&v=2'
+        testParser = CoverParse(testRecord)
+        testKey = testParser.createKey()
+        assert testKey == 'testing/xxxxxx_test.123456.jpg'
