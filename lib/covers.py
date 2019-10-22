@@ -1,13 +1,17 @@
 import re
 import requests
+from requests_oauthlib import OAuth1
 from urllib.parse import urlparse
 
 from helpers.errorHelpers import InvalidParameter, URLFetchError
 from helpers.logHelpers import createLog
+from helpers.configHelpers import decryptEnvVar
 from lib.s3 import s3Client
 
 
 class CoverParse:
+    HATHI_CLIENT_KEY = decryptEnvVar('HATHI_CLIENT_KEY')
+    HATHI_CLIENT_SECRET = decryptEnvVar('HATHI_CLIENT_SECRET')
     URL_ID_REGEX = r'\/([^\/]+\.[a-zA-Z]{3,4}$)'
 
     def __init__(self, record):
@@ -27,7 +31,7 @@ class CoverParse:
             self.logger.error('URL not provided to cover ingester')
             raise InvalidParameter('URL must be supplied to CoverParse()')
         if url[:4] != 'http':
-            url = 'http://{}'.format(url)
+            url = 'https://{}'.format(url)
         parsedURL = urlparse(url)
         if not parsedURL.scheme or not parsedURL.netloc or not parsedURL.path:
             self.logger.error('Invalid URL provided, unable to access cover')
@@ -48,7 +52,17 @@ class CoverParse:
         self._sourceID = identifier
 
     def storeCover(self):
-        imgResp = requests.get(self.remoteURL)
+        authObj = None
+        if 'hathitrust' in self.remoteURL:
+            authObj = CoverParse.createAuth()
+        try:
+            imgResp = requests.get(self.remoteURL, auth=authObj, timeout=5)
+        except requests.exceptions.ReadTimeout:
+            raise URLFetchError(
+                'URL request timed out',
+                504,
+                self.remoteURL
+            )
         if imgResp.status_code != 200:
             raise URLFetchError(
                 'Unable to read image at url',
@@ -65,6 +79,22 @@ class CoverParse:
             self.s3CoverURL = existingFile
 
     def createKey(self):
-        urlMatch = re.search(self.URL_ID_REGEX, self.remoteURL)
-        urlID = urlMatch.group(1)
+        if 'hathitrust' in self.remoteURL:
+            urlMatch = re.search(
+                r'([a-z]+\.[0-9]+)\/[0-9]{1,2}\?format=jpeg&v=2$',
+                self.remoteURL
+            )
+            urlID = '{}.jpg'.format(urlMatch.group(1))
+        else:
+            urlMatch = re.search(self.URL_ID_REGEX, self.remoteURL)
+            urlID = urlMatch.group(1)
         return '{}/{}_{}'.format(self.source, self.sourceID, urlID.lower())
+
+    @classmethod
+    def createAuth(cls):
+        print(cls.HATHI_CLIENT_KEY, cls.HATHI_CLIENT_SECRET)
+        return OAuth1(
+            cls.HATHI_CLIENT_KEY,
+            client_secret=cls.HATHI_CLIENT_SECRET,
+            signature_type='query'
+        )
