@@ -93,7 +93,11 @@ class TestCoverParse:
     def test_storeCover_hathi(self, mocker, testRecord, mockRequest):
         mockKey = mocker.patch.object(CoverParse, 'createKey')
         testRecord['url'] = testRecord['url'].replace('ebooks', 'hathitrust')
-        mockAuth = mocker.patch.object(CoverParse, 'createAuth', return_value='auth')
+        mockAuth = mocker.patch.object(
+            CoverParse,
+            'createAuth',
+            return_value='auth'
+        )
         testParser = CoverParse(testRecord)
         mockS3 = mocker.patch('lib.covers.s3Client')()
         mockS3.checkForFile.return_value = 'existingImageURL'
@@ -109,7 +113,7 @@ class TestCoverParse:
         assert testKey == 'testing/xxxxxx_123.epub'
 
     def test_createKey_hathi(self, testRecord):
-        testRecord['url'] = 'hathitrust.org/pageview/test.123456/1?format=jpeg&v=2'
+        testRecord['url'] = 'hathitrust.org/pageview/test.123456/1?format=jpeg&v=2'  # noqa: E501
         testParser = CoverParse(testRecord)
         testKey = testParser.createKey()
         assert testKey == 'testing/xxxxxx_test.123456.jpg'

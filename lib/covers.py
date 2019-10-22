@@ -93,7 +93,6 @@ class CoverParse:
 
     @classmethod
     def createAuth(cls):
-        print(cls.HATHI_CLIENT_KEY, cls.HATHI_CLIENT_SECRET)
         return OAuth1(
             cls.HATHI_CLIENT_KEY,
             client_secret=cls.HATHI_CLIENT_SECRET,
