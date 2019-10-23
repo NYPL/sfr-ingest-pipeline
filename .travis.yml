@@ -10,7 +10,7 @@ install:
 script: make test
 after_success:
 - pip uninstall -y lxml
-- unzip deployLXML.zip -d lxml
+- unzip deployLXML.zip
 - ENVIRONMENT_NAME=$TRAVIS_BRANCH
 - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
 deploy:
