@@ -5,7 +5,7 @@ python:
 install:
 - pip install --upgrade pip
 - pip install -r requirements.txt
-- chmod -R 755 /home/travis/build/NYPL/sfr-hathitrust-reader/lxml
+- export PYTHONPATH="${PYTHONPATH}:/home/travis/build/NYPL/sfr-hathitrust-reader/lxml"
 script: make test
 after_success:
 - ENVIRONMENT_NAME=$TRAVIS_BRANCH
