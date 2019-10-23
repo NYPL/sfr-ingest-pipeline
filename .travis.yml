@@ -9,7 +9,7 @@ install:
 - sudo apt-get install unzip
 script: make test
 after_success:
-- pip uninstall lxml
+- pip uninstall -y lxml
 - unzip deployLXML.zip -d lxml
 - ENVIRONMENT_NAME=$TRAVIS_BRANCH
 - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
