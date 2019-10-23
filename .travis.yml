@@ -5,6 +5,7 @@ python:
 install:
 - pip install --upgrade pip
 - pip install -r requirements.txt
+- pip install lxml
 script: make test
 after_success:
 - ENVIRONMENT_NAME=$TRAVIS_BRANCH
