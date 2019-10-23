@@ -2,6 +2,7 @@
 omit =
   tests/*
   */site-packages/*
+  lxml/*
 
 [report]
 exclude_lines =

@@ -1,8 +1,10 @@
 from random import random
+from requests.exceptions import ReadTimeout
 import unittest
 from unittest.mock import DEFAULT, MagicMock, patch
 
 from lib.hathiCover import HathiCover, HathiPage
+from helpers.errorHelpers import URLFetchError
 
 
 class TestHathiCover(unittest.TestCase):
@@ -10,11 +12,11 @@ class TestHathiCover(unittest.TestCase):
     def test_HathiCover_init(self, mockOAuth):
         testHathi = HathiCover('test.1')
         self.assertEqual(testHathi.htid, 'test.1')
-        self.assertEqual(testHathi.oauth, 'oauthHelper')
 
     @patch('lib.hathiCover.OAuth1', return_value='oauthHelper')
     def test_cover_generate_oauth(self, mockOauth):
-        testAuth = HathiCover.generateOAuth()
+        testHathi = HathiCover('test.1')
+        testAuth = testHathi.generateOAuth()
         mockOauth.assert_called_once_with(
             None,
             client_secret=None,
@@ -23,38 +25,39 @@ class TestHathiCover(unittest.TestCase):
         self.assertEqual(testAuth, 'oauthHelper')
 
     @patch('lib.hathiCover.requests')
-    @patch.multiple(HathiCover, generateOAuth=DEFAULT, parseMETS=DEFAULT)
+    @patch.multiple(
+        HathiCover,
+        parseMETS=DEFAULT,
+        getResponse=DEFAULT
+    )
     def test_HathiCover_getPageFromMETS(self,
-                                        mockReq, generateOAuth, parseMETS):
-        generateOAuth.return_value = 'oauthHelper'
-        testHathi = HathiCover('test.1')
-
+                                        mockReq, parseMETS, getResponse):
         mockResp = MagicMock()
+        testHathi = HathiCover('test.1')
         mockResp.status_code = 200
         mockResp.json = MagicMock()
-        mockReq.get.return_value = mockResp
+        getResponse.return_value = mockResp
 
         parseMETS.return_value = 'test_page_url'
         testURL = testHathi.getPageFromMETS()
-        mockReq.get.assert_called_once_with(
-            'None/structure/test.1?format=json&v=2', auth='oauthHelper'
+        getResponse.assert_called_once_with(
+            'None/structure/test.1?format=json&v=2'
         )
         parseMETS.assert_called_once()
         self.assertEqual(testURL, 'test_page_url')
 
-    @patch.object(HathiCover, 'generateOAuth', return_value='oauthHelper')
-    @patch('lib.hathiCover.requests')
-    def test_HathiCover_getPageFromMETS_error(self, mockReq, mockOAuth):
+    @patch.object(HathiCover, 'getResponse')
+    def test_HathiCover_getPageFromMETS_error(self, mockReq):
         testHathi = HathiCover('test.1')
 
         mockResp = MagicMock()
         mockResp.status_code = 500
         mockResp.json = MagicMock()
-        mockReq.get.return_value = mockResp
+        mockReq.return_value = mockResp
 
         testURL = testHathi.getPageFromMETS()
-        mockReq.get.assert_called_once_with(
-            'None/structure/test.1?format=json&v=2', auth='oauthHelper'
+        mockReq.assert_called_once_with(
+            'None/structure/test.1?format=json&v=2'
         )
         self.assertEqual(testURL, None)
 
@@ -105,3 +108,22 @@ class TestHathiCover(unittest.TestCase):
             testURL,
             'None/volume/pageimage/test.1/1?format=jpeg&v=2'
         )
+
+    @patch('lib.hathiCover.requests')
+    @patch.object(HathiCover, 'generateOAuth', return_value='testAuth')
+    def test_getResponse_success(self, mockOAuth, mockReq):
+        testHathi = HathiCover('test.1')
+        mockReq.get.return_value = 'testResponse'
+        testResp = testHathi.getResponse('testURL')
+        self.assertEqual(testResp, 'testResponse')
+        mockOAuth.assert_called_once()
+        mockReq.get.assert_called_with('testURL', auth='testAuth', timeout=3)
+
+    @patch('lib.hathiCover.requests')
+    @patch.object(HathiCover, 'generateOAuth', return_value='testAuth')
+    def test_getResponse_timeout(self, mockOAuth, mockReq):
+        testHathi = HathiCover('test.1')
+        mockReq.get.side_effect = ReadTimeout
+        with self.assertRaises(URLFetchError):
+            testHathi.getResponse('testURL')
+            mockOAuth.assert_called_once()
