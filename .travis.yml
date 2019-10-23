@@ -5,8 +5,12 @@ python:
 install:
 - pip install --upgrade pip
 - pip install -r requirements.txt
+- pip install lxml
+- sudo apt-get install unzip
 script: make test
 after_success:
+- pip uninstall -y lxml
+- unzip deployLXML.zip -d lxml
 - ENVIRONMENT_NAME=$TRAVIS_BRANCH
 - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
 deploy:

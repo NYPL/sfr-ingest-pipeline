@@ -24,3 +24,10 @@ class DataError(Exception):
 class KinesisError(Exception):
     def __init__(self, message):
         self.message = message
+
+
+class URLFetchError(Exception):
+    def __init__(self, message, status, url):
+        self.message = message
+        self.status = status
+        self.url = url

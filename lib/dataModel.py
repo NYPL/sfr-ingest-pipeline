@@ -75,7 +75,7 @@ class WorkRecord(DataObject):
         if self.primary_identifier is None:
             primaryID = None
         else:
-            self.primary_identifier.identifier
+            primaryID = self.primary_identifier.identifier
 
         return '<Work(title={}, primary_id={})>'.format(
             dispTitle,

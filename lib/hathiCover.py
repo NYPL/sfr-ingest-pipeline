@@ -1,9 +1,13 @@
 import os
 import requests
+from requests.exceptions import ReadTimeout
 from requests_oauthlib import OAuth1
 
 from helpers.configHelpers import decryptEnvVar
+from helpers.logHelpers import createLog
+from helpers.errorHelpers import URLFetchError
 
+logger = createLog('hathiCover')
 
 class HathiCover():
     """Manager class for finding a cover image for HathiTrust images. This is
@@ -12,17 +16,14 @@ class HathiCover():
     URI to the most relevant page image is ultimately returned.
     """
     HATHI_BASE_API = os.environ.get('HATHI_BASE_API', None)
-    HATHI_CLIENT_KEY = decryptEnvVar(os.environ.get('HATHI_CLIENT_KEY', ''))
-    HATHI_CLIENT_SECRET = decryptEnvVar(
-        os.environ.get('HATHI_CLIENT_SECRET', '')
-    )
+    HATHI_CLIENT_KEY = decryptEnvVar('HATHI_CLIENT_KEY')
+    HATHI_CLIENT_SECRET = decryptEnvVar('HATHI_CLIENT_SECRET')
 
     def __init__(self, htid):
         self.htid = htid
-        self.oauth = self.generateOAuth()
+        self.logger = logger
 
-    @classmethod
-    def generateOAuth(cls):
+    def generateOAuth(self):
         """Helper method that generates an OAuth1 block that authenticates
         requests against the HathiTrust Data API. Due to the structure of the
         API this is formatted as part of the query string.
@@ -31,10 +32,21 @@ class HathiCover():
             [object] -- An OAuth1 authentication block
         """
         return OAuth1(
-            cls.HATHI_CLIENT_KEY,
-            client_secret=cls.HATHI_CLIENT_SECRET,
+            self.HATHI_CLIENT_KEY,
+            client_secret=self.HATHI_CLIENT_SECRET,
             signature_type='query'
         )
+
+    def getResponse(self, queryURL):
+        queryAuth = self.generateOAuth()
+        try:
+            return requests.get(queryURL, auth=queryAuth, timeout=3)
+        except ReadTimeout:
+            raise URLFetchError(
+                'URL request timed out'.format(queryURL),
+                504,
+                queryURL
+            )
 
     def getPageFromMETS(self):
         """Query method for the best page URI from the record's METS file
@@ -42,12 +54,12 @@ class HathiCover():
         Returns:
             [uri] -- URI to the page to be used as a cover image
         """
+        self.logger.debug('Querying {} for cover image'.format(self.htid))
         structURL = '{}/structure/{}?format=json&v=2'.format(
             self.HATHI_BASE_API,
             self.htid
         )
-        structResp = requests.get(structURL, auth=self.oauth)
-
+        structResp = self.getResponse(structURL)
         if structResp.status_code == 200:
             return self.parseMETS(structResp.json())
 
@@ -66,7 +78,7 @@ class HathiCover():
             [uri] -- URI to the page to be used as a cover image
         """
         structMap = metsJson['METS:structMap']
-
+        self.logger.info('Retrieved METS for {}'.format(self.htid))
         self.pages = [
             HathiPage(page)
             for page in structMap['METS:div']['METS:div'][:25]
