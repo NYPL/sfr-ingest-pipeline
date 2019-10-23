@@ -21,7 +21,7 @@ memory_size: 2024
 
 # Build options
 build:
-  source_directories: lib, helpers
+  source_directories: lib, helpers, lxml
 
 # Environment Variables
 # Any variables set here will be carried across all environments, unless
