@@ -307,7 +307,8 @@ def rowParser(row, columns, countryCodes):
             'status': 200,
             'type': 'work',
             'method': 'insert',
-            'data': hathiRec.work
+            'data': hathiRec.work,
+            'source': 'hathitrust'
         }, os.environ['OUTPUT_STREAM'])
     except KinesisError as err:
         logger.error('Unable to output record {} to Kinesis'.format(
