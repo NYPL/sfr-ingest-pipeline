@@ -14,6 +14,7 @@ class CoverParse:
     HATHI_CLIENT_KEY = decryptEnvVar('HATHI_CLIENT_KEY')
     HATHI_CLIENT_SECRET = decryptEnvVar('HATHI_CLIENT_SECRET')
     URL_ID_REGEX = r'\/([^\/]+\.[a-zA-Z]{3,4}$)'
+    HATHI_URL_ID_REGEX = r'([a-z0-9]+\.[0-9]+)\/[0-9]{1,2}\?format=jpeg&v=2$'
 
     def __init__(self, record):
         self.logger = createLog('CoverParse')
@@ -81,10 +82,7 @@ class CoverParse:
 
     def createKey(self):
         if 'hathitrust' in self.remoteURL:
-            urlMatch = re.search(
-                r'([a-z]+\.[0-9]+)\/[0-9]{1,2}\?format=jpeg&v=2$',
-                self.remoteURL
-            )
+            urlMatch = re.search(self.HATHI_URL_ID_REGEX, self.remoteURL)
             urlID = '{}.jpg'.format(urlMatch.group(1))
         else:
             urlMatch = re.search(self.URL_ID_REGEX, self.remoteURL)
