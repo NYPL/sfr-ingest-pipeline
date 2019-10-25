@@ -1,5 +1,7 @@
 # SFR Cover Search
 
+[![Build Status](https://travis-ci.com/NYPL/sfr-cover-search.svg?token=Fv4twsPZbkerqgdJB89v&branch=development)](https://travis-ci.com/NYPL/sfr-cover-search)
+
 This function provides a lookup service for cover images for instance records that do not have an associated cover from the provider (Project Gutenberg or HathiTrust). The third-party services that are queried for covers are OpenLibrary, Google Books and Content Cafe.
 
 It queries the SFR database for `instance` records which lack a link for a cover that have been updated in the defined range.
