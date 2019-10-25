@@ -28,7 +28,7 @@ class CCCoverFetcher(AbsCoverFetcher):
         compare the bytes of each file. This generates the bytes for the
         comparison file.
         """
-        return open('./lib/fetchers/stand-in-prefix.png', 'rb').read()
+        return open('./assets/stand-in-prefix.png', 'rb').read()
 
     def queryIdentifier(self, idType, identifier):
         """Queries the API for a cover URI
