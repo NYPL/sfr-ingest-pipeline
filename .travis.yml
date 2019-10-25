@@ -1,0 +1,23 @@
+language: python
+dist: xenial
+python:
+- 3.7
+install:
+- pip install --upgrade pip
+- pip install -r requirements.txt
+- pip install -r dev-requirements.txt
+before_script: cp config.yaml.sample config.yaml
+script: make lint && make test
+after_success:
+- ENVIRONMENT_NAME=$TRAVIS_BRANCH
+- if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: make deploy ENV=$ENVIRONMENT_NAME
+  on:
+    branch: development
+env:
+  global:
+  - secure: c2kuOfmUNRcxyC7CspAeeJFVrdxeRD3TD+hgbNn2/c93hcZ9k9pAZ7NokyTHmeV69J7SoGe4VYfc9omH+XDiLHykHV2x/5q65QFqOJGexIQ17BFbaSbH05UoON0bmLSzU3lzGEkysmp/8VV/hVtrI+8duzX6RVcij1VKAmE3G1yFe/27fZtm0CGciK+xKaLXe/e9lrumEgYBt1uDu+Y7alwlArINOASp+CqHdg1ZU5QuJ37CQTXKKFiKz+bFE1fPQInvYFiWlg0ZKQRtZM3CQkvAsTTVlrNh8eZevC2+zU8P7NeQO2TlCS57UwDY2LOONGWAqzj+7+ApWaDI2NpsMcdHphOZuxOte5c9PFicIGanonNDx0vGY5mf7TKe8gn+qzjvYKbupKIWLsOl1BkA5eRLxfB/84zUdmYtBjiiJDBYRY1EMf/loMOTibEcTBx4UKKEYi7Vps93v84csYq989a7GySQwgzXV0+w5WJc0tFid75ELfpVAjEum+iBcu2ThCkU7W8nOxlaKgqbJDMaGuAmqJcY4IEbhzukaqgZ/Wxv13Ss0UNosObe4hCytV4RoUAADNdEVymUeROp7evoHzcQbIkwQEaag4kutYEO3yAWZUxxS7ymypPq86F8yBjQaH0nVZgBqkAwXWg/OLHYQ9Hx6mbpHwC/haincdFDaLI=
+  - secure: AX2Rk/jzXDLBogcpfQ0n/D8gSMeQYOtx3xwWKFVnczMbuGZg98xQ3C/MvKXMVVjwukx41j9mZVlQ+RpdifhFxCX/2YMJ9Em8TqM24HVltaNu/5Mvl62Qnc94n+IT6DwEpmBLBOt199UHKgJvoieeUdI/lwBKLKpTIa7/i3IKQYne/jmdM68K/dvJglKIFQDYLb4t9iYl1LKbsdyPnhR9y7mHTxVD0y5BUpXSxcs3MNneZ3QvCVMpvVBEcIfmzUDmPKnkdi9Z8KC/eIfFm2RFtaXFsCveBgHckkeHe8bCqyQScOzbgDd5cG9myP6WlpFZlofsHJwG7ad4pHTjXcvSGGv0mUaLQq4lIAiqKIXRoXiCpHtNLQpdRT/u32gzEco+0d+ThWqLkHPUP3phBZQtimsKJ4z8/brQ+wiJysiXjw8TMbSR+tHf9Qd1lYoaaX6eb9eX0OL9Jq1ng1pSZsuJTnpp+oXrGXq0BtCtJIqUcdTq58swzKFR21QUF6Xc1O70mMn3CAS5VBsS7qtYdPuOAeTGUTv3qYqZXvW9MKyNYJsDYDU6wYu1DV4FZP7MGqa0vSWLZFkajc4FeSoSIO3SuaIryeus87cqkOUNLAYsIMFNNfADR2aIDEhgNCB/4bp0k3sJd2b8N9YQRfWBy7S6Ec7JLZ0g7CHFVyycC7vnRZQ=

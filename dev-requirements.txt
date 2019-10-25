@@ -1,0 +1,4 @@
+coverage
+flake8
+pytest
+git+https://github.com/NYPL/sfr-db-core.git@development#egg=sfrCore
