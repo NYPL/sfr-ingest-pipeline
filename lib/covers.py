@@ -14,7 +14,7 @@ class CoverParse:
     HATHI_CLIENT_KEY = decryptEnvVar('HATHI_CLIENT_KEY')
     HATHI_CLIENT_SECRET = decryptEnvVar('HATHI_CLIENT_SECRET')
     URL_ID_REGEX = r'\/([^\/]+\.[a-zA-Z]{3,4}$)'
-    HATHI_URL_ID_REGEX = r'([a-z0-9]+\.[0-9]+)\/[0-9]{1,2}\?format=jpeg&v=2$'
+    HATHI_URL_ID_REGEX = r'([a-z0-9]+\.[0-9a-z]+)\/[0-9]{1,2}\?format=jpeg&v=2$'  # noqa: E501
 
     def __init__(self, record):
         self.logger = createLog('CoverParse')
