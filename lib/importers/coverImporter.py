@@ -40,6 +40,7 @@ class CoverImporter(AbstractImporter):
 
         self.link = Link(
             url=uri,
+            media_type=self.data.get('mediaType', None),
             flags={'cover': True, 'temporary': True}
         )
 
