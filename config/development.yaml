@@ -15,4 +15,4 @@ environment_variables:
     ES_TIMEOUT: '10'
     ES_INDEX: sfr_test
 
-    INDEX_PERIOD: '7200'
+    INDEX_PERIOD: '1200'
