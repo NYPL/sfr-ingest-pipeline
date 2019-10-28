@@ -2,7 +2,7 @@ class SFRCover:
     """Simple object that represents a cover image. The URI is the original URI
     from the provider identified by the source.
     """
-    def __init__(self, uri, source, instanceID):
+    def __init__(self, uri, source, mediaType, instanceID):
         """Initialize a cover object
 
         Arguments:
@@ -12,6 +12,7 @@ class SFRCover:
         """
         self.uri = uri
         self.source = source
+        self.mediaType = mediaType
         self.instanceID = instanceID
 
     def __repr__(self):

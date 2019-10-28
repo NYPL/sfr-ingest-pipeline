@@ -37,3 +37,9 @@ class AbsCoverFetcher(ABC):
             [string] -- Name of the fetcher source
         """
         return 'abstractFetcher'
+
+    @abstractmethod
+    def getMimeType(self):
+        """Return the MIMETYPE of the retrieved cover file
+        """
+        return None
