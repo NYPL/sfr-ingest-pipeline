@@ -71,3 +71,7 @@ class CCCoverFetcher(AbsCoverFetcher):
             [string] -- Unchanged ContentCafe URI
         """
         return volumeID
+
+    @staticmethod
+    def getMimeType(self):
+        return 'image/jpeg'

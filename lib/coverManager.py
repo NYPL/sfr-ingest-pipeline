@@ -60,7 +60,8 @@ class CoverManager:
         instanceQuery = session.query(Instance)\
             .outerjoin(Instance.links)\
             .filter(Instance.date_modified >= fetchPeriod)\
-            .filter(Link.flags['cover'] == None)  # noqa: E711
+            .filter(Link.flags['cover'] == None)\
+            .limit(10)
 
         self.instances = instanceQuery.all()
 
@@ -88,15 +89,19 @@ class CoverManager:
                 identifier['value'],
                 identifier['type']
             ))
-            coverURI, source = self.queryFetchers(
+            fetcher = self.queryFetchers(
                 identifier['type'],
                 identifier['value']
             )
-            if coverURI is not None:
+            if fetcher is not None:
+                coverURI = fetcher.createCoverURL(identifier['type'])
+                source = fetcher.getSource()
+                mediaType = fetcher.getMimeType()
                 self.logger.info('Found cover {} from {} for {}'.format(
                     coverURI, source, instance
                 ))
-                self.covers.append(SFRCover(coverURI, source, instance.id))
+                self.covers.append(
+                    SFRCover(coverURI, source, instance.id, mediaType))
                 break
 
     def queryFetchers(self, idType, identifier):
@@ -119,9 +124,9 @@ class CoverManager:
             if fetchedID is None:
                 continue
 
-            return fetcher.createCoverURL(fetchedID), fetcher.getSource()
+            return fetcher
 
-        return None, None
+        return None
 
     @staticmethod
     def getValidIDs(identifiers):
