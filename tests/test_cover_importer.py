@@ -34,18 +34,18 @@ class TestCoverImporter(unittest.TestCase):
         self.assertEqual(testAction, 'existing')
 
     @patch.dict('os.environ', {'COVER_QUEUE': 'testQueue'})
-    @patch('lib.importers.coverImporter.Link', return_value='testLink')
     @patch.object(OutputManager, 'putQueue')
-    def test_insertRecord(self, mockPut, mockLink):
+    def test_insertRecord(self, mockPut):
         mockSession = MagicMock()
         mockInstance = MagicMock()
         mockInstance.links = set()
         mockSession.query().get.return_value = mockInstance
 
         testImporter = CoverImporter({'data': {}}, mockSession)
-        testImporter.insertRecord(1, 'testURI')
+        testImporter.insertRecord(1, 'testURI.jpg')
 
-        self.assertEqual(testImporter.link, 'testLink')
+        self.assertEqual(testImporter.link.url, 'testuri.jpg')
+        self.assertEqual(testImporter.link.media_type, 'image/jpeg')
         self.assertEqual(len(list(mockInstance.links)), 1)
 
     @patch('lib.importers.coverImporter.datetime')
