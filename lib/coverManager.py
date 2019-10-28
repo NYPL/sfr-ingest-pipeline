@@ -60,8 +60,7 @@ class CoverManager:
         instanceQuery = session.query(Instance)\
             .outerjoin(Instance.links)\
             .filter(Instance.date_modified >= fetchPeriod)\
-            .filter(Link.flags['cover'] == None)\
-            .limit(10)
+            .filter(Link.flags['cover'] == None)  # noqa: E711
 
         self.instances = instanceQuery.all()
 
