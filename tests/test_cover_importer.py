@@ -41,7 +41,10 @@ class TestCoverImporter(unittest.TestCase):
         mockInstance.links = set()
         mockSession.query().get.return_value = mockInstance
 
-        testImporter = CoverImporter({'data': {}}, mockSession)
+        testImporter = CoverImporter(
+            {'data': {'mediaType': 'image/jpeg'}},
+            mockSession
+        )
         testImporter.insertRecord(1, 'testURI.jpg')
 
         self.assertEqual(testImporter.link.url, 'testuri.jpg')
