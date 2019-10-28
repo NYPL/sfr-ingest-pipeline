@@ -2,6 +2,7 @@ from lib.importers.workImporter import WorkImporter
 from lib.importers.instanceImporter import InstanceImporter
 from lib.importers.itemImporter import ItemImporter
 from lib.importers.accessImporter import AccessReportImporter
+from lib.importers.coverImporter import CoverImporter
 
 from helpers.logHelpers import createLog
 
@@ -13,6 +14,7 @@ importers = {
     'instance': InstanceImporter,
     'item': ItemImporter,
     'access_report': AccessReportImporter,
+    'cover': CoverImporter
 }
 
 
