@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import os
-from sqlalchemy import cast, type_coerce, JSON, String, text
-from sfrCore import Instance, Link
+from sqlalchemy import text
+from sfrCore import Instance
 
 from .fetchers.openLibraryFetcher import OLCoverFetcher
 from .fetchers.googleBooksFetcher import GBCoverFetcher
