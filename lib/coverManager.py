@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import os
+from sqlalchemy import cast, type_coerce, JSON, String, text
 from sfrCore import Instance, Link
 
 from .fetchers.openLibraryFetcher import OLCoverFetcher
@@ -60,7 +61,8 @@ class CoverManager:
         instanceQuery = session.query(Instance)\
             .outerjoin(Instance.links)\
             .filter(Instance.date_modified >= fetchPeriod)\
-            .filter(Link.flags['cover'] == None)  # noqa: E711
+            .group_by(Instance.id)\
+            .having(text('COUNT((CAST((links.flags -> \'cover\') AS VARCHAR)) = \'true\') < 1'))  # noqa: E501
 
         self.instances = instanceQuery.all()
 

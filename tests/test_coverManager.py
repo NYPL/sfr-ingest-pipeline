@@ -67,7 +67,8 @@ class TestCoverManager:
         mockSession = mocker.MagicMock()
         testManager.manager.createSession.return_value = mockSession
         mockSession.query()\
-            .outerjoin().filter().filter().all.return_value = [1, 2, 3]
+            .outerjoin().filter().group_by().having()\
+            .all.return_value = [1, 2, 3]
         testManager.getInstancesForSearch()
         assert testManager.instances == [1, 2, 3]
 
