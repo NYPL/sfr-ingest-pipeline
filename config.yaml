@@ -21,7 +21,10 @@ memory_size: 128
 
 # Build options
 build:
-  source_directories: lib, helpers
+  source_directories: lib, helpers, assets
+
+subnet_ids: ['subnet-12aa8a65']
+security_group_ids: ['sg-5521ef32']
 
 # Environment Variables
 # Any variables set here will be carried across all environments, unless
