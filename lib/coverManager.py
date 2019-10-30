@@ -90,19 +90,19 @@ class CoverManager:
                 identifier['value'],
                 identifier['type']
             ))
-            fetcher = self.queryFetchers(
+            fetcher, fetchedID = self.queryFetchers(
                 identifier['type'],
                 identifier['value']
             )
             if fetcher is not None:
-                coverURI = fetcher.createCoverURL(identifier['type'])
+                coverURI = fetcher.createCoverURL(fetchedID)
                 source = fetcher.getSource()
                 mediaType = fetcher.getMimeType()
                 self.logger.info('Found cover {} from {} for {}'.format(
                     coverURI, source, instance
                 ))
                 self.covers.append(
-                    SFRCover(coverURI, source, instance.id, mediaType))
+                    SFRCover(coverURI, source, mediaType, instance.id))
                 break
 
     def queryFetchers(self, idType, identifier):
@@ -125,9 +125,9 @@ class CoverManager:
             if fetchedID is None:
                 continue
 
-            return fetcher
+            return fetcher, fetchedID
 
-        return None
+        return None, None
 
     @staticmethod
     def getValidIDs(identifiers):

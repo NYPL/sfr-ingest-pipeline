@@ -72,6 +72,5 @@ class CCCoverFetcher(AbsCoverFetcher):
         """
         return volumeID
 
-    @staticmethod
     def getMimeType(self):
         return 'image/jpeg'
