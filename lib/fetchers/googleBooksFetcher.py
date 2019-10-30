@@ -88,6 +88,5 @@ class GBCoverFetcher(AbsCoverFetcher):
         except IndexError:
             return None
 
-    @staticmethod
-    def getMimeType():
+    def getMimeType(self):
         return 'image/jpeg'

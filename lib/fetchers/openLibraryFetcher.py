@@ -51,7 +51,6 @@ class OLCoverFetcher(AbsCoverFetcher):
         """
         return 'http://covers.openlibrary.org/b/id/{}-L.jpg'.format(olid[0])
 
-    @staticmethod
     def getMimeType(self):
         return 'image/jpeg'
 
