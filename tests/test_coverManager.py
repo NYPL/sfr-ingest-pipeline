@@ -100,7 +100,7 @@ class TestCoverManager:
     def test_searchInstanceIdentifiers(self, testManager, identifiers, mocker):
         mockQuery = mocker.patch.object(CoverManager, 'queryFetchers')
         mockFetcher = mocker.MagicMock()
-        mockQuery.side_effect = [None, mockFetcher]
+        mockQuery.side_effect = [(None, None), (mockFetcher, 1)]
 
         mockInstance = mocker.MagicMock()
         mockInstance.id = 1
@@ -120,7 +120,8 @@ class TestCoverManager:
 
         outFetcher = testManager.queryFetchers('test', 1)
 
-        assert outFetcher == testManager.fetchers[1]
+        assert outFetcher[0] == testManager.fetchers[1]
+        assert outFetcher[1] == 'testID'
 
     def test_queryFetchers_notFound(self, testManager, mocker):
         testManager.fetchers = (mocker.MagicMock(), mocker.MagicMock())
@@ -129,7 +130,7 @@ class TestCoverManager:
 
         outFetcher = testManager.queryFetchers('test', 1)
 
-        assert outFetcher is None
+        assert outFetcher == (None, None)
 
     def test_getValidIDs(self, idValidators):
         validatedIDs = CoverManager.getValidIDs(idValidators)
