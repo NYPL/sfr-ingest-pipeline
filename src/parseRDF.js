@@ -146,8 +146,12 @@ exports.getAgents = (ebook, lcRels) => {
     const roleTerm = `marcrel:${rel[0]}`
 
     if (roleTerm in ebook) {
-      const ent = exports.getAgent(ebook[roleTerm][0]['pgterms:agent'][0], rel[1])
-      agents.push(ent)
+      try {
+        const ent = exports.getAgent(ebook[roleTerm][0]['pgterms:agent'][0], rel[1])
+        agents.push(ent)
+      } catch (err) {
+        // Do nothing
+      }
     }
   })
 
