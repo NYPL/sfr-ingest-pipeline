@@ -157,7 +157,7 @@ class TestHathi(unittest.TestCase):
             'htid': 'test.00000',
             'source': 'nypl',
             'responsible_entity': 'nypl',
-            'digitization_entity': 'ia',
+            'digitization_entity': 'archive',
         }
         itemTest = HathiRecord(testItemRow)
         itemTest.buildItem()
