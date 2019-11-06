@@ -155,7 +155,7 @@ class TestHathi(unittest.TestCase):
     def test_build_item(self):
         testItemRow = {
             'htid': 'test.00000',
-            'source': 'nypl',
+            'provider_entity': 'nypl',
             'responsible_entity': 'nypl',
             'digitization_entity': 'archive',
         }

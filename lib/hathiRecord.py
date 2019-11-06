@@ -188,6 +188,7 @@ class HathiRecord():
         'case': 'Case Western Reserve University',
         'cgu': 'Claremont Graduate University',
         'claremont': 'Claremont University Consortium',
+        'clark': 'Clark University',
         'clarkart': 'Sterling and Francine Clark Art Institute',
         'clements-umich': 'William L. Clements Library, University of Michigan',
         'clemson': 'Clemson University',
