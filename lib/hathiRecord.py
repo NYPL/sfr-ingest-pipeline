@@ -269,6 +269,7 @@ class HathiRecord():
         'pomona': 'Pomona College',
         'press': 'University of Michigan Press',
         'princeton': 'Princeton University',
+        'private': 'Private Donor',
         'psu': 'Pennsylvania State University',
         'purdue': 'Purdue University',
         'quensu': 'Queen\'s University',
@@ -363,7 +364,8 @@ class HathiRecord():
         'wsu': 'Washington State University',
         'wustl': 'Washington University in St. Louis',
         'wvu': 'West Virginia University',
-        'yale': 'Yale University'
+        'yale': 'Yale University',
+        'yale2': 'Yale University'
     }
 
     identifierFields = [
