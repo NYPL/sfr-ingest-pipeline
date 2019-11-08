@@ -59,9 +59,12 @@ class HathiCover():
             self.HATHI_BASE_API,
             self.htid
         )
-        structResp = self.getResponse(structURL)
-        if structResp.status_code == 200:
-            return self.parseMETS(structResp.json())
+        try:
+            structResp = self.getResponse(structURL)
+            if structResp.status_code == 200:
+                return self.parseMETS(structResp.json())
+        except URLFetchError:
+            self.logger('Request for structure file timed out')
 
         return None
 
