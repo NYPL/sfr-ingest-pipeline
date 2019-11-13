@@ -258,11 +258,11 @@ class Rights(DataObject):
         return '<Rights(license={})>'.format(self.license)
 
 class Language(DataObject):
-    def __init__(self, language=None, iso2=None, iso3=None):
+    def __init__(self, language=None, iso_2=None, iso_3=None):
         super()
         self.language = language
-        self.iso2 = iso2
-        self.iso3 = iso3
+        self.iso_2 = iso_2
+        self.iso_3 = iso_3
     
     def __repr__(self):
-        return '<Language(code={})>'.format(self.iso2)
+        return '<Language(code={})>'.format(self.iso_2)
