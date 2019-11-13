@@ -50,7 +50,7 @@ class TestMARC(unittest.TestCase):
         )
         self.assertEqual(testWork.identifiers[0].identifier, 'doab:test')
         self.assertEqual(testWork.instances[0].rights[0].source, 'doab')
-        self.assertEqual(testWork.language[0].iso3, 'eng')
+        self.assertEqual(testWork.language[0].iso_3, 'eng')
     
     def test_agent_create(self):
         testRec = MagicMock()
@@ -331,6 +331,3 @@ class TestMARC(unittest.TestCase):
         self.assertIsInstance(testWork.instances[0], InstanceRecord)
         self.assertEqual(testWork.instances[0].summary, 'summary')
         self.assertEqual(testWork.instances[0].table_of_contents, 'table of contents')
-        print(testWork.instances[0].summary)
-
-
