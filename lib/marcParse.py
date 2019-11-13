@@ -177,8 +177,8 @@ def transformMARC(record, marcRels):
                     continue
                 sfrLang = Language(
                     language=language,
-                    iso2=langObj.alpha_2,
-                    iso3=langObj.alpha_3
+                    iso_2=langObj.alpha_2,
+                    iso_3=langObj.alpha_3
                 )
                 work.language.append(sfrLang)
                 instance.language.append(sfrLang)
