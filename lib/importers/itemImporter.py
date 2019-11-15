@@ -35,6 +35,12 @@ class ItemImporter(AbstractImporter):
                 'identifier': itemID,
                 'weight': 1
             }
+
+            # Remove the instance_id so it is nor parsed by the db layer
+            self.data.pop('instance_id', None)
+
+            self.item = self.session.query(Item).get(itemID)
+
             OutputManager.putKinesis(
                 self.data,
                 os.environ['UPDATE_STREAM'],
