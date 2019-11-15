@@ -19,7 +19,7 @@ class ItemUpdater(AbstractUpdater):
         return self.item.id
 
     def lookupRecord(self):
-        primaryID = self.data.pop('primary_identifier', None)
+        primaryID = self.data.get('primary_identifier', None)
         self.logger.debug('Ingesting Item #{}'.format(
             primaryID['identifier'] if primaryID else 'unknown'
         ))
@@ -50,6 +50,8 @@ class ItemUpdater(AbstractUpdater):
                 )
             else:
                 raise DBError('items', 'Failed find item in db. Dropping')
+        
+        self.data.pop('primary_identifier', None)
 
     def updateRecord(self):
         self.item.update(self.session, self.data)
