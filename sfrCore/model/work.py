@@ -409,7 +409,7 @@ class Work(Core, Base):
 
         if self.tmp_alt_titles:
             self.alt_titles.update({
-                AltTitle.insertOrSkip(session, a, Work, self.id)
+                AltTitle.insertOrSkip(self.session, a, Work, self.id)
                 for a in self.tmp_alt_titles
             })
     
