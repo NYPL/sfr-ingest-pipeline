@@ -211,8 +211,9 @@ class Item(Core, Base):
             if primaryID.get('type') == 'row_id':
                 return session.query(cls).get(primaryID.get('identifier'))
             else:
-                item = Identifier.getByIdentifier(Item, session, [primaryID])
-                if item: return item
+                itemID = Identifier.getByIdentifier(Item, session, [primaryID])
+                if itemID:
+                    return session.query(cls).get(itemID)
 
         return Identifier.getByIdentifier(Item, session, identifiers)
     
@@ -236,7 +237,10 @@ class Item(Core, Base):
         self.createTmpRelations(itemData)
 
         for field, value in itemData.items():
-            if(value is not None and value.strip() != ''):
+            if(isinstance(value, str)):
+                if(value is not None and value.strip() != ''):
+                    setattr(self, field, value)
+            else:
                 setattr(self, field, value)
 
         self.updateIdentifiers()
