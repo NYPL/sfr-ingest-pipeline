@@ -408,7 +408,7 @@ class Work(Core, Base):
                     AltTitle.insertOrSkip(self.session, newTitle, Work, self.id)
 
         if self.tmp_alt_titles:
-            self.alt_titles.extend({
+            self.alt_titles.update({
                 AltTitle.insertOrSkip(session, a, Work, self.id)
                 for a in self.tmp_alt_titles
             })
