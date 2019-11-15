@@ -34,10 +34,12 @@ class TestItemImporter(unittest.TestCase):
     @patch.object(OutputManager, 'putKinesis')
     def test_lookupRecord_found(self, mockPut, mockLookup):
         mockLookup.return_value = 1
-        testImporter = ItemImporter({'data': {}}, 'session')
+        mockSession = MagicMock()
+        testImporter = ItemImporter({'data': {}}, mockSession)
         testAction = testImporter.lookupRecord()
         self.assertEqual(testAction, 'update')
-        mockLookup.assert_called_once_with(Item, 'session', [])
+        mockLookup.assert_called_once_with(Item, mockSession, [])
+        mockSession.query().get.assert_called_once_with(1)
         mockPut.assert_called_once()
 
     @patch.object(Item, 'createItem')
