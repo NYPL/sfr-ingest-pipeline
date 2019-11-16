@@ -1,4 +1,3 @@
-import os
 import re
 from copy import deepcopy
 from collections import deque
@@ -25,8 +24,8 @@ from .measurement import (
 )
 from .identifiers import ITEM_IDENTIFIERS, Identifier
 from .link import ITEM_LINKS, Link
-from .date import ITEM_DATES, DateField
-from .rights import Rights, ITEM_RIGHTS
+from .date import DateField
+from .rights import Rights
 from .agent import Agent
 
 from ..helpers import createLog, DataError
@@ -43,7 +42,7 @@ class Item(Core, Base):
     content_type = Column(Unicode)
     modified = Column(DateTime)
     drm = Column(Unicode)
-    
+
     instance_id = Column(Integer, ForeignKey('instances.id'), index=True)
 
     instance = relationship(
@@ -93,7 +92,7 @@ class Item(Core, Base):
     }
 
     EPUB_SOURCES = ['gut']
-    
+
     def __init__(self, session=None):
         self.session = session
 
@@ -107,13 +106,15 @@ class Item(Core, Base):
         for relType in Item.RELS:
             tmpRel = 'tmp_{}'.format(relType)
             setattr(self, tmpRel, itemData.pop(relType, []))
-            if getattr(self, tmpRel) is None: setattr(self, tmpRel, [])
-    
+            if getattr(self, tmpRel) is None:
+                setattr(self, tmpRel, [])
+
     def removeTmpRelations(self):
         """Removes temporary attributes that were used to hold related objects.
         """
-        for rel in Item.RELS: delattr(self, 'tmp_{}'.format(rel))
-    
+        for rel in Item.RELS:
+            delattr(self, 'tmp_{}'.format(rel))
+
     @classmethod
     def createOrStore(cls, session, item, instance):
         links = deque(item.pop('links', []))
@@ -122,12 +123,13 @@ class Item(Core, Base):
         while len(links) > 0:
             link = links.popleft()
             url = link['url']
-            if not isinstance(url, (str,)): continue
+            if not isinstance(url, (str,)):
+                continue
             for source, regex in cls.SOURCE_REGEX.items():
                 try:
                     if re.search(regex, url):
                         if source in cls.EPUB_SOURCES:
-                            # We need to get the ID of the instance to allow 
+                            # We need to get the ID of the instance to allow
                             # for asynchronously storing the ePub file, so
                             # instance is added and flushed here
                             if instance.id is None:
@@ -150,8 +152,9 @@ class Item(Core, Base):
                     logger.debug(err)
             else:
                 item['links'].append(link)
-        
-        if not deferredLoad: return cls.updateOrInsert(session, item)
+
+        if not deferredLoad:
+            return cls.updateOrInsert(session, item)
         return None
 
     @classmethod
@@ -182,7 +185,7 @@ class Item(Core, Base):
     def updateOrInsert(cls, session, itemData):
         """Will query for existing items and either update or insert an item
         record pending the outcome of that query"""
-        
+
         existingID = Item.lookup(session, itemData['identifiers'])
 
         if existingID is not None:
@@ -193,7 +196,7 @@ class Item(Core, Base):
         else:
             logger.debug('Inserting new item record')
             outItem = Item.createItem(session, itemData)
-        
+
         return outItem
 
     @classmethod
@@ -212,14 +215,15 @@ class Item(Core, Base):
                 return session.query(cls).get(primaryID.get('identifier'))
             else:
                 itemID = Identifier.getByIdentifier(Item, session, [primaryID])
-                if itemID:
-                    return session.query(cls).get(itemID)
+                return session.query(cls).get(itemID)
 
-        return Identifier.getByIdentifier(Item, session, identifiers)
-    
+        itemID = Identifier.getByIdentifier(Item, session, identifiers)
+        return session.query(cls).get(itemID)
+
     def insertData(self, itemData):
         """Insert a new item record"""
-        for key, value in itemData.items(): setattr(self, key, value)
+        for key, value in itemData.items():
+            setattr(self, key, value)
 
         self.addIdentifiers()
         self.addLinks()
@@ -255,14 +259,14 @@ class Item(Core, Base):
 
     def addIdentifiers(self):
         self.identifiers = {
-            Identifier.returnOrInsert(self.session, i) 
+            Identifier.returnOrInsert(self.session, i)
             for i in self.tmp_identifiers
         }
 
     def updateIdentifiers(self):
         for identifier in self.tmp_identifiers:
             self.updateIdentifier(identifier)
-    
+
     def updateIdentifier(self, identifier):
         try:
             self.identifiers.add(
@@ -271,9 +275,9 @@ class Item(Core, Base):
         except DataError as err:
             logger.warning('Received invalid identifier')
             logger.debug(err)
-    
+
     def addMeasurements(self):
-        self.measurements = { 
+        self.measurements = {
             Measurement.insert(m) for m in self.tmp_measurements
         }
 
@@ -287,27 +291,27 @@ class Item(Core, Base):
                     self.id
                 )
             )
-    
+
     def addLinks(self):
-        self.links = { Link(**l) for l in self.tmp_links }
+        self.links = {Link(**l) for l in self.tmp_links}
 
     def updateLinks(self):
         for link in self.tmp_links:
             self.links.add(
                 Link.updateOrInsert(self.session, link, Item, self.id)
             )
-    
+
     def addDates(self):
-        self.dates = { DateField.insert(d) for d in self.tmp_dates }
+        self.dates = {DateField.insert(d) for d in self.tmp_dates}
 
     def updateDates(self):
         for date in self.tmp_dates:
             self.dates.add(
                 DateField.updateOrInsert(self.session, date, Item, self.id)
             )
-    
+
     def addRights(self):
-        self.rights = { 
+        self.rights = {
             Rights.insert(r, dates=r.pop('dates', [])) for r in self.tmp_rights
         }
 
@@ -321,27 +325,32 @@ class Item(Core, Base):
                     self.id
                 )
             )
-    
+
     def addAgents(self):
-        for agent in self.tmp_agents: self.addAgent(agent)
-    
+        for agent in self.tmp_agents:
+            self.addAgent(agent)
+
     def addAgent(self, agent):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
-            for role in roles: AgentItems(agent=agentRec, item=self, role=role)
+            for role in roles:
+                AgentItems(agent=agentRec, item=self, role=role)
         except DataError:
             logger.warning('Unable to read agent {}'.format(agent['name']))
 
     def updateAgents(self):
-        for agent in self.tmp_agents: self.updateAgent(agent)
-    
+        for agent in self.tmp_agents:
+            self.updateAgent(agent)
+
     def updateAgent(self, agent):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
             if roles is None:
                 roles = ['repository']
             for role in roles:
-                if AgentItems.roleExists(self.session, agentRec, role, self.id) is None:
+                if AgentItems.roleExists(
+                    self.session, agentRec, role, self.id
+                ) is None:
                     AgentItems(agent=agentRec, item=self, role=role)
         except DataError:
             logger.warning('Unable to read agent {}'.format(agent['name']))
@@ -350,16 +359,17 @@ class Item(Core, Base):
     def addReportData(cls, session, aceReport):
         """Adds accessibility report data to an item."""
         identifier = aceReport.pop('identifier', None)
-        instanceID = aceReport.pop('instanceID', None)
+        aceReport.pop('instanceID', None)
 
         if identifier is not None:
             existingID = Identifier.getByIdentifier(cls, session, [identifier])
 
-        if existingID is not None:
-            existing = session.query(Item).get(existingID)
-            newReport = Item.buildReport(aceReport)
-            existing.access_reports.add(newReport)
-    
+            if existingID is not None:
+                existing = session.query(Item).get(existingID)
+                newReport = Item.buildReport(aceReport)
+                existing.access_reports.add(newReport)
+                return newReport
+
     @classmethod
     def buildReport(cls, aceReport):
         violations = aceReport.pop('violations', [])
@@ -376,7 +386,7 @@ class Item(Core, Base):
                 'weight': 1,
                 'taken_at': timestamp
             }))
-        
+
         return newReport
 
 
@@ -414,8 +424,12 @@ class AgentItems(Core, Base):
     relationships between an agent and an item. Identical to AgentInstances
     and AgentWorks"""
     __tablename__ = 'agent_items'
-    item_id = Column(Integer, ForeignKey('items.id'), primary_key=True, index=True)
-    agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True, index=True)
+    item_id = Column(
+        Integer, ForeignKey('items.id'), primary_key=True, index=True
+    )
+    agent_id = Column(
+        Integer, ForeignKey('agents.id'), primary_key=True, index=True
+    )
     role = Column(String(64), primary_key=True)
 
     agentItemPkey = PrimaryKeyConstraint(
