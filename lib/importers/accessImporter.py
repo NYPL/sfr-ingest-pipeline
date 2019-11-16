@@ -20,11 +20,12 @@ class AccessReportImporter(AbstractImporter):
         return self.insertRecord()
 
     def insertRecord(self):
-        self.item = Item.addReportData(self.session, self.data)
+        accessReport = Item.addReportData(self.session, self.data)
 
-        if not self.item:
+        if not accessReport:
             return 'error'
 
+        self.item = accessReport.item
         return 'insert'
 
     def setInsertTime(self):
