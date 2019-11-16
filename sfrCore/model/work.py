@@ -170,17 +170,17 @@ class Work(Core, Base):
         self.addDates()
         self.addLanguages()
 
-        if self.sort_title is None: 
+        if self.sort_title is None:
             logger.debug('Setting sort_title to {}'.format(self.title))
             self.sort_title = self.setSortTitle()
-        
+
         epubsToLoad = getattr(self, 'epubsToLoad', [])
         delattr(self, 'epubsToLoad')
         delattr(self, 'session')
         self.removeTmpRelations()
 
         return epubsToLoad
-    
+
     def update(self, workData, session=None):
         """Update an existing work record"""
         logger.info('Updating existing work record {}'.format(self.id))
@@ -208,14 +208,14 @@ class Work(Core, Base):
         self.updateLinks()
         self.updateDates()
         self.updateLanguages()
-        
+
         epubsToLoad = getattr(self, 'epubsToLoad', [])
         delattr(self, 'epubsToLoad')
         delattr(self, 'session')
         self.removeTmpRelations()
 
         return epubsToLoad
-    
+
     def addImportJson(self):
         logger.debug('Adding JSON block of current import data')
         self.import_json.append(RawData(data=self.tmp_storeJson))
@@ -225,21 +225,22 @@ class Work(Core, Base):
         self.identifiers = {
             self.addIdentifier(i) for i in self.tmp_identifiers
         }
-    
+
     def addIdentifier(self, iden):
         try:
             return Identifier.returnOrInsert(self.session, iden)
         except DataError as err:
             logger.warning('Received invalid identifier')
             logger.debug(err)
-    
+
     def updateIdentifiers(self):
         logger.info('Upserting identifiers for work')
-        for iden in self.tmp_identifiers: self.updateIdentifier(iden)
-    
+        for iden in self.tmp_identifiers:
+            self.updateIdentifier(iden)
+
     def updateIdentifier(self, iden):
         try:
-            self.identifiers.add(Identifier.returnOrInsert(self.session, iden))        
+            self.identifiers.add(Identifier.returnOrInsert(self.session, iden))
         except DataError as err:
             logger.warning('Received invalid identifier')
             logger.debug(err)
@@ -254,8 +255,9 @@ class Work(Core, Base):
 
     def updateInstances(self):
         logger.info('Upserting instances for work')
-        for instance in self.tmp_instances: self.updateInstance(instance)
-        
+        for instance in self.tmp_instances:
+            self.updateInstance(instance)
+
     def updateInstance(self, inst):
         try:
             self.instances.add(
@@ -267,12 +269,14 @@ class Work(Core, Base):
 
     def addAgents(self):
         logger.info('Adding agents to work')
-        for a in self.tmp_agents: self.addAgent(a)
+        for a in self.tmp_agents:
+            self.addAgent(a)
 
     def addAgent(self, agent):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
-            if roles is None: roles = ['author']
+            if roles is None:
+                roles = ['author']
             self.agents.extend = {
                 AgentWorks(agent=agentRec, work=self, role=role)
                 for role in set(roles)
@@ -280,15 +284,17 @@ class Work(Core, Base):
         except (DataError, DBError) as err:
             logger.warning('Unable to read agent {}'.format(agent['name']))
             logger.debug(err)
-    
+
     def updateAgents(self):
         logger.info('Upserting agents for work')
-        for agent in self.tmp_agents: self.updateAgent(agent)
-    
+        for agent in self.tmp_agents:
+            self.updateAgent(agent)
+
     def updateAgent(self, agent):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
-            if roles is None: roles = ['author']
+            if roles is None:
+                roles = ['author']
             for role in roles:
                 if AgentWorks.roleExists(
                     self.session,
@@ -300,89 +306,93 @@ class Work(Core, Base):
         except (DataError, DBError) as err:
             logger.warning('Unable to read agent {}'.format(agent['name']))
             logger.debug(err)
-    
+
     def addSubjects(self):
         logger.info('Adding subjects to work')
         self.subjects = {
             Subject.updateOrInsert(self.session, s)
             for s in self.tmp_subjects
         }
-    
+
     def updateSubjects(self):
         logger.info('Upserting subjects for work')
-        for subject in self.tmp_subjects: self.updateSubject(subject)
-        
+        for subject in self.tmp_subjects:
+            self.updateSubject(subject)
+
     def updateSubject(self, subj):
         self.subjects.add(Subject.updateOrInsert(self.session, subj))
-    
+
     def addMeasurements(self):
         self.measurements = {
             Measurement.insert(m) for m in self.tmp_measurements
         }
-    
+
     def updateMeasurements(self):
-        for measurement in self.tmp_measurements: 
+        for measurement in self.tmp_measurements:
             self.updateMeasurement(measurement)
-    
+
     def updateMeasurement(self, measure):
         self.measurements.add(
             Measurement.updateOrInsert(self.session, measure, Work, self.id)
         )
-    
+
     def addLinks(self):
-        self.links = { Link(**l) for l in self.tmp_links }
-    
+        self.links = {Link(**l) for l in self.tmp_links}
+
     def updateLinks(self):
-        for link in self.tmp_links: self.updateLink(link)
-    
+        for link in self.tmp_links:
+            self.updateLink(link)
+
     def updateLink(self, link):
         self.links.add(Link.updateOrInsert(self.session, link, Work, self.id))
-    
+
     def addDates(self):
-        self.dates = { DateField.insert(d) for d in self.tmp_dates }
-    
+        self.dates = {DateField.insert(d) for d in self.tmp_dates}
+
     def updateDates(self):
-        for date in self.tmp_dates: self.updateDate(date)
-    
+        for date in self.tmp_dates:
+            self.updateDate(date)
+
     def updateDate(self, date):
         self.dates.add(
             DateField.updateOrInsert(self.session, date, Work, self.id)
         )
-    
+
     def addLanguages(self):
         if self.tmp_language is not None:
             if isinstance(self.tmp_language, str):
                 self.tmp_language = [self.tmp_language]
-            
+
             self.language = {
                 self.addLanguage(l) for l in self.tmp_language
             }
-    
+
     def addLanguage(self, language):
         try:
             return Language.updateOrInsert(self.session, language)
         except DataError:
             logger.debug('Unable to parse language {}'.format(language))
-    
+
     def updateLanguages(self):
         if self.tmp_language is not None:
             if isinstance(self.tmp_language, str):
                 self.tmp_language = [self.tmp_language]
-            
-            for lang in self.tmp_language: self.updateLanguage(lang)
-    
+
+            for lang in self.tmp_language:
+                self.updateLanguage(lang)
+
     def updateLanguage(self, lang):
         self.language.add(self.addLanguage(lang))
-    
+
     def addAltTitles(self):
-        self.alt_titles = { AltTitle(title=a) for a in self.tmp_alt_titles }
+        self.alt_titles = {AltTitle(title=a) for a in self.tmp_alt_titles}
 
     def addTitles(self, newTitle):
-        
-        # The "canonical title" should be set to the record with the most holdings
+
+        # The "canonical title" should be the record with the most holdings
         if newTitle.lower() != self.title.lower():
             newHoldings = list(filter(
-                lambda x: x['quantity'] == 'holdings', 
+                lambda x: x['quantity'] == 'holdings',
                 self.tmp_measurements
             ))
             if len(newHoldings) >= 1:
@@ -405,23 +415,25 @@ class Work(Core, Base):
                     self.title = newTitle
                     self.setSortTitle()
                 else:
-                    AltTitle.insertOrSkip(self.session, newTitle, Work, self.id)
+                    AltTitle.insertOrSkip(
+                        self.session, newTitle, Work, self.id
+                    )
 
         if self.tmp_alt_titles:
-            self.alt_titles.update({
-                AltTitle.insertOrSkip(self.session, a, Work, self.id)
-                for a in self.tmp_alt_titles
-            })
-    
+            for a in self.tmp_alt_titles:
+                newAlt = AltTitle.insertOrSkip(self.session, a, Work, self.id)
+                if newAlt:
+                    self.alt_titles.add(newAlt)
+
     def setSortTitle(self):
-        workLangs = [ l.iso_3 for l in list(self.language) ]
-        
+        workLangs = [l.iso_3 for l in list(self.language)]
+
         stops = Work.getStops(workLangs)
-            
+
         titleTokens = re.split(r'\s+', self.title)
         stoppedTitle = []
         for i, t in enumerate(titleTokens):
-            if t.lower() in stops: 
+            if t.lower() in stops:
                 continue
             else:
                 stoppedTitle = titleTokens[i:]
@@ -444,7 +456,7 @@ class Work(Core, Base):
                 return lang_stops[lang]
             except KeyError:
                 continue
-        
+
         return lang_stops['eng']
 
     @classmethod
@@ -463,8 +475,9 @@ class Work(Core, Base):
             if instanceID:
                 workID = session.query(Instance.work_id)\
                     .filter(Instance.id == instanceID).one()[0]
-        
-        if workID: return session.query(Work).get(workID)
+
+        if workID:
+            return session.query(Work).get(workID)
         return None
 
     @classmethod
@@ -478,7 +491,7 @@ class Work(Core, Base):
         except NoResultFound:
             logger.error('No matching UUID {} found!'.format(recUUID))
             raise DBError(
-                'work', 
+                'work',
                 'Original UUID {} not found, check error logs'.format(recUUID)
             )
 
@@ -490,7 +503,7 @@ class Work(Core, Base):
             .filter(Subject.subject == subject.subject)\
             .filter(cls.id == workID)\
             .one_or_none()
-    
+
     def importSubjects(self, session, subjects):
         for subject in subjects:
             self.subjects.add(Subject.updateOrInsert(session, subject))
@@ -502,8 +515,12 @@ class AgentWorks(Core, Base):
     (e.g. author, editor)"""
 
     __tablename__ = 'agent_works'
-    work_id = Column(Integer, ForeignKey('works.id'), primary_key=True, index=True)
-    agent_id = Column(Integer, ForeignKey('agents.id'), primary_key=True, index=True)
+    work_id = Column(
+        Integer, ForeignKey('works.id'), primary_key=True, index=True
+    )
+    agent_id = Column(
+        Integer, ForeignKey('agents.id'), primary_key=True, index=True
+    )
     role = Column(String(64), primary_key=True)
 
     agentWorksPkey = PrimaryKeyConstraint(
@@ -534,7 +551,7 @@ class AgentWorks(Core, Base):
             self.agent_id,
             self.role
         )
-    
+
     @classmethod
     def roleExists(cls, session, agent, role, recordID):
         """Query database to see if relationship with role exists between
