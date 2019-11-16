@@ -26,8 +26,11 @@ class TestAccessImporter(unittest.TestCase):
         self.assertEqual(testImporter.item, None)
         mockInsert.assert_called_once()
 
-    @patch.object(Item, 'addReportData', return_value='testItem')
+    @patch.object(Item, 'addReportData')
     def test_insertRecord_success(self, mockAddData):
+        mockReport = MagicMock()
+        mockReport.item = 'testItem'
+        mockAddData.return_value = mockReport
         testImporter = AccessReportImporter({'data': {}}, 'session')
         testAction = testImporter.insertRecord()
         self.assertEqual(testAction, 'insert')
