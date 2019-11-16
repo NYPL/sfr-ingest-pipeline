@@ -132,7 +132,10 @@ class ItemTest(unittest.TestCase):
     
     @patch('sfrCore.model.item.Identifier.getByIdentifier', return_value=True)
     def test_item_lookup(self, mock_get):
-        self.assertTrue(Item.lookup('session', ['id1']))
+        mockSession = MagicMock()
+        mockSession.query().get.return_value = True
+        self.assertTrue(Item.lookup(mockSession, ['id1']))
+        mockSession.query().get.assert_called_once_with(True)
     
     def test_item_insertData(self):
         testData = {
