@@ -10,7 +10,7 @@ logger = createLog('workImporter')
 
 
 class WorkImporter(AbstractImporter):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.source = record.get('source', 'unknown')
         self.data = WorkImporter.parseData(record)
         self.work = None
@@ -49,7 +49,10 @@ class WorkImporter(AbstractImporter):
                 'weight': 1
             }
 
-            OutputManager.putKinesis(self.data, os.environ['UPDATE_STREAM'])
+            self.kinesisMsgs[os.environ['UPDATE_STREAM']].append({
+                'recType': 'work',
+                'data': self.data
+            })
             return 'update'
 
         self.insertRecord()
@@ -59,7 +62,10 @@ class WorkImporter(AbstractImporter):
         self.work = Work(session=self.session)
         epubsToLoad = self.work.insert(self.data)
         # Kicks off enhancement pipeline through OCLC CLassify
-        queryWork(self.session, self.work, self.work.uuid.hex)
+        queryMsgs = queryWork(self.session, self.work, self.work.uuid.hex)
+        if len(queryMsgs) > 0:
+            for msg in queryMsgs:
+                self.sqsMsgs[os.environ['CLASSIFY_QUEUE']].append(msg)
 
         self.storeCovers()
         self.storeEpubs(epubsToLoad)
@@ -73,22 +79,18 @@ class WorkImporter(AbstractImporter):
                     linkFlags = link.flags
 
                 if linkFlags.get('cover', False) is True:
-                    OutputManager.putQueue(
-                        {
-                            'url': link.url,
-                            'source': self.source,
-                            'identifier': self.work.uuid.hex
-                        },
-                        os.environ['COVER_QUEUE']
-                    )
+                    self.sqsMsgs[os.environ['COVER_QUEUE']].append({
+                        'url': link.url,
+                        'source': self.source,
+                        'identifier': self.work.uuid.hex
+                    })
 
     def storeEpubs(self, epubsToLoad):
         for deferredEpub in epubsToLoad:
-            OutputManager.putKinesis(
-                deferredEpub,
-                os.environ['EPUB_STREAM'],
-                recType='item'
-            )
+            self.kinesisMsgs[os.environ['EPUB_STREAM']].append({
+                'recType': 'item',
+                'data': deferredEpub
+            })
 
     def setInsertTime(self):
         super().setInsertTime()

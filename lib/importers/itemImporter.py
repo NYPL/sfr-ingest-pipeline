@@ -9,7 +9,7 @@ logger = createLog('itemImporter')
 
 
 class ItemImporter(AbstractImporter):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.data = record['data']
         self.item = None
         self.kinesisMsgs = kinesisMsgs
@@ -46,11 +46,10 @@ class ItemImporter(AbstractImporter):
 
             self.item = self.session.query(Item).get(itemID)
 
-            OutputManager.putKinesis(
-                self.data,
-                os.environ['UPDATE_STREAM'],
-                recType='item'
-            )
+            self.kinesisMsgs[os.environ['UPDATE_STREAM']].append({
+                'recType': 'item',
+                'data': self.data
+            })
             return 'update'
 
         self.logger.info('Ingesting item record')

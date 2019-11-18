@@ -10,7 +10,7 @@ logger = createLog('instanceImporter')
 
 
 class InstanceImporter(AbstractImporter):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.source = record.get('source', 'unknown')
         self.data = record['data']
         self.instance = None
@@ -42,11 +42,10 @@ class InstanceImporter(AbstractImporter):
                 'identifier': instanceID,
                 'weight': 1
             }
-            OutputManager.putKinesis(
-                self.data,
-                os.environ['UPDATE_STREAM'],
-                recType='instance'
-            )
+            self.kinesisMsgs[os.environ['UPDATE_STREAM']].append({
+                'recType': 'instance',
+                'data': self.data
+            })
             return 'update'
 
         self.insertRecord()
@@ -68,22 +67,18 @@ class InstanceImporter(AbstractImporter):
                 linkFlags = link.flags
 
             if linkFlags.get('cover', False) is True:
-                OutputManager.putQueue(
-                    {
-                        'url': link.url,
-                        'source': self.source,
-                        'identifier': self.data['identifiers'][0]['identifier']
-                    },
-                    os.environ['COVER_QUEUE']
-                )
+                self.sqsMsgs[os.environ['COVER_QUEUE']].append({
+                    'url': link.url,
+                    'source': self.source,
+                    'identifier': self.data['identifiers'][0]['identifier']
+                })
 
     def storeEpubs(self, epubsToLoad):
         for deferredEpub in epubsToLoad:
-            OutputManager.putKinesis(
-                deferredEpub,
-                os.environ['EPUB_STREAM'],
-                recType='item'
-            )
+            self.kinesisMsgs[os.environ['EPUB_STREAM']].append({
+                'recType': 'item',
+                'data': deferredEpub
+            })
 
     def setInsertTime(self):
         self.instance.work.date_modified = datetime.utcnow()

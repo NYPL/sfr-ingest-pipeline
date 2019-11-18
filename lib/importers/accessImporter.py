@@ -8,7 +8,7 @@ logger = createLog('accessImporter')
 
 
 class AccessReportImporter(AbstractImporter):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.data = record['data']
         self.item = None
         self.logger = self.createLogger()

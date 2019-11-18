@@ -68,24 +68,17 @@ class TestQueryManager(unittest.TestCase):
         self.assertEqual(testAgents, 'agent1')
 
     @patch.dict('os.environ', {'CLASSIFY_QUEUE': 'testQueue'})
-    @patch.multiple(OutputManager,
-                    checkRecentQueries=DEFAULT, putQueue=DEFAULT)
-    def test_createClassifyQuery_noCache(self, checkRecentQueries, putQueue):
+    @patch.multiple(OutputManager, checkRecentQueries=DEFAULT)
+    def test_createClassifyQuery_noCache(self, checkRecentQueries):
         testQuery = {
             'idType': 'testing',
             'identifier': '1'
         }
         checkRecentQueries.return_value = False
-        createClassifyQuery(testQuery, 'test', 'uuid')
+        outMsg = createClassifyQuery(testQuery, 'test', 'uuid')
         checkRecentQueries.assert_called_once_with('testing/1')
-        putQueue.assert_called_once_with(
-            {
-                'type': 'test',
-                'uuid': 'uuid',
-                'fields': testQuery
-            },
-            'testQueue'
-        )
+        self.assertEqual(outMsg['fields']['identifier'], '1')
+        self.assertEqual(outMsg['type'], 'test')
 
     @patch.dict('os.environ', {'CLASSIFY_QUEUE': 'testQueue'})
     @patch.multiple(OutputManager,
