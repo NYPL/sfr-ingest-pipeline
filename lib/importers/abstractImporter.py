@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod, abstractproperty
 
-from helpers.logHelpers import createLog
-
 
 class AbstractImporter(ABC):
     @abstractmethod
@@ -26,4 +24,4 @@ class AbstractImporter(ABC):
         pass
 
     def createLogger(self):
-        return createLog(type(self).__name__)
+        pass

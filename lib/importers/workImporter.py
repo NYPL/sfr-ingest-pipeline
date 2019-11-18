@@ -4,7 +4,9 @@ from sfrCore import Work
 
 from lib.importers.abstractImporter import AbstractImporter
 from lib.queryManager import queryWork
-from lib.outputManager import OutputManager
+from helpers.logHelpers import createLog
+
+logger = createLog('workImporter')
 
 
 class WorkImporter(AbstractImporter):
@@ -12,6 +14,9 @@ class WorkImporter(AbstractImporter):
         self.source = record.get('source', 'unknown')
         self.data = WorkImporter.parseData(record)
         self.work = None
+        self.kinesisMsgs = kinesisMsgs
+        self.sqsMsgs = sqsMsgs
+        self.logger = self.createLogger()
         super().__init__(record, session)
 
     @staticmethod
@@ -87,3 +92,6 @@ class WorkImporter(AbstractImporter):
 
     def setInsertTime(self):
         super().setInsertTime()
+
+    def createLogger(self):
+        return logger

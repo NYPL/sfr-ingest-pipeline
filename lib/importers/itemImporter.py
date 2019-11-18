@@ -3,13 +3,18 @@ import os
 from sfrCore import Item, Instance, Identifier
 
 from lib.importers.abstractImporter import AbstractImporter
-from lib.outputManager import OutputManager
+from helpers.logHelpers import createLog
+
+logger = createLog('itemImporter')
 
 
 class ItemImporter(AbstractImporter):
     def __init__(self, record, session):
         self.data = record['data']
         self.item = None
+        self.kinesisMsgs = kinesisMsgs
+        self.sqsMsgs = sqsMsgs
+        self.logger = self.createLogger()
         super().__init__(record, session)
 
     @property
@@ -63,3 +68,6 @@ class ItemImporter(AbstractImporter):
 
     def setInsertTime(self):
         self.item.instance.work.date_modified = datetime.utcnow()
+
+    def createLogger(self):
+        return logger
