@@ -112,7 +112,7 @@ def parseRecord(encodedRec, manager):
         logger.debug(opErr)
         OutputManager.putKinesis(
             record.get('data'),
-            os.environ['UPDATE_STREAM'],
+            os.environ['INGEST_STREAM'],
             recType=record.get('type', 'work'),
         )
     except Exception as err:  # noqa: Q000

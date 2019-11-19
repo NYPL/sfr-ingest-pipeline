@@ -10,6 +10,7 @@ environment_variables:
     DB_USER: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQEkoQNYODSk+m8cJJethF9fAAAAYTBfBgkqhkiG9w0BBwagUjBQAgEAMEsGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMRn26MsM9MH+2cXAyAgEQgB7gWCou8rWbTzfnj2dpcXupJEiP4FcYNo9x0b5Au44=
     DB_PSWD: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQF9q6qZdlshh6jj9SCwRnrxAAAAaTBnBgkqhkiG9w0BBwagWjBYAgEAMFMGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM3VcD1csTm05LRnTxAgEQgCaaffMztl8n0z5ic66yft0nGxzX8141R/Y987kqXEeQYemN4DJ2zg==
 
+    INGEST_STREAM: sfr-db-ingest-development
     UPDATE_STREAM: sfr-db-update-development
     EPUB_STREAM: sfr-epub-ingest-development
     CLASSIFY_QUEUE: https://sqs.us-east-1.amazonaws.com/224280085904/sfr-oclc-classify-development
