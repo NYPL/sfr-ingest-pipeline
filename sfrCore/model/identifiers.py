@@ -310,9 +310,19 @@ class Identifier(Base):
 
         className = model.__tablename__[:-1]
 
-        cleanIdentifiers = [cls._cleanIdentifier(i) for i in identifiers]
+        cleanIdentifiers = []
+        for i in identifiers:
+            try:
+                cleanIdentifiers.append(cls._cleanIdentifier(i))
+            except DataError:
+                continue
+
         idQueries = []
         for iden in cleanIdentifiers:
+            logger.debug('Querying database for identifier {} ({})'.format(
+                iden['identifier'],
+                iden['type']
+            ))
             idenType = iden['type']
             idenValue = iden['identifier']
             idQueries.append(
