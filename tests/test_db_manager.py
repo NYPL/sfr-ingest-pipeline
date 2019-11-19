@@ -169,5 +169,5 @@ class TestDBManager(unittest.TestCase):
         testManager.sqsMsgs['testQueue'] = ['msg1', 'msg2', 'msg3']
 
         testManager.sendMessages()
-        putKinesisBatch.assert_called_with('testStream', ['rec1', 'rec2', 'rec3'])
-        putQueueBatches.assert_called_with('testQueue', ['msg1', 'msg2', 'msg3'])
+        putKinesisBatch.assert_called_with(['rec1', 'rec2', 'rec3'], 'testStream')
+        putQueueBatches.assert_called_with(['msg1', 'msg2', 'msg3'], 'testQueue')

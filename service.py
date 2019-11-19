@@ -57,19 +57,21 @@ def parseRecords(records):
     logger.debug('Creating Session')
     session = MANAGER.createSession()
     dbManager = DBManager(session)
+    parseResults = []
     try:
-        parseResults = [parseRecord(r, dbManager) for r in records]
+        for r in records:
+            parseResults.append(parseRecord(r, dbManager))
         logger.debug('Parsed {} records. Committing results'.format(
             str(len(parseResults))
         ))
         MANAGER.closeConnection()
-        return parseResults
     except (NoRecordsReceived, DataError, DBError) as err:
         logger.error('Could not process records in current invocation')
         logger.debug(err)
         MANAGER.closeConnection()
 
     dbManager.sendMessages()
+    return parseResults
 
 
 def parseRecord(encodedRec, manager):
