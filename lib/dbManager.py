@@ -48,8 +48,8 @@ class DBManager:
         )
 
     def sendMessages(self):
-        for stream, records in self.kinesisMsgs.items():
+        for records, stream in self.kinesisMsgs.items():
             OutputManager.putKinesisBatch(stream, records)
 
-        for queue, messages in self.sqsMsgs.items():
+        for messages, queue in self.sqsMsgs.items():
             OutputManager.putQueueBatches(queue, messages)
