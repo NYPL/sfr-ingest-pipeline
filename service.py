@@ -1,13 +1,15 @@
 import json
 import base64
+import os
 import traceback
-from psycopg2.errors import DeadlockDetected
+from sqlalchemy.exc import OperationalError
 
 from sfrCore import SessionManager
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
-from lib.dbManager import importRecord
+from lib.dbManager import DBManager 
+from lib.outputManager import OutputManager
 
 """Logger can be passed name of current module
 Can also be instantiated on a class/method basis using dot notation
@@ -54,8 +56,9 @@ def parseRecords(records):
 
     logger.debug('Creating Session')
     session = MANAGER.createSession()
+    dbManager = DBManager(session)
     try:
-        parseResults = [parseRecord(r, session) for r in records]
+        parseResults = [parseRecord(r, dbManager) for r in records]
         logger.debug('Parsed {} records. Committing results'.format(
             str(len(parseResults))
         ))
@@ -66,8 +69,10 @@ def parseRecords(records):
         logger.debug(err)
         MANAGER.closeConnection()
 
+    dbManager.sendMessages()
 
-def parseRecord(encodedRec, session):
+
+def parseRecord(encodedRec, manager):
     """Handles each individual record by parsing JSON from the base64 encoded
     string recieved from the Kinesis stream, creating a database session and
     inserting/updating the database to reflect this new data source. It will
@@ -97,20 +102,24 @@ def parseRecord(encodedRec, session):
         raise DataError('Error in base64 encoding of record')
 
     try:
-        MANAGER.startSession() # Start transaction
-        record = importRecord(session, record)
+        MANAGER.startSession()  # Start transaction
+        manager.importRecord(record)
         MANAGER.commitChanges()
         return record
+    except OperationalError as opErr:
+        MANAGER.session.rollback()  # Rollback current record only
+        logger.error('Conflicting updates caused deadlock, retry')
+        logger.debug(opErr)
+        OutputManager.putKinesis(
+            record.get('data'),
+            os.environ['INGEST_STREAM'],
+            recType=record.get('type', 'work'),
+        )
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
-        MANAGER.session.rollback() # Rollback current record only
-        if isinstance(err, DeadlockDetected):
-            logger.error('Conflicting updates caused deadlock, retry')
-            logger.debug(deadlock)
-            parseRecord(encodedRec)
-        else:
-            logger.error('Failed to store record')
-            logger.debug(err)
-            logger.debug(traceback.format_exc())
+        MANAGER.session.rollback()  # Rollback current record only
+        logger.error('Failed to store record')
+        logger.debug(err)
+        logger.debug(traceback.format_exc())

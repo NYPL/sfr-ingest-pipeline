@@ -1,3 +1,4 @@
+from collections import defaultdict
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -8,12 +9,12 @@ from lib.outputManager import OutputManager
 
 class TestItemImporter(unittest.TestCase):
     def test_ImporterInit(self):
-        testImporter = ItemImporter({'data': 'data'}, 'session')
+        testImporter = ItemImporter({'data': 'data'}, 'session', {}, {})
         self.assertEqual(testImporter.data, 'data')
         self.assertEqual(testImporter.session, 'session')
 
     def test_getIdentifier(self):
-        testImporter = ItemImporter({'data': {}}, 'session')
+        testImporter = ItemImporter({'data': {}}, 'session', {}, {})
         mockItem = MagicMock()
         mockItem.id = 1
         testImporter.item = mockItem
@@ -22,7 +23,7 @@ class TestItemImporter(unittest.TestCase):
     @patch.object(Identifier, 'getByIdentifier', return_value=None)
     @patch.object(ItemImporter, 'insertRecord')
     def test_lookupRecord_success(self, mockInsert, mockLookup):
-        testImporter = ItemImporter({'data': {}}, 'session')
+        testImporter = ItemImporter({'data': {}}, 'session', {}, {})
         testAction = testImporter.lookupRecord()
         self.assertEqual(testAction, 'insert')
         self.assertEqual(testImporter.item, None)
@@ -31,21 +32,22 @@ class TestItemImporter(unittest.TestCase):
 
     @patch.dict('os.environ', {'UPDATE_STREAM': 'test'})
     @patch.object(Identifier, 'getByIdentifier')
-    @patch.object(OutputManager, 'putKinesis')
-    def test_lookupRecord_found(self, mockPut, mockLookup):
+    def test_lookupRecord_found(self, mockLookup):
         mockLookup.return_value = 1
         mockSession = MagicMock()
-        testImporter = ItemImporter({'data': {}}, mockSession)
+        testImporter = ItemImporter(
+            {'data': {}}, mockSession, defaultdict(list), defaultdict(list)
+        )
         testAction = testImporter.lookupRecord()
         self.assertEqual(testAction, 'update')
         mockLookup.assert_called_once_with(Item, mockSession, [])
         mockSession.query().get.assert_called_once_with(1)
-        mockPut.assert_called_once()
+        self.assertEqual(testImporter.kinesisMsgs['test'][0]['data']['primary_identifier']['identifier'], 1)
 
     @patch.object(Item, 'createItem')
     @patch.object(Instance, 'addItemRecord')
     def test_insertRecord(self, mockAddItem, mockCreate):
-        testImporter = ItemImporter({'data': {}}, 'session')
+        testImporter = ItemImporter({'data': {}}, 'session', {}, {})
         mockCreate.return_value = 'testItem'
         testImporter.insertRecord()
         self.assertEqual(testImporter.item, 'testItem')
@@ -53,7 +55,7 @@ class TestItemImporter(unittest.TestCase):
 
     @patch('lib.importers.itemImporter.datetime')
     def test_setInsertTime(self, mockUTC):
-        testImporter = ItemImporter({'data': {}}, 'session')
+        testImporter = ItemImporter({'data': {}}, 'session', {}, {})
         testItem = MagicMock()
         testInstance = MagicMock()
         testInstance.work = MagicMock()

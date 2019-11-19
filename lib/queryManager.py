@@ -1,5 +1,3 @@
-import os
-
 from sfrCore import Work
 from sfrCore.model.identifiers import (
     OCLC,
@@ -47,6 +45,7 @@ def queryWork(session, work, workUUID):
     match the returned data with the existing record."""
 
     lookupIDs = getIdentifiers(session, work)
+    classifyQueries = []
 
     if len(lookupIDs) == 0:
         # If no identifiers are in the work record, lookup via title/author
@@ -55,7 +54,9 @@ def queryWork(session, work, workUUID):
             'title': work.title,
             'authors': authors
         }
-        createClassifyQuery(workTitleFields, 'authorTitle', workUUID)
+        classifyQueries.append(
+            createClassifyQuery(workTitleFields, 'authorTitle', workUUID)
+        )
     else:
         # Otherwise, pass all valid identifiers to the Classify service
         for idType, ids in lookupIDs.items():
@@ -64,7 +65,10 @@ def queryWork(session, work, workUUID):
                     'idType': idType,
                     'identifier': iden
                 }
-                createClassifyQuery(idenFields, 'identifier', workUUID)
+                classifyQueries.append(
+                    createClassifyQuery(idenFields, 'identifier', workUUID)
+                )
+    return classifyQueries
 
 
 def getIdentifiers(session, work):
@@ -101,11 +105,11 @@ def createClassifyQuery(classifyQuery, queryType, uuid):
     if OutputManager.checkRecentQueries(
         '{}'.format('/'.join(queryStr))
     ) is False:
-        OutputManager.putQueue({
+        return {
             'type': queryType,
             'uuid': uuid,
             'fields': classifyQuery
-        }, os.environ['CLASSIFY_QUEUE'])
+        }
     else:
         logger.info('{} was recently queried, can skip Classify'.format(
             '/'.join(queryStr)

@@ -1,20 +1,20 @@
+from collections import defaultdict
 import json
 import unittest
 from unittest.mock import patch, MagicMock, DEFAULT
 
 from lib.importers.instanceImporter import InstanceImporter
 from sfrCore import Instance, Identifier
-from lib.outputManager import OutputManager
 
 
 class TestInstanceImporter(unittest.TestCase):
     def test_ImporterInit(self):
-        testImporter = InstanceImporter({'data': 'data'}, 'session')
+        testImporter = InstanceImporter({'data': 'data'}, 'session', {}, {})
         self.assertEqual(testImporter.data, 'data')
         self.assertEqual(testImporter.session, 'session')
 
     def test_getIdentifier(self):
-        testImporter = InstanceImporter({'data': {}}, 'session')
+        testImporter = InstanceImporter({'data': {}}, 'session', {}, {})
         mockInstance = MagicMock()
         mockInstance.id = 1
         testImporter.instance = mockInstance
@@ -23,7 +23,7 @@ class TestInstanceImporter(unittest.TestCase):
     @patch.object(Identifier, 'getByIdentifier', return_value=None)
     @patch.object(InstanceImporter, 'insertRecord')
     def test_lookupRecord_success(self, mockInsert, mockLookup):
-        testImporter = InstanceImporter({'data': {}}, 'session')
+        testImporter = InstanceImporter({'data': {}}, 'session', {}, {})
         testAction = testImporter.lookupRecord()
         self.assertEqual(testAction, 'insert')
         self.assertEqual(testImporter.instance, None)
@@ -32,19 +32,22 @@ class TestInstanceImporter(unittest.TestCase):
 
     @patch.dict('os.environ', {'UPDATE_STREAM': 'test'})
     @patch.object(Identifier, 'getByIdentifier')
-    @patch.object(OutputManager, 'putKinesis')
-    def test_lookupRecord_found(self, mockPut, mockLookup):
+    def test_lookupRecord_found(self, mockLookup):
         mockLookup.return_value = 1
-        testImporter = InstanceImporter({'data': {}}, 'session')
+        testImporter = InstanceImporter(
+            {'data': {}}, 'session', defaultdict(list), defaultdict(list)
+        )
         testAction = testImporter.lookupRecord()
         self.assertEqual(testAction, 'update')
         mockLookup.assert_called_once_with(Instance, 'session', [])
-        mockPut.assert_called_once()
+        self.assertEqual(
+            testImporter.kinesisMsgs['test'][0]['data']['primary_identifier']['identifier'], 1
+        )
 
     @patch.object(Instance, 'createNew')
     @patch.multiple(InstanceImporter, storeCovers=DEFAULT, storeEpubs=DEFAULT)
     def test_insertRecord(self, mockCreate, storeCovers, storeEpubs):
-        testImporter = InstanceImporter({'data': {}}, 'session')
+        testImporter = InstanceImporter({'data': {}}, 'session', {}, {})
         mockInstance = MagicMock()
         mockCreate.return_value = (mockInstance, ['epub1'])
         testImporter.insertRecord()
@@ -53,15 +56,15 @@ class TestInstanceImporter(unittest.TestCase):
         storeEpubs.assert_called_once_with(['epub1'])
 
     @patch.dict('os.environ', {'COVER_QUEUE': 'test_queue'})
-    @patch.object(OutputManager, 'putQueue')
-    def test_storeCovers_dictFlags(self, mockPut):
+    def test_storeCovers_dictFlags(self):
         testImporter = InstanceImporter(
             {
                 'data': {
                     'identifiers': [{'identifier': 1}]
                 }
             },
-            'session'
+            'session',
+            defaultdict(list), defaultdict(list)
         )
         mockInstance = MagicMock()
         mockLink = MagicMock()
@@ -75,55 +78,22 @@ class TestInstanceImporter(unittest.TestCase):
         testImporter.instance = mockInstance
 
         testImporter.storeCovers()
-        mockPut.assert_called_once_with(
-            {
-                'url': 'testing_url',
-                'source': 'testing',
-                'identifier': 1
-            },
-            'test_queue'
-        )
-
-    @patch.dict('os.environ', {'COVER_QUEUE': 'test_queue'})
-    @patch.object(OutputManager, 'putQueue')
-    def test_storeCovers_dictFlags(self, mockPut):
-        testImporter = InstanceImporter(
-            {
-                'data': {
-                    'identifiers': [{'identifier': 1}]
-                },
-                'source': 'testing'
-            },
-            'session'
-        )
-        mockInstance = MagicMock()
-        mockLink = MagicMock()
-        mockInstance.links = [mockLink]
-        mockLink.flags = {'cover': True}
-        mockLink.url = 'testing_url'
-
-        testImporter.instance = mockInstance
-
-        testImporter.storeCovers()
-        mockPut.assert_called_once_with(
-            {
-                'url': 'testing_url',
-                'source': 'testing',
-                'identifier': 1
-            },
-            'test_queue'
+        self.assertEqual(
+            testImporter.sqsMsgs['test_queue'][0]['url'],
+            'testing_url'
         )
 
     @patch.dict('os.environ', {'EPUB_STREAM': 'test_stream'})
-    @patch.object(OutputManager, 'putKinesis')
-    def test_storeEpubs(self, mockPut):
-        testImporter = InstanceImporter({'data': {}}, 'session')
+    def test_storeEpubs(self):
+        testImporter = InstanceImporter(
+            {'data': {}}, 'session', defaultdict(list), defaultdict(list)
+        )
         testImporter.storeEpubs(['epub1'])
-        mockPut.assert_called_once_with('epub1', 'test_stream', recType='item')
+        self.assertEqual(testImporter.kinesisMsgs['test_stream'][0]['data'], 'epub1')
 
     @patch('lib.importers.instanceImporter.datetime')
     def test_setInsertTime(self, mockUTC):
-        testImporter = InstanceImporter({'data': {}}, 'session')
+        testImporter = InstanceImporter({'data': {}}, 'session', {}, {})
         testInstance = MagicMock()
         testInstance.work = MagicMock()
         testImporter.instance = testInstance

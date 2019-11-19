@@ -7,12 +7,12 @@ from sfrCore import Item
 
 class TestAccessImporter(unittest.TestCase):
     def test_ImporterInit(self):
-        testImporter = AccessReportImporter({'data': 'data'}, 'session')
+        testImporter = AccessReportImporter({'data': 'data'}, 'session', {}, {})
         self.assertEqual(testImporter.data, 'data')
         self.assertEqual(testImporter.session, 'session')
 
     def test_getIdentifier(self):
-        testImporter = AccessReportImporter({'data': {}}, 'session')
+        testImporter = AccessReportImporter({'data': {}}, 'session', {}, {})
         mockItem = MagicMock()
         mockItem.id = 1
         testImporter.item = mockItem
@@ -20,7 +20,7 @@ class TestAccessImporter(unittest.TestCase):
 
     @patch.object(AccessReportImporter, 'insertRecord', return_value='testing')
     def test_lookupRecord(self, mockInsert):
-        testImporter = AccessReportImporter({'data': {}}, 'session')
+        testImporter = AccessReportImporter({'data': {}}, 'session', {}, {})
         testAction = testImporter.lookupRecord()
         self.assertEqual(testAction, 'testing')
         self.assertEqual(testImporter.item, None)
@@ -31,7 +31,7 @@ class TestAccessImporter(unittest.TestCase):
         mockReport = MagicMock()
         mockReport.item = 'testItem'
         mockAddData.return_value = mockReport
-        testImporter = AccessReportImporter({'data': {}}, 'session')
+        testImporter = AccessReportImporter({'data': {}}, 'session', {}, {})
         testAction = testImporter.insertRecord()
         self.assertEqual(testAction, 'insert')
         self.assertEqual(testImporter.item, 'testItem')
@@ -39,7 +39,7 @@ class TestAccessImporter(unittest.TestCase):
 
     @patch.object(Item, 'addReportData', return_value=None)
     def test_insertRecord_failure(self, mockAddData):
-        testImporter = AccessReportImporter({'data': {}}, 'session')
+        testImporter = AccessReportImporter({'data': {}}, 'session', {}, {})
         testAction = testImporter.insertRecord()
         self.assertEqual(testAction, 'error')
         self.assertEqual(testImporter.item, None)
@@ -47,7 +47,7 @@ class TestAccessImporter(unittest.TestCase):
 
     @patch('lib.importers.accessImporter.datetime')
     def test_setInsertTime(self, mockUTC):
-        testImporter = AccessReportImporter({'data': {}}, 'session')
+        testImporter = AccessReportImporter({'data': {}}, 'session', {}, {})
         testItem = MagicMock()
         testInstance = MagicMock()
         testInstance.work = MagicMock()

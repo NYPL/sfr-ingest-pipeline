@@ -3,13 +3,18 @@ import os
 from sfrCore import Link, Instance
 
 from lib.importers.abstractImporter import AbstractImporter
-from lib.outputManager import OutputManager
+from helpers.logHelpers import createLog
+
+logger = createLog('coverImporter')
 
 
 class CoverImporter(AbstractImporter):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.data = record['data']
         self.link = None
+        self.kinesisMsgs = kinesisMsgs
+        self.sqsMsgs = sqsMsgs
+        self.logger = self.createLogger()
         super().__init__(record, session)
 
     @property
@@ -48,14 +53,14 @@ class CoverImporter(AbstractImporter):
         instance.links.add(self.link)
         self.session.add(instance)
 
-        OutputManager.putQueue(
-            {
-                'url': uri,
-                'source': self.data.get('source', 'unknown'),
-                'identifier': instanceID
-            },
-            os.environ['COVER_QUEUE']
-        )
+        self.sqsMsgs[os.environ['COVER_QUEUE']].append({
+            'url': uri,
+            'source': self.data.get('source', 'unknown'),
+            'identifier': instanceID
+        })
 
     def setInsertTime(self):
         self.link.instances[0].work.date_modified = datetime.utcnow()
+
+    def createLogger(self):
+        return logger

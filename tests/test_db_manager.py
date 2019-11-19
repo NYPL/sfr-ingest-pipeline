@@ -1,12 +1,13 @@
 import unittest
-from unittest.mock import patch, DEFAULT
+from unittest.mock import patch, DEFAULT, call
 
 from lib.dbManager import (
-    importRecord,
+    DBManager,
     WorkImporter,
     InstanceImporter,
     ItemImporter,
-    AccessReportImporter
+    AccessReportImporter,
+    OutputManager
 )
 
 
@@ -23,8 +24,9 @@ class TestDBManager(unittest.TestCase):
             'data': 'data',
             'type': 'work'
         }
+        testManager = DBManager('session')
         lookupRecord.return_value = 'insert'
-        result = importRecord('session', testWorkRecord)
+        result = testManager.importRecord(testWorkRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_called_once()
         self.assertEqual(result, 'insert WORK #1')
@@ -42,7 +44,8 @@ class TestDBManager(unittest.TestCase):
             'type': 'work'
         }
         lookupRecord.return_value = 'update'
-        result = importRecord('session', testWorkRecord)
+        testManager = DBManager('session')
+        result = testManager.importRecord(testWorkRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_not_called()
         self.assertEqual(result, 'update WORK #1')
@@ -59,7 +62,8 @@ class TestDBManager(unittest.TestCase):
             'type': 'instance'
         }
         lookupRecord.return_value = 'insert'
-        result = importRecord('session', testInstanceRecord)
+        testManager = DBManager('session')
+        result = testManager.importRecord(testInstanceRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_called_once()
         self.assertEqual(result, 'insert INSTANCE #1')
@@ -76,7 +80,8 @@ class TestDBManager(unittest.TestCase):
             'type': 'instance'
         }
         lookupRecord.return_value = 'update'
-        result = importRecord('session', testInstanceRecord)
+        testManager = DBManager('session')
+        result = testManager.importRecord(testInstanceRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_not_called()
         self.assertEqual(result, 'update INSTANCE #1')
@@ -93,7 +98,8 @@ class TestDBManager(unittest.TestCase):
             'type': 'item'
         }
         lookupRecord.return_value = 'insert'
-        result = importRecord('session', testItemRecord)
+        testManager = DBManager('session')
+        result = testManager.importRecord(testItemRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_called_once()
         self.assertEqual(result, 'insert ITEM #1')
@@ -110,7 +116,8 @@ class TestDBManager(unittest.TestCase):
             'type': 'item'
         }
         lookupRecord.return_value = 'update'
-        result = importRecord('session', testItemRecord)
+        testManager = DBManager('session')
+        result = testManager.importRecord(testItemRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_not_called()
         self.assertEqual(result, 'update ITEM #1')
@@ -127,7 +134,8 @@ class TestDBManager(unittest.TestCase):
             'type': 'access_report'
         }
         lookupRecord.return_value = 'insert'
-        result = importRecord('session', testAccessRecord)
+        testManager = DBManager('session')
+        result = testManager.importRecord(testAccessRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_called_once()
         self.assertEqual(result, 'insert ACCESS_REPORT #1')
@@ -144,7 +152,22 @@ class TestDBManager(unittest.TestCase):
             'type': 'access_report'
         }
         lookupRecord.return_value = 'update'
-        result = importRecord('session', testAccessRecord)
+        testManager = DBManager('session')
+        result = testManager.importRecord(testAccessRecord)
         lookupRecord.assert_called_once()
         setInsertTime.assert_not_called()
         self.assertEqual(result, 'update ACCESS_REPORT #1')
+    
+    @patch.multiple(
+        OutputManager,
+        putKinesisBatch=DEFAULT,
+        putQueueBatches=DEFAULT
+    )
+    def test_sendMessages(self, putKinesisBatch, putQueueBatches):
+        testManager = DBManager('session')
+        testManager.kinesisMsgs['testStream'] = ['rec1', 'rec2', 'rec3']
+        testManager.sqsMsgs['testQueue'] = ['msg1', 'msg2', 'msg3']
+
+        testManager.sendMessages()
+        putKinesisBatch.assert_called_with('testStream', ['rec1', 'rec2', 'rec3'])
+        putQueueBatches.assert_called_with('testQueue', ['msg1', 'msg2', 'msg3'])
