@@ -6,7 +6,9 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     Unicode,
-    Table
+    Table,
+    func,
+    text
 )
 from sqlalchemy.orm import relationship, selectinload
 from sqlalchemy.orm.exc import NoResultFound, MultipleResultsFound
@@ -305,44 +307,37 @@ class Identifier(Base):
     def getByIdentifier(cls, model, session, identifiers):
         """Query database for a record related to a specific identifier. Return
         if found and raise an error if multiple matching records are found."""
-        matchingRecs = defaultdict(int)
-        sortedMatches = []
-        for ident in cls._orderIdentifiers(identifiers):
-            try:
-                cls._cleanIdentifier(ident)
-            except DataError:
-                logger.debug('Received overly-generic identifier {}'.format(
-                    ident['identifier']
-                ))
-                continue
 
-            logger.debug('Querying database for identifier {} ({})'.format(
-                ident['identifier'],
-                ident['type']
-            ))
-            idenType = ident['type']
-            idenTable = idenType if idenType is not None else 'generic'
-            records = session.query(model.id)\
-                .join('identifiers', idenTable)\
-                .filter(cls.identifierTypes[idenType].value == ident['identifier'])\
-                .all()
-            Identifier._assignRecs(records, matchingRecs)
+        className = model.__tablename__[:-1]
+
+        cleanIdentifiers = [cls._cleanIdentifier(i) for i in identifiers]
+        idQueries = []
+        for iden in cleanIdentifiers:
+            idenType = iden['type']
+            idenValue = iden['identifier']
+            idQueries.append(
+                'SELECT {}_id FROM {}_identifiers JOIN identifiers ON {}_identifiers.identifier_id = identifiers.id JOIN {} ON identifiers.id = {}.identifier_id WHERE {}.value=\'{}\''.format(
+                    className, className, className, idenType, idenType, idenType, idenValue
+                )
+            )
+
+        results = session.execute(text(' UNION ALL '.join(idQueries)))
+
+        matches = defaultdict(int)
+        for res in results:
+            matches[res[0]] += 1
 
         sortedMatches = sorted(
-            matchingRecs.items(),
+            matches.items(),
             key=lambda x: x[1],
             reverse=True
         )
+
         if len(sortedMatches) > 0:
-            return sortedMatches.pop(0)[0]
-        
+            return sortedMatches[0][0]
+
         return None
 
-    @classmethod
-    def _assignRecs(cls, records, matches):
-        for r in records:
-            matches[r[0]] += 1
-        
     @staticmethod
     def _cleanIdentifier(identifier):
         """Normalizes all identifiers received to remove issue ids"""
@@ -357,31 +352,8 @@ class Identifier(Base):
             raise DataError('Non-unique identifier {} recieved'.format(
                 cleanIdentifier
             ))
-        
-        identifier['identifier'] = cleanIdentifier
 
-    
-    @staticmethod
-    def _orderIdentifiers(identifiers):
-        """Implement a custom sort order for identifiers for lookup. This is 
-        necessary to ensure that matches are properly made. The order of 
-        precedence is:
-        ISBN, ISSN, LCCN, OWI, OCLC, Hathi, DOAB, Gutenberg, DDC, LLC
-        This order is in the order of most likely match to be found and then
-        in descending order.
-        """
-        idWeight = {
-            'isbn': 1,
-            'issn': 2,
-            'lccn': 3,
-            'owi': 4,
-            'oclc': 5,
-            'hathi': 6,
-            'doab': 7,
-            'gutenberg': 8,
-            None: 9
+        return {
+            'type': identifier['type'],
+            'identifier': cleanIdentifier
         }
-        trueIdentifiers = list(
-            filter(lambda x: x['type'] not in['lcc', 'ddc'], identifiers)
-        )
-        return sorted(trueIdentifiers, key=lambda x:idWeight.get(x['type'], 10))
