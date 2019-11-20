@@ -112,7 +112,7 @@ class OutputManager():
                         'MessageBody': OutputManager._convertToJSON(
                             messages.pop()
                         ),
-                        'Id': i
+                        'Id': str(i)
                     })
                 except IndexError:
                     break
