@@ -63,6 +63,33 @@ class OutputManager():
             raise OutputError('Failed to write result to output stream!')
 
     @classmethod
+    def putKinesisBatch(cls, records, stream):
+        streamRecords = [
+            {
+                'Data': OutputManager._convertToJSON(
+                    {
+                        'status': 200,
+                        'data': r['data'],
+                        'type': r['recType'],
+                        'attempts': r.get('attempts', 0)
+                    }
+                ),
+                'PartitionKey': OutputManager._createPartitionKey(r['data'])
+            }
+            for r in records
+        ]
+
+        try:
+            cls.KINESIS_CLIENT.put_records(
+                Records=streamRecords,
+                StreamName=stream
+            )
+        except Exception as err:
+            logger.error('Kinesis Batch write error')
+            logger.debug(err)
+            raise OutputError('Failed to write batch to Kinesis')
+
+    @classmethod
     def putQueue(cls, data, outQueue):
         """This puts record identifiers into an SQS queue that is read for
         records to (re)index in ElasticSearch. Takes an object which is
@@ -81,6 +108,31 @@ class OutputManager():
         except:  # noqa: E722
             logger.error('SQS Write error!')
             raise OutputError('Failed to write result to output stream!')
+
+    @classmethod
+    def putQueueBatches(cls, messages, outQueue):
+        while len(messages) > 0:
+            jsonMessages = []
+            for i in range(10):
+                try:
+                    jsonMessages.append({
+                        'MessageBody': OutputManager._convertToJSON(
+                            messages.pop()
+                        ),
+                        'Id': str(i)
+                    })
+                except IndexError:
+                    break
+
+            try:
+                cls.SQS_CLIENT.send_message_batch(
+                    QueueUrl=outQueue,
+                    Entries=jsonMessages
+                )
+            except Exception as err:
+                logger.error('Failed to write messages to queue')
+                logger.debug(err)
+                raise OutputError('Failed to write results to queue')
 
     @classmethod
     def checkRecentQueries(cls, queryString):

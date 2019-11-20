@@ -3,16 +3,19 @@ import os
 
 from .abstractUpdater import AbstractUpdater
 from sfrCore import Work
-from lib.outputManager import OutputManager
 from helpers.errorHelpers import DBError
+from helpers.logHelpers import createLog
+
+logger = createLog('workUpdater')
 
 
 class WorkUpdater(AbstractUpdater):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.data = WorkUpdater.parseData(record)
         self.attempts = int(record.get('attempts', 0))
         self.work = None
-        super().__init__(record, session)
+        self.logger = self.createLogger()
+        super().__init__(record, session, kinesisMsgs, sqsMsgs)
 
     @staticmethod
     def parseData(record):
@@ -42,12 +45,11 @@ class WorkUpdater(AbstractUpdater):
                         self.attempts + 1
                     )
                 )
-                OutputManager.putKinesis(
-                    self.data,
-                    os.environ['UPDATE_STREAM'],
-                    recType='work',
-                    attempts=self.attempts + 1
-                )
+                self.kinesisMsgs[os.environ['UPDATE_STREAM']].append({
+                    'data': self.data,
+                    'recType': 'work',
+                    'attempts': self.attempts + 1
+                })
                 raise DBError(
                     'works',
                     'Could not locate work in database,\
@@ -60,11 +62,13 @@ class WorkUpdater(AbstractUpdater):
         epubsToLoad = self.work.update(self.data, session=self.session)
 
         for deferredEpub in epubsToLoad:
-            OutputManager.putKinesis(
-                deferredEpub,
-                os.environ['EPUB_STREAM'],
-                recType='item'
-            )
+            self.kinesisMsgs[os.environ['EPUB_STREAM']].append({
+                'data': deferredEpub,
+                'recType': 'item'
+            })
 
     def setUpdateTime(self):
         self.work.date_modified = datetime.utcnow()
+
+    def createLogger(self):
+        return logger

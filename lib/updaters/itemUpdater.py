@@ -3,16 +3,19 @@ import os
 
 from .abstractUpdater import AbstractUpdater
 from sfrCore import Item
-from lib.outputManager import OutputManager
 from helpers.errorHelpers import DBError
+from helpers.logHelpers import createLog
+
+logger = createLog('itemUpdater')
 
 
 class ItemUpdater(AbstractUpdater):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.data = record.get('data')
         self.attempts = int(record.get('attempts', 0))
         self.item = None
-        super().__init__(record, session)
+        self.logger = self.createLogger()
+        super().__init__(record, session, kinesisMsgs, sqsMsgs)
 
     @property
     def identifier(self):
@@ -37,12 +40,11 @@ class ItemUpdater(AbstractUpdater):
                         self.attempts + 1
                     )
                 )
-                OutputManager.putKinesis(
-                    self.data,
-                    os.environ['UPDATE_STREAM'],
-                    recType='item',
-                    attempts=self.attempts + 1
-                )
+                self.kinesisMsgs[os.environ['UPDATE_STREAM']].append({
+                    'data': self.data,
+                    'recType': 'item',
+                    'attempts': self.attempts + 1
+                })
                 raise DBError(
                     'items',
                     'Could not locate item in database,\
@@ -50,7 +52,7 @@ class ItemUpdater(AbstractUpdater):
                 )
             else:
                 raise DBError('items', 'Failed find item in db. Dropping')
-        
+
         self.data.pop('primary_identifier', None)
 
     def updateRecord(self):
@@ -58,3 +60,6 @@ class ItemUpdater(AbstractUpdater):
 
     def setUpdateTime(self):
         self.item.instance.work.date_modified = datetime.utcnow()
+
+    def createLogger(self):
+        return logger

@@ -1,13 +1,15 @@
 import base64
 import binascii
 import json
-from psycopg2.errors import DeadlockDetected
+import os
+from sqlalchemy.exc import OperationalError
 import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
 from sfrCore import SessionManager
-from lib.dbManager import importRecord
+from lib.dbManager import DBUpdater
+from lib.outputManager import OutputManager
 
 """Logger can be passed name of current module
 Can also be instantiated on a class/method basis using dot notation
@@ -54,20 +56,27 @@ def parseRecords(records):
 
     MANAGER.createSession()
 
+    updater = DBUpdater(MANAGER.session)
+    results = []
+
     try:
-        parseResults = [parseRecord(r) for r in records]
+        for r in records:
+            results.append(parseRecord(r, updater))
+
         logger.debug('Parsed {} records. Committing results'.format(
-            str(len(parseResults))
+            str(len(results))
         ))
         MANAGER.closeConnection()
-        return parseResults
     except (NoRecordsReceived, DataError, DBError) as err:
         logger.error('Could not process records in current invocation')
         logger.debug(err)
         MANAGER.closeConnection()
 
+    updater.sendMessages()
+    return results
 
-def parseRecord(encodedRec):
+
+def parseRecord(encodedRec, updater):
     """Handles each individual record by parsing JSON from the base64 encoded
     string recieved from the Kinesis stream, creating a database session and
     inserting/updating the database to reflect this new data source. It will
@@ -98,14 +107,18 @@ def parseRecord(encodedRec):
 
     try:
         MANAGER.startSession()  # Start transaction
-        record = importRecord(MANAGER.session, record)
+        record = updater.importRecord(record)
         MANAGER.commitChanges()
         return record
-    except DeadlockDetected as deadlock:
+    except OperationalError as opErr:
         MANAGER.session.rollback()  # Rollback current record only
         logger.error('Conflicting updates caused deadlock, retry')
-        logger.debug(deadlock)
-        parseRecord(encodedRec)
+        logger.debug(opErr)
+        OutputManager.putKinesis(
+            record.get('data'),
+            os.environ['UPDATE_STREAM'],
+            recType=record.get('type', 'work'),
+        )
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything

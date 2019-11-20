@@ -5,16 +5,19 @@ import os
 
 from .abstractUpdater import AbstractUpdater
 from sfrCore import Link
-from lib.outputManager import OutputManager
 from helpers.errorHelpers import DBError
+from helpers.logHelpers import createLog
+
+logger = createLog('coverUpdater')
 
 
 class CoverUpdater(AbstractUpdater):
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.data = record.get('data')
         self.attempts = int(record.get('attempts', 0))
         self.link = None
-        super().__init__(record, session)
+        self.logger = self.createLogger()
+        super().__init__(record, session, kinesisMsgs, sqsMsgs)
 
     @property
     def identifier(self):
@@ -35,12 +38,11 @@ class CoverUpdater(AbstractUpdater):
                         self.attempts + 1
                     )
                 )
-                OutputManager.putKinesis(
-                    self.data,
-                    os.environ['UPDATE_STREAM'],
-                    recType='link',
-                    attempts=self.attempts + 1
-                )
+                self.kinesisMsgs[os.environ['UPDATE_STREAM']].append({
+                    'data': self.data,
+                    'recType': 'link',
+                    'attempts': self.attempts + 1
+                })
                 raise DBError(
                     'links',
                     """Could not locate link in database, moving to end of queue
@@ -64,3 +66,6 @@ class CoverUpdater(AbstractUpdater):
         if len(self.link.instances) == 0:
             raise DBError('links', 'Cover must be associated with an instance')
         self.link.instances[0].work.date_modified = datetime.utcnow()
+
+    def createLogger(self):
+        return logger

@@ -1,12 +1,12 @@
 from abc import ABC, abstractmethod, abstractproperty
 
-from helpers.logHelpers import createLog
-
 
 class AbstractUpdater(ABC):
     @abstractmethod
-    def __init__(self, record, session):
+    def __init__(self, record, session, kinesisMsgs, sqsMsgs):
         self.session = session
+        self.kinesisMsgs = kinesisMsgs
+        self.sqsMsgs = sqsMsgs
         self.logger = self.createLogger()
 
     @abstractproperty
@@ -26,4 +26,4 @@ class AbstractUpdater(ABC):
         pass
 
     def createLogger(self):
-        return createLog(type(self).__name__)
+        pass
