@@ -2,7 +2,8 @@ from base64 import b64encode
 import json
 import os
 import unittest
-from unittest.mock import patch, call
+from unittest.mock import patch, call, MagicMock
+from psycopg2 import OperationalError
 
 from helpers.errorHelpers import NoRecordsReceived, DataError
 
@@ -60,22 +61,23 @@ class TestHandler(unittest.TestCase):
 
     @patch('service.parseRecord', side_effect=[1, 2, 3])
     @patch('service.MANAGER')
-    def test_parseRecords_success(self, mockManager, mockParse):
+    @patch('service.DBUpdater')
+    def test_parseRecords_success(self, mockUpdater, mockManager, mockParse):
         recResults = parseRecords(['rec1', 'rec2', 'rec3'])
         self.assertEqual(recResults, [1, 2, 3])
         mockManager.closeConnection.assert_called_once()
-        mockParse.assert_has_calls([call('rec1'), call('rec2'), call('rec3')])
+        self.assertEqual(mockParse.call_count, 3)
 
     @patch('service.parseRecord', side_effect=[1, DataError('testing'), 3])
     @patch('service.MANAGER')
     def test_parseRecords_error(self, mockManager, mockParse):
         recResults = parseRecords(['rec1', 'rec2', 'rec3'])
-        self.assertEqual(recResults, None)
+        self.assertEqual(recResults[0], 1)
+        self.assertEqual(len(recResults), 1)
         mockManager.closeConnection.assert_called_once()
 
-    @patch('service.importRecord', return_value='import_record')
     @patch('service.MANAGER')
-    def test_parseRecord_success(self, mockManager, mockImport):
+    def test_parseRecord_success(self, mockManager):
         encStr = b64encode(json.dumps({
             'status': 200,
             'source': 'testing'
@@ -85,14 +87,15 @@ class TestHandler(unittest.TestCase):
                 'data': encStr
             }
         }
-        importRec = parseRecord(testRecord)
+        mockUpdater = MagicMock()
+        mockUpdater.importRecord.return_value = 'import_record'
+        importRec = parseRecord(testRecord, mockUpdater)
         mockManager.startSession.assert_called_once()
         mockManager.commitChanges.assert_called_once()
         self.assertEqual(importRec, 'import_record')
 
-    @patch('service.importRecord', side_effect=Exception)
     @patch('service.MANAGER')
-    def test_parseRecord_dbErr(self, mockManager, mockImport):
+    def test_parseRecord_dbErr(self, mockManager):
         encStr = b64encode(json.dumps({
             'status': 200,
             'source': 'testing'
@@ -102,7 +105,9 @@ class TestHandler(unittest.TestCase):
                 'data': encStr
             }
         }
-        importRec = parseRecord(testRecord)
+        mockUpdater = MagicMock()
+        mockUpdater.importRecord.side_effect = OperationalError
+        importRec = parseRecord(testRecord, mockUpdater)
         mockManager.startSession.assert_called_once()
         mockManager.commitChanges.assert_not_called()
         mockManager.session.rollback.assert_called_once()
@@ -119,7 +124,7 @@ class TestHandler(unittest.TestCase):
             }
         }
         with self.assertRaises(NoRecordsReceived):
-            parseRecord(testRecord)
+            parseRecord(testRecord, 'updater')
 
     def test_parseRecord_otherRecordErr(self):
         encStr = b64encode(json.dumps({
@@ -132,7 +137,7 @@ class TestHandler(unittest.TestCase):
             }
         }
         with self.assertRaises(DataError):
-            parseRecord(testRecord)
+            parseRecord(testRecord, 'updater')
 
     def test_parseRecord_jsonErr(self):
         encStr = b64encode('{"bad: "json"}'.encode('utf-8'))
@@ -142,7 +147,7 @@ class TestHandler(unittest.TestCase):
             }
         }
         with self.assertRaises(DataError):
-            parseRecord(testRecord)
+            parseRecord(testRecord, 'updater')
 
     def test_parseRecord_b64Err(self):
         encStr = json.dumps({'bad': 'base64'}).encode('utf-8')
@@ -152,7 +157,7 @@ class TestHandler(unittest.TestCase):
             }
         }
         with self.assertRaises(DataError):
-            parseRecord(testRecord)
+            parseRecord(testRecord, 'updater')
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 from datetime import datetime
 import os
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch, MagicMock, DEFAULT
 
 from helpers.errorHelpers import OutputError
 
@@ -133,3 +133,43 @@ class OutputTest(unittest.TestCase):
 
         testKey = MockOutputManager._createPartitionKey(testObj)
         self.assertEqual(testKey, '0')
+
+    @patch.multiple(OutputManager, _convertToJSON=DEFAULT, _createPartitionKey=DEFAULT)
+    def test_putKinesisBatch(self, _convertToJSON, _createPartitionKey):
+        _convertToJSON.return_value = 'jsonDict'
+        _createPartitionKey.return_value = 1
+        testManager = MockOutputManager()
+        testManager.putKinesisBatch([{'data': 'data', 'recType': 'test'}], 'testStream')
+        testManager.KINESIS_CLIENT.put_records.assert_called_once_with(
+            Records=[{'Data': 'jsonDict', 'PartitionKey': 1}],
+            StreamName='testStream'
+        )
+
+    @patch.multiple(OutputManager, _convertToJSON=DEFAULT, _createPartitionKey=DEFAULT)
+    def test_putKinesisBatch_error(self, _convertToJSON, _createPartitionKey):
+        _convertToJSON.return_value = 'jsonDict'
+        _createPartitionKey.return_value = 1
+        testManager = MockOutputManager()
+        testManager.KINESIS_CLIENT.put_records.side_effect = Exception
+
+        with self.assertRaises(OutputError):
+            testManager.putKinesisBatch([{'data': 'data', 'recType': 'test'}], 'testStream')
+
+    @patch.multiple(OutputManager, _convertToJSON=DEFAULT)
+    def test_putQueueBatches(self, _convertToJSON):
+        _convertToJSON.side_effect = ['dict1', 'dict2']
+        testManager = MockOutputManager()
+        testManager.putQueueBatches(['msg1', 'msg2'], 'testQueue')
+        testManager.SQS_CLIENT.send_message_batch.assert_called_once_with(
+            QueueUrl='testQueue',
+            Entries=[{'MessageBody': 'dict1', 'Id': '0'}, {'MessageBody': 'dict2', 'Id': '1'}]
+        )
+
+    @patch.multiple(OutputManager, _convertToJSON=DEFAULT)
+    def test_putQueueBatches_error(self, _convertToJSON):
+        _convertToJSON.return_value = 'jsonDict'
+        testManager = MockOutputManager()
+        testManager.SQS_CLIENT.send_message_batch.side_effect = Exception
+
+        with self.assertRaises(OutputError):
+            testManager.putQueueBatches(['msg1'], 'testQueue')

@@ -1,4 +1,5 @@
 import os
+from collections import defaultdict
 import unittest
 from unittest.mock import patch, MagicMock
 
@@ -12,13 +13,13 @@ from lib.updaters.coverUpdater import CoverUpdater  # noqa: E402
 
 class TestCoverUpdater(unittest.TestCase):
     def test_UpdaterInit(self):
-        testUpdater = CoverUpdater({'data': 'data'}, 'session')
+        testUpdater = CoverUpdater({'data': 'data'}, 'session', {}, {})
         self.assertEqual(testUpdater.data, 'data')
         self.assertEqual(testUpdater.session, 'session')
         self.assertEqual(testUpdater.attempts, 0)
 
     def test_getIdentifier(self):
-        testUpdater = CoverUpdater({'data': {}}, 'session')
+        testUpdater = CoverUpdater({'data': {}}, 'session', {}, {})
         testLink = MagicMock()
         testLink.id = 1
         testUpdater.link = testLink
@@ -27,29 +28,23 @@ class TestCoverUpdater(unittest.TestCase):
     def test_lookupRecord_success(self):
         mockSession = MagicMock()
         mockSession.query().filter().first.return_value = 'existing_link'
-        testUpdater = CoverUpdater({'data': {}}, mockSession)
+        testUpdater = CoverUpdater({'data': {}}, mockSession, {}, {})
         testUpdater.lookupRecord()
         self.assertEqual(testUpdater.link, 'existing_link')
 
     @patch.dict('os.environ', {'UPDATE_STREAM': 'test'})
-    @patch.object(OutputManager, 'putKinesis')
-    def test_lookupRecord_missing(self, mockPut):
+    def test_lookupRecord_missing(self):
         mockSession = MagicMock()
         mockSession.query().filter().first.return_value = None
-        testUpdater = CoverUpdater({'data': {}}, mockSession)
+        testUpdater = CoverUpdater({'data': {}}, mockSession, defaultdict(list), defaultdict(list))
         with self.assertRaises(DBError):
             testUpdater.lookupRecord()
-            mockPut.assert_called_once_with(
-                {'data': {}},
-                'test',
-                recType='cover',
-                attempts=1
-            )
+            self.assertEqual(testUpdater.kinesisMsgs[0]['recType'] == 'cover')
 
     def test_lookupRecord_missing_retries_exceeded(self):
         mockSession = MagicMock()
         mockSession.query().filter().first.return_value = None
-        testUpdater = CoverUpdater({'data': {}, 'attempts': 3}, mockSession)
+        testUpdater = CoverUpdater({'data': {}, 'attempts': 3}, mockSession, {}, {})
         with self.assertRaises(DBError):
             testUpdater.lookupRecord()
 
@@ -58,7 +53,7 @@ class TestCoverUpdater(unittest.TestCase):
     def test_updateRecord(self, mockPut):
         mockLink = MagicMock()
         mockLink.flags = {'temporary': True}
-        testUpdater = CoverUpdater({'data': {'storedURL': 's3URL'}}, 'session')
+        testUpdater = CoverUpdater({'data': {'storedURL': 's3URL'}}, 'session', {}, {})
         testUpdater.link = mockLink
 
         testUpdater.updateRecord()
@@ -67,7 +62,7 @@ class TestCoverUpdater(unittest.TestCase):
 
     @patch('lib.updaters.coverUpdater.datetime')
     def test_setUpdateTime(self, mockUTC):
-        testUpdater = CoverUpdater({'data': {}}, 'session')
+        testUpdater = CoverUpdater({'data': {}}, 'session', {}, {})
         testLink = MagicMock()
         testUpdater.link = testLink
         testInstance = MagicMock()
@@ -79,7 +74,7 @@ class TestCoverUpdater(unittest.TestCase):
         )
 
     def test_setUpdateTime_noInstance(self):
-        testUpdater = CoverUpdater({'data': {}}, 'session')
+        testUpdater = CoverUpdater({'data': {}}, 'session', {}, {})
         testLink = MagicMock()
         testUpdater.link = testLink
         testLink.instances = []

@@ -2,10 +2,11 @@ import os
 import unittest
 from unittest.mock import patch, DEFAULT
 
+
 os.environ['REDIS_HOST'] = 'test_host'
 
 from lib.dbManager import (
-    importRecord, WorkUpdater, InstanceUpdater, ItemUpdater
+    DBUpdater, WorkUpdater, InstanceUpdater, ItemUpdater, OutputManager
 )  # noqa: E402
 
 
@@ -24,7 +25,8 @@ class TestManager(unittest.TestCase):
             'data': 'data',
             'type': 'work'
         }
-        result = importRecord('session', testWorkRecord)
+        testUpdater = DBUpdater('session')
+        result = testUpdater.importRecord(testWorkRecord)
         lookupRecord.assert_called_once()
         updateRecord.assert_called_once()
         setUpdateTime.assert_called_once()
@@ -42,7 +44,8 @@ class TestManager(unittest.TestCase):
             'data': 'data',
             'type': 'instance'
         }
-        result = importRecord('session', testInstanceRecord)
+        testUpdater = DBUpdater('session')
+        result = testUpdater.importRecord(testInstanceRecord)
         lookupRecord.assert_called_once()
         updateRecord.assert_called_once()
         setUpdateTime.assert_called_once()
@@ -60,12 +63,23 @@ class TestManager(unittest.TestCase):
             'data': 'data',
             'type': 'item'
         }
-        result = importRecord('session', testItemRecord)
+        testUpdater = DBUpdater('session')
+        result = testUpdater.importRecord(testItemRecord)
         lookupRecord.assert_called_once()
         updateRecord.assert_called_once()
         setUpdateTime.assert_called_once()
         self.assertEqual(result, 'ITEM #1')
 
+    @patch.multiple(
+        OutputManager,
+        putKinesisBatch=DEFAULT,
+        putQueueBatches=DEFAULT
+    )
+    def test_sendMessages(self, putKinesisBatch, putQueueBatches):
+        testManager = DBUpdater('session')
+        testManager.kinesisMsgs['testStream'] = ['rec1', 'rec2', 'rec3']
+        testManager.sqsMsgs['testQueue'] = ['msg1', 'msg2', 'msg3']
 
-if __name__ == '__main__':
-    unittest.main()
+        testManager.sendMessages()
+        putKinesisBatch.assert_called_with(['rec1', 'rec2', 'rec3'], 'testStream')
+        putQueueBatches.assert_called_with(['msg1', 'msg2', 'msg3'], 'testQueue')
