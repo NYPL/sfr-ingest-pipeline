@@ -323,7 +323,7 @@ class Identifier(Base):
                 iden['identifier'],
                 iden['type']
             ))
-            idenType = iden['type']
+            idenType = iden['type'] if iden['type'] is not None else 'generic'
             idenValue = iden['identifier']
             idQueries.append(
                 'SELECT {}_id FROM {}_identifiers JOIN identifiers ON {}_identifiers.identifier_id = identifiers.id JOIN {} ON identifiers.id = {}.identifier_id WHERE {}.value=\'{}\''.format(
