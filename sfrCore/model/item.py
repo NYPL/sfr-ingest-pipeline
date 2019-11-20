@@ -367,7 +367,8 @@ class Item(Core, Base):
             if existingID is not None:
                 existing = session.query(Item).get(existingID)
                 newReport = Item.buildReport(aceReport)
-                existing.access_reports.add(newReport)
+                newReport.item = existing
+                session.add(newReport)
                 return newReport
 
     @classmethod
