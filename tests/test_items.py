@@ -252,7 +252,7 @@ class ItemTest(unittest.TestCase):
         self.assertEqual(list(testItem.rights)[0].name, 'test_rights')
     
     @patch('sfrCore.model.item.Identifier')
-    @patch.object(Item, 'buildReport', return_value='newReport')
+    @patch.object(Item, 'buildReport')
     def test_add_access_report(self, mock_build, mock_iden):
         testReport = {
             'identifier': 'item_id',
@@ -266,11 +266,11 @@ class ItemTest(unittest.TestCase):
         }
         mock_iden.getByidentifier.return_value = 1
         mock_session = MagicMock()
-        mock_item = MagicMock()
-        mock_item.access_reports = set()
-        mock_session.query().get.return_value=mock_item
+        mock_session.query().get.return_value = 'parentItem'
+        mockReport = MagicMock()
+        mock_build.return_value = mockReport
         Item.addReportData(mock_session, testReport)
-        self.assertEqual(list(mock_item.access_reports)[0], 'newReport')
+        self.assertEqual(mockReport.item, 'parentItem')
 
     def test_init_report(self):
         testReport = AccessReport(
