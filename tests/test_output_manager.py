@@ -163,7 +163,7 @@ class OutputTest(unittest.TestCase):
         testManager.putQueueBatches(['msg1', 'msg2'], 'testQueue')
         testManager.SQS_CLIENT.send_message_batch.assert_called_once_with(
             QueueUrl='testQueue',
-            Entries=[{'MessageBody': 'dict1', 'Id': 0}, {'MessageBody': 'dict2', 'Id': 1}]
+            Entries=[{'MessageBody': 'dict1', 'Id': '0'}, {'MessageBody': 'dict2', 'Id': '1'}]
         )
 
     @patch.multiple(OutputManager, _convertToJSON=DEFAULT)
