@@ -22,7 +22,7 @@ MARC_FIELDS = {
 }
 
 
-def readFromClassify(workXML):
+def readFromClassify(workXML, workUUID):
     """Parse Classify XML document into a object that complies with the
     SFR data model. Accepts a single XML document and returns a WorkRecord."""
     logger.debug('Parsing Returned Work')
@@ -47,7 +47,7 @@ def readFromClassify(workXML):
     authorList = list(map(parseAuthor, authors))
 
     editions = workXML.findall('.//edition', namespaces=NAMESPACE)
-    editionList = list(map(parseEdition, editions))
+    editionList = [parseEdition(e, workUUID) for e in editions]
 
     headings = workXML.findall('.//heading', namespaces=NAMESPACE)
     headingList = list(map(parseHeading, headings))
@@ -85,7 +85,7 @@ def parseHeading(heading):
 
     return subject
 
-def parseEdition(edition):
+def parseEdition(edition, workUUID):
     """Parse an edition into a Instance record"""
     oclcIdentifier = edition.get('oclc')
     oclcNo = Identifier(
@@ -102,7 +102,8 @@ def parseEdition(edition):
     if OutputManager.checkRecentQueries('lookup/{}/{}'.format(oclcNo.type, oclcNo.identifier)) is False:
         OutputManager.putQueue({
             'type': oclcNo.type,
-            'identifier': oclcNo.identifier
+            'identifier': oclcNo.identifier,
+            'uuid': workUUID
         }, os.environ['OUTPUT_SQS'])
 
     classifications = edition.findall('.//class', namespaces=NAMESPACE)
