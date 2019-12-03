@@ -346,12 +346,11 @@ class Instance(Core, Base):
 
         # Add new identifiers to set and check for summaries associated with
         # new identifiers being associated with this instance
-        ## Disabled for performance reasons
-        # for iden in list(identifiers):
-        #    self.identifiers.add(iden)
-        #    if iden.type == 'isbn':
-        #        self.fetchUnglueitSummary(iden.isbn[0].value)
-        ##
+        for iden in list(identifiers):
+            self.identifiers.add(iden)
+            ## Disabled for performance reasons
+            # if iden.type == 'isbn':
+            #    self.fetchUnglueitSummary(iden.isbn[0].value)
 
     def upsertIdentifier(self, iden):
         try:
