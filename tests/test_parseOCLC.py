@@ -19,5 +19,5 @@ class TestOCLCParse(unittest.TestCase):
         work.text = '0000000000'
         mockXML.find = MagicMock(return_value=work)
         mockXML.findall = MagicMock(return_value=[])
-        res = readFromClassify(mockXML)
+        res = readFromClassify(mockXML, 'testUUID')
         self.assertIsInstance(res, WorkRecord)
