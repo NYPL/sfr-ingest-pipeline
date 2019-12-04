@@ -2,7 +2,7 @@ import base64
 import binascii
 import json
 import os
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
 import traceback
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
@@ -105,13 +105,12 @@ def parseRecord(encodedRec, updater):
         logger.debug(b64Err)
         raise DataError('Error in base64 encoding of record')
 
+    outRec = None
     try:
         MANAGER.startSession()  # Start transaction
-        record = updater.importRecord(record)
+        outRec = updater.importRecord(record)
         MANAGER.commitChanges()
-        return record
     except OperationalError as opErr:
-        MANAGER.session.rollback()  # Rollback current record only
         logger.error('Conflicting updates caused deadlock, retry')
         logger.debug(opErr)
         OutputManager.putKinesis(
@@ -119,11 +118,23 @@ def parseRecord(encodedRec, updater):
             os.environ['UPDATE_STREAM'],
             recType=record.get('type', 'work'),
         )
+        MANAGER.session.rollback()  # Rollback current record only except
+    except IntegrityError as intErr:
+        logger.error('Unique constraint violated, retry')
+        logger.debug(intErr)
+        OutputManager.putKinesis(
+            record.get('data'),
+            os.environ['UPDATE_STREAM'],
+            recType=record.get('type', 'work'),
+        )
+        MANAGER.session.rollback()  # Rollback current record only
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything
         # and rollback the session if we encounter something unexpected
-        MANAGER.session.rollback()  # Rollback current record only
         logger.error('Failed to store record')
         logger.debug(err)
         logger.debug(traceback.format_exc())
+        MANAGER.session.rollback()  # Rollback current record only
+
+    return outRec
