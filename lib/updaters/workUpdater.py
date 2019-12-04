@@ -66,6 +66,8 @@ class WorkUpdater(AbstractUpdater):
                 'data': deferredEpub,
                 'recType': 'item'
             })
+        
+        self.session.add(self.work)
 
     def setUpdateTime(self):
         self.work.date_modified = datetime.utcnow()

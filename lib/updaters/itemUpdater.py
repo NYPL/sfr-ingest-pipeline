@@ -57,6 +57,7 @@ class ItemUpdater(AbstractUpdater):
 
     def updateRecord(self):
         self.item.update(self.session, self.data)
+        self.session.add(self.item)
 
     def setUpdateTime(self):
         self.item.instance.work.date_modified = datetime.utcnow()
