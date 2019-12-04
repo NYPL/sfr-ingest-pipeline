@@ -186,13 +186,12 @@ class Item(Core, Base):
         """Will query for existing items and either update or insert an item
         record pending the outcome of that query"""
 
-        existingID = Item.lookup(session, itemData['identifiers'])
+        existingItem = Item.lookup(session, itemData['identifiers'])
 
-        if existingID is not None:
+        if existingItem is not None:
             logger.debug('Found existing item by identifier')
-            existing = session.query(Item).get(existingID)
-            existing.update(session, itemData)
-            outItem = existing
+            existingItem.update(session, itemData)
+            outItem = existingItem
         else:
             logger.debug('Inserting new item record')
             outItem = Item.createItem(session, itemData)
