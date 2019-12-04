@@ -112,15 +112,14 @@ class ItemTest(unittest.TestCase):
         newItem = Item.updateOrInsert('session', testData)
         self.assertEqual(newItem, 'newItem')
     
-    @patch.object(Item, 'lookup', return_value=1)
+    @patch.object(Item, 'lookup')
     @patch.object(Item, 'update')
     def test_updateInsert_update(self, mock_update, mock_lookup):
         testData = {'identifiers': []}
         mock_item = MagicMock()
         mock_item.name = 'existingItem'
-        mock_session = MagicMock()
-        mock_session.query().get.return_value = mock_item
-        existingItem = Item.updateOrInsert(mock_session, testData)
+        mock_lookup.return_value = mock_item
+        existingItem = Item.updateOrInsert('session', testData)
         self.assertEqual(existingItem.name, 'existingItem')
     
     @patch.object(Item, 'createTmpRelations')

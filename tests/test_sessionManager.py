@@ -30,11 +30,14 @@ class SessionTest(unittest.TestCase):
         self.assertEqual(testManager.host, None)
         self.assertEqual(testManager.port, None)
 
-    @patch('sfrCore.lib.sessionManager.create_engine', return_value='newEngine')
+    @patch('sfrCore.lib.sessionManager.create_engine')
     def test_generate_engine_success(self, mock_engine):
+        mockEngine = MagicMock()
+        mock_engine.return_value = mockEngine
         testManager = SessionManager()
         testManager.generateEngine()
-        self.assertEqual(testManager.engine, 'newEngine')
+        testManager.engine.execute.assert_called_once()
+        self.assertEqual(testManager.engine, mockEngine)
 
     @patch('sfrCore.lib.sessionManager.create_engine', side_effect=Exception)
     def test_generate_engine_error(self, mock_engine):
