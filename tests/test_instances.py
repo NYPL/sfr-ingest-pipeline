@@ -223,7 +223,8 @@ class InstanceTest(unittest.TestCase):
         ]
 
         testInst.addIdentifiers()
-        mock_unglue.assert_called_once_with('testISBN')
+        # mock_unglue.assert_called_once_with('testISBN')
+        mock_unglue.assert_not_called()  # Temporarily disabled for performance
         mock_identifier.assert_has_calls([
             call(testInst.tmp_identifiers[0]),
             call(testInst.tmp_identifiers[1])

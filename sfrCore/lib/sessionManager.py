@@ -3,7 +3,7 @@ from binascii import Error as base64Error
 import boto3
 from botocore.exceptions import ClientError
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
 from ..model.core import Base
@@ -34,6 +34,9 @@ class SessionManager():
                     self.db
                 )
             )
+            self.engine.execute(text(
+                'SET statement_timeout TO \'30s\'; SET lock_timeout TO\'15s\';'
+            ))
         except Exception as e:
             self.logger.error(e)
             raise e
@@ -42,7 +45,7 @@ class SessionManager():
         if not self.engine.dialect.has_table(self.engine, 'works'):
             Base.metadata.create_all(self.engine)
 
-    def createSession(self, autoflush=True):
+    def createSession(self, autoflush=False):
         if not self.engine:
             self.generateEngine()
         self.session = sessionmaker(bind=self.engine, autoflush=autoflush)()

@@ -323,7 +323,9 @@ class Instance(Core, Base):
                     role,
                     self.id
                 ) is None:
-                    AgentInstances(agent=agentRec, instance=self, role=role)
+                    self.agents.append(
+                        AgentInstances(agent=agentRec, instance=self, role=role)
+                    )
         except DataError:
             logger.warning('Unable to read agent {}'.format(agent['name']))
 
@@ -346,8 +348,9 @@ class Instance(Core, Base):
         # new identifiers being associated with this instance
         for iden in list(identifiers):
             self.identifiers.add(iden)
-            if iden.type == 'isbn':
-                self.fetchUnglueitSummary(iden.isbn[0].value)
+            ## Disabled for performance reasons
+            # if iden.type == 'isbn':
+            #    self.fetchUnglueitSummary(iden.isbn[0].value)
 
     def upsertIdentifier(self, iden):
         try:
