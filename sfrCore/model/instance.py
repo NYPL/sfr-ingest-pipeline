@@ -323,7 +323,7 @@ class Instance(Core, Base):
                     role,
                     self.id
                 ) is None:
-                    self.agents.add(
+                    self.agents.append(
                         AgentInstances(agent=agentRec, instance=self, role=role)
                     )
         except DataError:
