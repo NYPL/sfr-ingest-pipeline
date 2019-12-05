@@ -53,11 +53,16 @@ class TestWorkUpdater(unittest.TestCase):
     def test_updateRecord(self):
         mockInstance = MagicMock()
         mockInstance.update.return_value = ['deferred_epub']
-        testUpdater = InstanceUpdater({'data': {}}, 'session', defaultdict(list), defaultdict(list))
+        mockSession = MagicMock()
+        testUpdater = InstanceUpdater(
+            {'data': {}},
+            mockSession, defaultdict(list), defaultdict(list)
+        )
         testUpdater.instance = mockInstance
 
         testUpdater.updateRecord()
-        mockInstance.update.assert_called_once_with('session', {})
+        mockInstance.update.assert_called_once_with(mockSession, {})
+        mockSession.add.assert_called_once_with(mockInstance)
         self.assertEqual(
             testUpdater.kinesisMsgs['test'][0]['data'], 'deferred_epub'
         )

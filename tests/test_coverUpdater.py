@@ -53,10 +53,15 @@ class TestCoverUpdater(unittest.TestCase):
     def test_updateRecord(self, mockPut):
         mockLink = MagicMock()
         mockLink.flags = {'temporary': True}
-        testUpdater = CoverUpdater({'data': {'storedURL': 's3URL'}}, 'session', {}, {})
+        mockSession = MagicMock()
+        testUpdater = CoverUpdater(
+            {'data': {'storedURL': 's3URL'}},
+            mockSession, {}, {}
+        )
         testUpdater.link = mockLink
 
         testUpdater.updateRecord()
+        mockSession.add.assert_called_once_with(mockLink)
         self.assertEqual(mockLink.url, 's3URL')
         self.assertEqual(mockLink.flags['temporary'], False)
 

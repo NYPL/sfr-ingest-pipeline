@@ -32,7 +32,7 @@ class TestScripts(unittest.TestCase):
     @patch('os.remove')
     def test_run_local(self, mock_rm, mock_run, mock_envVars):
         main()
-        mock_envVars.assert_called_once_with('development')
+        mock_envVars.assert_called_once_with('local')
         mock_run.assert_called_once()
         mock_rm.assert_called_once_with('run_config.yaml')
 
