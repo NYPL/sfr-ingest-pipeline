@@ -63,6 +63,8 @@ class InstanceUpdater(AbstractUpdater):
                 'recType': 'item'
             })
 
+        self.session.add(self.instance)
+
     def setUpdateTime(self):
         self.instance.work.date_modified = datetime.utcnow()
 

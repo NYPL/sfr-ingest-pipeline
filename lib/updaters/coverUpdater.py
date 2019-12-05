@@ -61,6 +61,7 @@ class CoverUpdater(AbstractUpdater):
             tmpFlags = copy(self.link.flags)
         tmpFlags['temporary'] = False
         self.link.flags = tmpFlags
+        self.session.add(self.link)
 
     def setUpdateTime(self):
         if len(self.link.instances) == 0:

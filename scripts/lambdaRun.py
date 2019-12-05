@@ -43,7 +43,7 @@ def main():
 
     elif re.match(r'^run-local', runType):
         logger.info('Running test locally with development environment')
-        env = 'development'
+        env = 'local'
         setEnvVars(env)
         subprocess.run([
             'lambda',

@@ -49,11 +49,16 @@ class TestWorkUpdater(unittest.TestCase):
     @patch.dict('os.environ', {'EPUB_STREAM': 'test'})
     def test_updateRecord(self):
         mockItem = MagicMock()
-        testUpdater = ItemUpdater({'data': {}}, 'session', defaultdict(list), defaultdict(list))
+        mockSession = MagicMock()
+        testUpdater = ItemUpdater(
+            {'data': {}},
+            mockSession, defaultdict(list), defaultdict(list)
+        )
         testUpdater.item = mockItem
 
         testUpdater.updateRecord()
-        mockItem.update.assert_called_once_with('session', {})
+        mockSession.add.assert_called_once_with(mockItem)
+        mockItem.update.assert_called_once_with(mockSession, {})
 
     @patch('lib.updaters.itemUpdater.datetime')
     def test_setUpdateTime(self, mockUTC):
