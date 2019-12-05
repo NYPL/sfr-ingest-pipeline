@@ -193,7 +193,8 @@ class ItemTest(unittest.TestCase):
     @patch('sfrCore.model.item.Agent')
     @patch('sfrCore.model.item.AgentItems')
     def test_add_agent(self, mock_agent_items, mock_agent):
-        testItem = Item()
+        mockSession = MagicMock()
+        testItem = Item(session=mockSession)
         mock_name = MagicMock()
         mock_name.name = 'test_agent'
         mock_agent.updateOrInsert.return_value = (mock_name, ['tester'])
@@ -201,8 +202,8 @@ class ItemTest(unittest.TestCase):
         mock_agent_items.assert_has_calls([
             call(agent=mock_name, item=testItem, role='tester'),
         ])
-    
-    
+        mockSession.add.assert_called_once()
+
     @patch('sfrCore.model.item.Measurement')
     def test_add_measurement(self, mock_meas):
         testItem = Item()

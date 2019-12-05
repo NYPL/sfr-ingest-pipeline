@@ -333,7 +333,9 @@ class Item(Core, Base):
         try:
             agentRec, roles = Agent.updateOrInsert(self.session, agent)
             for role in roles:
-                AgentItems(agent=agentRec, item=self, role=role)
+                self.session.add(
+                    AgentItems(agent=agentRec, item=self, role=role)
+                )
         except DataError:
             logger.warning('Unable to read agent {}'.format(agent['name']))
 

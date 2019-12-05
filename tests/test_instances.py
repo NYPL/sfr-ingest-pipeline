@@ -195,12 +195,14 @@ class InstanceTest(unittest.TestCase):
         mock_agent.updateOrInsert.return_value = ('agent1', None)
         mock_agent_instances.roleExists.return_value = None
         test_agent = {'name': 'agent1'}
-        testInstance = Instance()
+        mockSession = MagicMock()
+        testInstance = Instance(session=mockSession)
         testInstance.updateAgent(test_agent)
         mock_agent_instances.assert_has_calls([
-            call.roleExists(None, 'agent1', 'author', None),
+            call.roleExists(mockSession, 'agent1', 'author', None),
             call(agent='agent1', instance=testInstance, role='author')
         ])
+        mockSession.add.assert_called_once()
 
     @patch('sfrCore.model.Instance.upsertIdentifier')
     @patch('sfrCore.model.Instance.fetchUnglueitSummary')
