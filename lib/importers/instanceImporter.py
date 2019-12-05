@@ -56,6 +56,8 @@ class InstanceImporter(AbstractImporter):
             self.session, self.data
         )
 
+        self.session.add(self.instance)
+
         self.storeCovers()
         self.storeEpubs(epubsToLoad)
 

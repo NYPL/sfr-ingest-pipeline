@@ -77,8 +77,9 @@ class TestWorkImporter(unittest.TestCase):
     @patch('lib.importers.workImporter.queryWork')
     def test_insertRecord(self, mockQuery, insert, uuid, storeCovers,
                           storeEpubs):
+        mockSession = MagicMock()
         testImporter = WorkImporter(
-            {'data': {}}, 'session', defaultdict(list), defaultdict(list))
+            {'data': {}}, mockSession, defaultdict(list), defaultdict(list))
         insert.return_value = ['epub1']
         mockQuery.return_value = ['testQueryMessage']
         testImporter.insertRecord()
@@ -89,6 +90,7 @@ class TestWorkImporter(unittest.TestCase):
         self.assertEqual(
             testImporter.sqsMsgs['testQueue'][0], 'testQueryMessage'
         )
+        mockSession.add.assert_called_once()
 
     @patch.dict('os.environ', {'COVER_QUEUE': 'test_queue'})
     def test_storeCovers_strFlags(self):

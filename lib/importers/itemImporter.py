@@ -62,6 +62,8 @@ class ItemImporter(AbstractImporter):
 
         self.item = Item.createItem(self.session, self.data)
 
+        self.session.add(self.item)
+
         self.logger.debug('Got new item record, adding to instance')
         Instance.addItemRecord(self.session, instanceID, self.item)
 

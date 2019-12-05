@@ -30,6 +30,7 @@ class AccessReportImporter(AbstractImporter):
             return 'error'
 
         self.item = accessReport.item
+        self.session.add(accessReport)
         return 'insert'
 
     def setInsertTime(self):
