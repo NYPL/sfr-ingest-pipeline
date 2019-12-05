@@ -10,7 +10,7 @@ The function is intended to be invoked by the AWS API Gateway and is configured 
 
 ## Version
 
-v0.1.0
+v0.1.1
 
 ## Requirements
 
