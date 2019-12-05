@@ -1,7 +1,8 @@
 import unittest
 import base64
 import json
-from unittest.mock import patch
+from sfrCore import SessionManager
+from unittest.mock import patch, DEFAULT, MagicMock
 import os
 
 from helpers.errorHelpers import NoRecordsReceived, DBError, DataError
@@ -15,11 +16,16 @@ os.environ['DB_HOST'] = 'test'
 os.environ['DB_PORT'] = '0'
 os.environ['DB_NAME'] = 'test'
 
-with patch('service.SessionManager') as mock_db:
-    from service import handler, parseRecords, parseRecord
-
 
 class TestHandler(unittest.TestCase):
+    @patch.multiple(
+        SessionManager, generateEngine=DEFAULT, decryptEnvVar=DEFAULT
+    )
+    def setUp(self, generateEngine, decryptEnvVar):
+        from service import handler, parseRecords, parseRecord
+        self.handler = handler
+        self.parseRecords = parseRecords
+        self.parseRecord = parseRecord
 
     @patch('service.parseRecords', return_value=True)
     def test_handler_clean(self, mock_parse):
@@ -33,7 +39,7 @@ class TestHandler(unittest.TestCase):
                 }
             ]
         }
-        resp = handler(testRec, None)
+        resp = self.handler(testRec, None)
         self.assertTrue(resp)
 
     def test_handler_error(self):
@@ -42,7 +48,7 @@ class TestHandler(unittest.TestCase):
             'Records': []
         }
         try:
-            handler(testRec, None)
+            self.handler(testRec, None)
         except NoRecordsReceived:
             pass
         self.assertRaises(NoRecordsReceived)
@@ -52,32 +58,34 @@ class TestHandler(unittest.TestCase):
             'source': 'Kinesis'
         }
         try:
-            handler(testRec, None)
+            self.handler(testRec, None)
         except NoRecordsReceived:
             pass
         self.assertRaises(NoRecordsReceived)
     
     @patch('service.parseRecord', side_effect=[1, 2, 3])
-    @patch('service.SessionManager')
+    @patch('service.MANAGER')
     def test_parse_records_success(self, mock_parse, mock_manager):
-        res = parseRecords([1, 2, 3])
+        res = self.parseRecords([1, 2, 3])
         self.assertEqual(res, [1, 2, 3])
     
     @patch('service.parseRecord', side_effect=DBError('test', 'error'))
-    @patch('service.SessionManager')
+    @patch('service.MANAGER')
     def test_parse_records_error(self, mock_parse, mock_manager):
-        res = parseRecords([1, 2, 3])
-        self.assertRaises(DBError)
-    
+        res = self.parseRecords([1, 2, 3])
+        self.assertEqual([], res)
+                  
     @patch('service.DBManager')
-    @patch('service.SessionManager')
+    @patch('service.MANAGER')
     def test_record_parse_success(self, mockManager, mockSession):
         testRec = base64.b64encode(json.dumps({
             'status': 200,
             'data': 'data'
         }).encode('utf-8'))
         mockManager.importRecord.return_value = True
-        self.assertTrue(parseRecord({'kinesis': {'data': testRec}}, mockManager))
+        self.assertTrue(
+            self.parseRecord({'kinesis': {'data': testRec}}, mockManager)
+        )
     
     def test_record_parse_none(self):
         testRec = base64.b64encode(json.dumps({
@@ -86,7 +94,7 @@ class TestHandler(unittest.TestCase):
             'data': None
         }).encode('utf-8'))
         with self.assertRaises(NoRecordsReceived):
-            parseRecord({'kinesis': {'data': testRec}}, 'session')
+            self.parseRecord({'kinesis': {'data': testRec}}, 'session')
     
     def test_record_parse_error_status(self):
         testRec = base64.b64encode(json.dumps({
@@ -94,7 +102,7 @@ class TestHandler(unittest.TestCase):
             'data': None
         }).encode('utf-8'))
         with self.assertRaises(DataError):
-            parseRecord({'kinesis': {'data': testRec}}, 'session')
+            self.parseRecord({'kinesis': {'data': testRec}}, 'session')
 
     @patch('service.json.loads', side_effect=json.decoder.JSONDecodeError('test', 'test', 1))
     def test_record_json_error(self, mock_json):
@@ -103,7 +111,7 @@ class TestHandler(unittest.TestCase):
             'data': 'bad data'
         }).encode('utf-8'))
         with self.assertRaises(DataError):
-            parseRecord({'kinesis': {'data': testRec}}, 'session')
+            self.parseRecord({'kinesis': {'data': testRec}}, 'session')
     
     @patch('service.base64.b64decode', side_effect=UnicodeDecodeError('test', b'test', 0, 0, 'test'))
     def test_record_unicode_error(self, mock_base64):
@@ -112,17 +120,17 @@ class TestHandler(unittest.TestCase):
             'data': 'bad unicode'
         }).encode('utf-8'))
         with self.assertRaises(DataError):
-            parseRecord({'kinesis': {'data': testRec}}, 'session')
+            self.parseRecord({'kinesis': {'data': testRec}}, 'session')
 
     @patch('service.DBManager')
-    @patch('service.SessionManager')
+    @patch('service.MANAGER')
     def test_record_parse_write_err(self, mockManager, mockSession):
         testRec = base64.b64encode(json.dumps({
             'status': 200,
             'data': 'data'
         }).encode('utf-8'))
         mockManager.importRecord.side_effect = DataError('test err')
-        res = parseRecord({'kinesis': {'data': testRec}}, mockManager)
+        res = self.parseRecord({'kinesis': {'data': testRec}}, mockManager)
         self.assertNotEqual(res, True)
 
 

@@ -61,6 +61,9 @@ class WorkImporter(AbstractImporter):
     def insertRecord(self):
         self.work = Work(session=self.session)
         epubsToLoad = self.work.insert(self.data)
+
+        self.session.add(self.work)
+
         # Kicks off enhancement pipeline through OCLC CLassify
         queryMsgs = queryWork(self.session, self.work, self.work.uuid.hex)
         if len(queryMsgs) > 0:

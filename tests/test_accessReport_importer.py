@@ -31,19 +31,23 @@ class TestAccessImporter(unittest.TestCase):
         mockReport = MagicMock()
         mockReport.item = 'testItem'
         mockAddData.return_value = mockReport
-        testImporter = AccessReportImporter({'data': {}}, 'session', {}, {})
+        mockSession = MagicMock()
+        testImporter = AccessReportImporter({'data': {}}, mockSession, {}, {})
         testAction = testImporter.insertRecord()
         self.assertEqual(testAction, 'insert')
         self.assertEqual(testImporter.item, 'testItem')
-        mockAddData.assert_called_once_with('session', {})
+        mockAddData.assert_called_once_with(mockSession, {})
+        mockSession.add.assert_called_once_with(mockReport)
 
     @patch.object(Item, 'addReportData', return_value=None)
     def test_insertRecord_failure(self, mockAddData):
-        testImporter = AccessReportImporter({'data': {}}, 'session', {}, {})
+        mockSession = MagicMock()
+        testImporter = AccessReportImporter({'data': {}}, mockSession, {}, {})
         testAction = testImporter.insertRecord()
         self.assertEqual(testAction, 'error')
         self.assertEqual(testImporter.item, None)
-        mockAddData.assert_called_once_with('session', {})
+        mockAddData.assert_called_once_with(mockSession, {})
+        mockSession.add.assert_not_called()
 
     @patch('lib.importers.accessImporter.datetime')
     def test_setInsertTime(self, mockUTC):

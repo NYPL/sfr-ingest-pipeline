@@ -2,13 +2,13 @@ import json
 import base64
 import os
 import traceback
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import OperationalError, IntegrityError
 
 from sfrCore import SessionManager
 
 from helpers.errorHelpers import NoRecordsReceived, DataError, DBError
 from helpers.logHelpers import createLog
-from lib.dbManager import DBManager 
+from lib.dbManager import DBManager
 from lib.outputManager import OutputManager
 
 """Logger can be passed name of current module
@@ -109,7 +109,6 @@ def parseRecord(encodedRec, manager):
         MANAGER.commitChanges()
         return record
     except OperationalError as opErr:
-        MANAGER.session.rollback()  # Rollback current record only
         logger.error('Conflicting updates caused deadlock, retry')
         logger.debug(opErr)
         OutputManager.putKinesis(
@@ -117,6 +116,16 @@ def parseRecord(encodedRec, manager):
             os.environ['INGEST_STREAM'],
             recType=record.get('type', 'work'),
         )
+        MANAGER.session.rollback()  # Rollback current record only
+    except IntegrityError as intErr:
+        logger.error('Unique constraint violated, retry')
+        logger.debug(intErr)
+        OutputManager.putKinesis(
+            record.get('data'),
+            os.environ['UPDATE_STREAM'],
+            recType=record.get('type', 'work'),
+        )
+        MANAGER.session.rollback()  # Rollback current record only
     except Exception as err:  # noqa: Q000
         # There are a large number of SQLAlchemy errors that can be thrown
         # These should be handled elsewhere, but this should catch anything

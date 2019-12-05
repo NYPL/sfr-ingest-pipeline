@@ -47,23 +47,26 @@ class TestInstanceImporter(unittest.TestCase):
     @patch.object(Instance, 'createNew')
     @patch.multiple(InstanceImporter, storeCovers=DEFAULT, storeEpubs=DEFAULT)
     def test_insertRecord(self, mockCreate, storeCovers, storeEpubs):
-        testImporter = InstanceImporter({'data': {}}, 'session', {}, {})
+        mockSession = MagicMock()
+        testImporter = InstanceImporter({'data': {}}, mockSession, {}, {})
         mockInstance = MagicMock()
         mockCreate.return_value = (mockInstance, ['epub1'])
         testImporter.insertRecord()
         self.assertEqual(testImporter.instance, mockInstance)
         storeCovers.assert_called_once()
         storeEpubs.assert_called_once_with(['epub1'])
+        mockSession.add.assert_called_once_with(mockInstance)
 
     @patch.dict('os.environ', {'COVER_QUEUE': 'test_queue'})
     def test_storeCovers_dictFlags(self):
+        mockSession = MagicMock()
         testImporter = InstanceImporter(
             {
                 'data': {
                     'identifiers': [{'identifier': 1}]
                 }
             },
-            'session',
+            mockSession,
             defaultdict(list), defaultdict(list)
         )
         mockInstance = MagicMock()
