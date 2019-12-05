@@ -7,12 +7,12 @@ from helpers.errorHelpers import VIAFError
 from lib.viaf import VIAFSearch
 
 
-@patch.dict(os.environ, {'VIAF_API': 'oclcAPI', 'REDIS_ARN': 'AWSARN'})
+@patch.dict(os.environ, {'VIAF_API': 'oclcAPI?', 'REDIS_ARN': 'AWSARN'})
 class TestVIAFSearch(unittest.TestCase):
     def test_create_search_object(self):
         testInstance = VIAFSearch('Test Name')
         self.assertEqual(testInstance.queryName, 'Test Name')
-        self.assertEqual(testInstance.viaf_endpoint, 'oclcAPI')
+        self.assertEqual(testInstance.viaf_endpoint, 'oclcAPI?')
 
     @patch('lib.viaf.VIAFSearch.checkCache', return_value=None)
     @patch('lib.viaf.VIAFSearch.searchVIAF')
@@ -44,7 +44,20 @@ class TestVIAFSearch(unittest.TestCase):
         req_mock.json.return_value = {'result': 'test'}
 
         result = searchTest.searchVIAF()
-        mock_get.assert_called_once()
+        mock_get.assert_called_once_with('oclcAPI?Test')
+        self.assertTrue(result)
+
+    @patch('lib.viaf.requests.get')
+    def test_viaf_search_success_url_chars(self, mock_get):
+        searchTest = VIAFSearch('Test & Co')
+
+        req_mock = MagicMock()
+        mock_get.return_value = req_mock
+        req_mock.status_code = 200
+        req_mock.json.return_value = {'result': 'test'}
+
+        result = searchTest.searchVIAF()
+        mock_get.assert_called_once_with('oclcAPI?Test+%26+Co')
         self.assertTrue(result)
 
     @patch('lib.viaf.requests.get')

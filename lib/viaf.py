@@ -3,6 +3,7 @@ import time
 import json
 import requests
 import redis
+from urllib.parse import quote_plus
 
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import VIAFError
@@ -63,8 +64,10 @@ class VIAFSearch():
             OCLC VIAF lookup API.
         """
         self.logger.info('Searching OCLC API for {}'.format(self.queryName))
-        req = requests.get('{}{}'.format(self.viaf_endpoint, self.queryName))
-
+        req = requests.get('{}{}'.format(
+            self.viaf_endpoint,
+            quote_plus(self.queryName)
+        ))
         if req.status_code != 200:
             self.logger.warning('Received non-200 error from OCLC')
             self.logger.debug(req.body)
