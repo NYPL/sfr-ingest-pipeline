@@ -3,11 +3,10 @@ from datetime import datetime
 from io import BytesIO
 from lxml import etree
 import requests
-from multiprocessing import Pool
+from multiprocessing import Process, Queue
 
 from helpers.logHelpers import createLog
 from lib.dataModel import WorkRecord, InstanceRecord, Agent, Identifier, Subject, Measurement
-from lib.outputManager import OutputManager
 
 logger = createLog('classify_parse')
 
@@ -88,8 +87,30 @@ def parseHeading(heading):
 
 
 def loadEditions(editions, uuid):
-    edPool = Pool(processes=4)
-    return edPool.map(parseEdition, editions)
+    processes = []
+    cores = 4
+    logger.info('Processing {} editions'.format(len(editions)))
+    edQueue = Queue()
+    outQueue = Queue()
+
+    for ed in editions:
+        edQueue.put(ed)
+
+    for i in range(cores):
+        edQueue.put('DONE')  # Put end message for each process
+        proc = Process(target=parseQueue, args=(edQueue, outQueue))
+        processes.append(proc)
+        proc.start()
+
+    for proc in processes:
+        proc.join()
+
+    outEds = []
+    while outQueue.empty() is False:
+        outEds.append(outQueue.get())
+
+    print(outEds)
+    return outEds
 
 
 def etreePickler(tree):
@@ -101,6 +122,15 @@ def etreeUnPickler(data):
 
 
 copyreg.pickle(etree._Element, etreePickler, etreeUnPickler)
+
+
+def parseQueue(edQueue, outQueue):
+    while True:
+        element = edQueue.get()
+        if element == 'DONE':
+            break
+
+        outQueue.put(parseEdition(element))
 
 
 def parseEdition(element):
@@ -171,8 +201,7 @@ def parseEdition(element):
         outEdition['identifiers'].extend(editionDict['identifiers']) 
         outEdition['measurements'].extend(editionDict['measurements'])
         outEdition['language'] = list(set(
-           outEdition['language'],
-           editionDict['language']
+           [outEdition['language'], editionDict['language']]
         ))
     else:
         outEdition = editionDict
