@@ -2,8 +2,9 @@ import copyreg
 from datetime import datetime
 from io import BytesIO
 from lxml import etree
+import math
 import requests
-from multiprocessing import Process, Queue
+from multiprocessing import Process, Pipe 
 
 from helpers.logHelpers import createLog
 from lib.dataModel import WorkRecord, InstanceRecord, Agent, Identifier, Subject, Measurement
@@ -88,26 +89,34 @@ def parseHeading(heading):
 
 def loadEditions(editions, uuid):
     processes = []
+    outPipes = []
     cores = 4
     logger.info('Processing {} editions'.format(len(editions)))
-    edQueue = Queue()
-    outQueue = Queue()
 
-    for ed in editions:
-        edQueue.put(ed)
+    chunkSize = math.ceil(len(editions) / cores)
 
     for i in range(cores):
-        edQueue.put('DONE')  # Put end message for each process
-        proc = Process(target=parseQueue, args=(edQueue, outQueue))
+        start = i * chunkSize
+        end = start + chunkSize
+        logger.info('Processing chunk {} to {}'.format(start, end))
+
+        pConn, cConn = Pipe()
+        proc = Process(target=parseChunk, args=(editions[start:end], cConn))
         processes.append(proc)
+        outPipes.append(pConn)
         proc.start()
+
+    outEds = []
+    for pOut in outPipes:
+        while True:
+            ed = pOut.recv()
+            if ed == 'DONE':
+                break
+            outEds.append(ed)
+        pOut.close()
 
     for proc in processes:
         proc.join()
-
-    outEds = []
-    while outQueue.empty() is False:
-        outEds.append(outQueue.get())
 
     return outEds
 
@@ -123,18 +132,15 @@ def etreeUnPickler(data):
 copyreg.pickle(etree._Element, etreePickler, etreeUnPickler)
 
 
-def parseQueue(edQueue, outQueue):
-    while True:
-        element = edQueue.get()
-        if element == 'DONE':
-            break
+def parseChunk(editions, cConn):
+    for edition in editions:
+        cConn.send(parseEdition(edition))
 
-        outQueue.put(parseEdition(element))
+    cConn.send('DONE')
 
 
-def parseEdition(element):
+def parseEdition(edition):
     """Parse an edition into a Instance record"""
-    edition = element.getroot()
     oclcIdentifier = edition.get('oclc')
     oclcNo = Identifier(
         'oclc',
@@ -153,7 +159,7 @@ def parseEdition(element):
         oclcQuery = '{}?identifier={}&type={}'.format(
             oclcRoot, oclcIdentifier, 'oclc'
         )
-        edResp = requests.get(oclcQuery)
+        edResp = requests.get(oclcQuery, timeout=10)
         if edResp.status_code == 200:
             logger.debug('Found matching OCLC record')
             fullEditionRec = edResp.json()
@@ -204,8 +210,6 @@ def parseEdition(element):
         ))
     else:
         outEdition = editionDict
-
-    print(outEdition)
     return InstanceRecord.createFromDict(**outEdition)
 
 
