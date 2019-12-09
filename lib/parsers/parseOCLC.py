@@ -1,11 +1,12 @@
-import os
-from lxml import etree
-from itertools import repeat
+import copyreg
 from datetime import datetime
+from io import BytesIO
+from lxml import etree
+import requests
+from multiprocessing import Pool
 
-from helpers.errorHelpers import OCLCError
 from helpers.logHelpers import createLog
-from lib.dataModel import WorkRecord, InstanceRecord, Format, Agent, Identifier, Link, Subject, Measurement
+from lib.dataModel import WorkRecord, InstanceRecord, Agent, Identifier, Subject, Measurement
 from lib.outputManager import OutputManager
 
 logger = createLog('classify_parse')
@@ -47,7 +48,7 @@ def readFromClassify(workXML, workUUID):
     authorList = list(map(parseAuthor, authors))
 
     editions = workXML.findall('.//edition', namespaces=NAMESPACE)
-    editionList = [parseEdition(e, workUUID) for e in editions]
+    editionList = loadEditions(editions, workUUID)
 
     headings = workXML.findall('.//heading', namespaces=NAMESPACE)
     headingList = list(map(parseHeading, headings))
@@ -85,8 +86,26 @@ def parseHeading(heading):
 
     return subject
 
-def parseEdition(edition, workUUID):
+
+def loadEditions(editions, uuid):
+    edPool = Pool(processes=4)
+    return edPool.map(parseEdition, editions)
+
+
+def etreePickler(tree):
+    return etreeUnPickler, (etree.tostring(tree),)
+
+
+def etreeUnPickler(data):
+    return etree.parse(BytesIO(data))
+
+
+copyreg.pickle(etree._Element, etreePickler, etreeUnPickler)
+
+
+def parseEdition(element):
     """Parse an edition into a Instance record"""
+    edition = element.getroot()
     oclcIdentifier = edition.get('oclc')
     oclcNo = Identifier(
         'oclc',
@@ -98,13 +117,20 @@ def parseEdition(edition, workUUID):
         oclcNo
     ]
 
-    # Put OCLC# into Kinesis stream for reading by OCLC Lookup service
-    if OutputManager.checkRecentQueries('lookup/{}/{}'.format(oclcNo.type, oclcNo.identifier)) is False:
-        OutputManager.putQueue({
-            'type': oclcNo.type,
-            'identifier': oclcNo.identifier,
-            'uuid': workUUID
-        }, os.environ['OUTPUT_SQS'])
+    fullEditionRec = None
+    try:
+        logger.info('Querying OCLC lookup for {}'.format(oclcIdentifier))
+        oclcRoot = 'https://dev-platform.nypl.org/api/v0.1/research-now/v3/utils/oclc-catalog'
+        oclcQuery = '{}?identifier={}&type={}'.format(
+            oclcRoot, oclcIdentifier, 'oclc'
+        )
+        edResp = requests.get(oclcQuery)
+        if edResp.status_code == 200:
+            logger.debug('Found matching OCLC record')
+            fullEditionRec = edResp.json()
+    except Exception as err:
+        logger.debug('Error received when querying OCLC catalog')
+        logger.error(err)
 
     classifications = edition.findall('.//class', namespaces=NAMESPACE)
     classificationList = list(map(parseClassification, classifications))
@@ -139,7 +165,21 @@ def parseEdition(edition, workUUID):
         ]
     }
 
-    return InstanceRecord.createFromDict(**editionDict)
+    if fullEditionRec is not None:
+        outEdition = fullEditionRec
+        outEdition['title'] = editionDict['title']
+        outEdition['identifiers'].extend(editionDict['identifiers']) 
+        outEdition['measurements'].extend(editionDict['measurements'])
+        outEdition['language'] = list(set(
+           outEdition['language'],
+           editionDict['language']
+        ))
+    else:
+        outEdition = editionDict
+
+    print(outEdition)
+    return InstanceRecord.createFromDict(**outEdition)
+
 
 def parseClassification(classification):
     """Parse a classification into an identifier for the work record."""
