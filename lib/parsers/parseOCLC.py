@@ -8,6 +8,7 @@ from multiprocessing import Process, Pipe
 
 from helpers.logHelpers import createLog
 from lib.dataModel import WorkRecord, InstanceRecord, Agent, Identifier, Subject, Measurement
+from lib.outputManager import OutputManager
 
 logger = createLog('classify_parse')
 
@@ -153,19 +154,20 @@ def parseEdition(edition):
     ]
 
     fullEditionRec = None
-    try:
-        logger.info('Querying OCLC lookup for {}'.format(oclcIdentifier))
-        oclcRoot = 'https://dev-platform.nypl.org/api/v0.1/research-now/v3/utils/oclc-catalog'
-        oclcQuery = '{}?identifier={}&type={}'.format(
-            oclcRoot, oclcIdentifier, 'oclc'
-        )
-        edResp = requests.get(oclcQuery, timeout=10)
-        if edResp.status_code == 200:
-            logger.debug('Found matching OCLC record')
-            fullEditionRec = edResp.json()
-    except Exception as err:
-        logger.debug('Error received when querying OCLC catalog')
-        logger.error(err)
+    if OutputManager.checkRecentQueries('lookup/{}/{}'.format('oclc', oclcIdentifier)) is False:
+        try:
+            logger.info('Querying OCLC lookup for {}'.format(oclcIdentifier))
+            oclcRoot = 'https://dev-platform.nypl.org/api/v0.1/research-now/v3/utils/oclc-catalog'
+            oclcQuery = '{}?identifier={}&type={}'.format(
+                oclcRoot, oclcIdentifier, 'oclc'
+            )
+            edResp = requests.get(oclcQuery, timeout=10)
+            if edResp.status_code == 200:
+                logger.debug('Found matching OCLC record')
+                fullEditionRec = edResp.json()
+        except Exception as err:
+            logger.debug('Error received when querying OCLC catalog')
+            logger.error(err)
 
     classifications = edition.findall('.//class', namespaces=NAMESPACE)
     classificationList = list(map(parseClassification, classifications))
