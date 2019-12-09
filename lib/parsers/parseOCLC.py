@@ -109,7 +109,6 @@ def loadEditions(editions, uuid):
     while outQueue.empty() is False:
         outEds.append(outQueue.get())
 
-    print(outEds)
     return outEds
 
 
