@@ -237,10 +237,10 @@ class Agent(Core, Base):
             None.
         """
 
+        agentID = None
         if self.viaf is not None or self.lcnaf is not None:
             agentID = self.authorityQuery()
-        else:
-            agentID = self.findViafQuery()
+
         if agentID is None:
             agentRec = self.findTrgmQuery()
             if agentRec:
@@ -273,21 +273,6 @@ class Agent(Core, Base):
         logger.info(
             'Name/information is too generic to create individual record'
         )
-
-        return None
-
-    def findViafQuery(self):
-        viafResp = requests.get('{}{}'.format(Agent.VIAF_API, self.name))
-        responseJSON = viafResp.json()
-        logger.debug(responseJSON)
-        if 'viaf' in responseJSON:
-            if responseJSON['name'] != self.name:
-                self.aliases.add(Alias(alias=self.name))
-                self.name = responseJSON.get('name', '')
-                self.cleanName()
-            self.viaf = responseJSON.get('viaf', None)
-            self.lcnaf = responseJSON.get('lcnaf', None)
-            return self.authorityQuery()
 
         return None
 

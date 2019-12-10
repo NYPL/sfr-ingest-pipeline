@@ -171,8 +171,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(testAgent.sort_name, 'new, name')
 
     @patch.object(Agent, 'findTrgmQuery', return_value={'id': 'mockAgent'})
-    @patch.object(Agent, 'findViafQuery', return_value=None)
-    def test_agent_lookup_name(self, mock_viaf, mock_auth):
+    def test_agent_lookup_name(self, mock_auth):
         testAgent = Agent()
         testAgent.name = 'Tester, Test'
 
@@ -226,34 +225,6 @@ class TestAgent(unittest.TestCase):
         testAgent.name = 'Tester, Test'
         noMatches = testAgent.findTrgmQuery()
         self.assertEqual(noMatches, None)
-
-    @patch('sfrCore.model.agent.requests')
-    @patch.object(Agent, 'authorityQuery', return_value='matchedAgent')
-    @patch.object(Agent, 'cleanName')
-    def test_viaf_query_success(self, mock_clean, mock_auth, mock_req):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            'name': 'Test',
-            'viaf': 000,
-            'lcnaf': 000
-        }
-        mock_req.get.return_value = mock_resp
-        testAgent = Agent()
-        testAgent.name = 'Old'
-        outAgent = testAgent.findViafQuery()
-        self.assertEqual(outAgent, 'matchedAgent')
-
-    @patch('sfrCore.model.agent.requests')
-    def test_viaf_query_miss(self, mock_req):
-        mock_resp = MagicMock()
-        mock_resp.json.return_value = {
-            'message': 'Missing'
-        }
-        mock_req.get.return_value = mock_resp
-        testAgent = Agent()
-        testAgent.name = 'Old'
-        outAgent = testAgent.findViafQuery()
-        self.assertEqual(outAgent, None)
 
     def test_authority_query_success(self):
         mock_session = MagicMock()
