@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch, MagicMock, call
+from unittest.mock import patch, MagicMock, call, DEFAULT
 from requests.exceptions import ConnectionError
 
 from lib.marcParse import (
@@ -12,6 +12,7 @@ from lib.marcParse import (
     parseHoldingURI
 )
 from lib.dataModel import WorkRecord, InstanceRecord
+from lib.linkParser import LinkParser
 from helpers.errorHelpers import DataError
 
 
@@ -80,7 +81,8 @@ class TestMARC(unittest.TestCase):
         ('uri1', 'text/html'),
         ('uri2', 'application/pdf')
     ])
-    def test_add_links(self, mock_parse):
+    @patch.multiple(LinkParser, selectParser=DEFAULT, createLinks=DEFAULT)
+    def test_add_links(self, mock_parse, selectParser, createLinks):
         testRec = MagicMock()
         testItem = MagicMock()
         
@@ -119,9 +121,9 @@ class TestMARC(unittest.TestCase):
         ]
 
         extractHoldingsLinks(testHoldings, testRec, testItem)
+        selectParser.assert_has_calls([call(), call()])
+        createLinks.assert_has_calls([call(), call()])
 
-        self.assertEqual(2, testItem.addClassItem.call_count)
-    
     @patch('lib.marcParse.requests')
     def test_parse_holding_success(self, mock_req):
         mock_redirect = MagicMock()
