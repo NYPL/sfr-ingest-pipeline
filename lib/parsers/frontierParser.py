@@ -30,7 +30,6 @@ class FrontierParser:
     
     def validateURI(self):
         match = re.search(self.REGEX, self.uri)
-        print(match)
         if match is not None:
             self.identifier = match.group(1)
             return True

@@ -22,7 +22,6 @@ class LinkParser:
 
     def createLinks(self):
         for link in self.parser.createLinks():
-            print(link)
             self.item.addClassItem('links', Link, **{
                 'url': link[0],
                 'media_type': link[2],
