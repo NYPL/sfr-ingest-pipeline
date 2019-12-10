@@ -2,10 +2,12 @@ import re
 import pycountry
 import requests
 from requests.exceptions import ConnectionError, MissingSchema, InvalidURL
+from urllib.parse import quote_plus
 
 from helpers.errorHelpers import MARCXMLError, DataError
 from helpers.logHelpers import createLog
 
+from lib.linkParser import LinkParser
 from lib.dataModel import (
     WorkRecord,
     Identifier,
@@ -230,27 +232,9 @@ def extractHoldingsLinks(holdings, instance, item):
             continue
     
     for itemURI in itemURIs:
-        uriFlags = {
-            'local': False,
-            'download': True,
-            'images': True,
-            'ebook': True
-        }
-        if 'text/html' in itemURI[1]:
-            logger.info('Adding Read Online link {} for item record'.format(uri))
-            uriFlags['download'] = False
-            item.addClassItem('links', Link, **{
-                'url': itemURI[0],
-                'media_type': itemURI[1],
-                'flags': uriFlags
-            })
-        else:         
-            logger.info('Adding Download link {} for item record'.format(uri))
-            item.addClassItem('links', Link, **{
-                'url': itemURI[0],
-                'media_type': itemURI[1],
-                'flags': uriFlags
-            })
+        linkParser = LinkParser(item, itemURI[0], itemURI[1])
+        linkParser.selectParser()
+        linkParser.createLinks()
 
 
 def parseHoldingURI(uri):
@@ -358,10 +342,7 @@ def extractSubfieldValue(data, record, fieldData):
             fieldValue = fieldInstance.subfield(subfield)[0].value
             if attr == 'agents':
                 role = fieldData[3]
-                record.agents.append(Agent(
-                    name=fieldValue,
-                    role=role
-                ))
+                record.agents.append(buildAgent(fieldValue, role))
             elif attr == 'identifiers':
                 controlField = fieldData[3]
                 record.addClassItem('identifiers', Identifier, **{
@@ -388,3 +369,22 @@ def extractSubfieldValue(data, record, fieldData):
             field
         ))
         logger.debug(err)
+
+def buildAgent(name, role):
+
+    newAgent = Agent(name=name, role=role)
+
+    viafResp = requests.get('{}{}'.format(
+        'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName=',
+        quote_plus(name)
+    ))
+    responseJSON = viafResp.json()
+    logger.debug(responseJSON)
+    if 'viaf' in responseJSON:
+        if responseJSON['name'] != name:
+            newAgent.aliases.append(name)
+            newAgent.name = responseJSON.get('name', '')
+        newAgent.viaf = responseJSON.get('viaf', None)
+        newAgent.lcnaf = responseJSON.get('lcnaf', None)
+
+    return newAgent

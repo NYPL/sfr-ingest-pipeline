@@ -12,8 +12,8 @@ aws_access_key_id:
 aws_secret_access_key:
 
 # dist_directory: dist
-timeout: 300
-memory_size: 256
+timeout: 600
+memory_size: 384
 
 # If tags are used they will overwrite all existing tags at deployment time
 #tags:
