@@ -376,6 +376,6 @@ class Alias(Core, Base):
                 .join(model)\
                 .filter(Alias.alias == alias)\
                 .filter(model.id == recordID)\
-                .one()
+                .first()
         except NoResultFound:
             return Alias(alias=alias)

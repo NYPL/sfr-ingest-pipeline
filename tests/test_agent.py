@@ -320,7 +320,7 @@ class TestAgent(unittest.TestCase):
     def test_alias_insert(self):
         mock_session = MagicMock()
         mock_session.query()\
-            .join().filter().filter().one.side_effect = NoResultFound
+            .join().filter().filter().first.side_effect = NoResultFound
         mock_model = MagicMock()
 
         newAlias = Alias.insertOrSkip(
