@@ -4,7 +4,8 @@ from io import BytesIO
 from lxml import etree
 import math
 import requests
-from multiprocessing import Process, Pipe 
+from multiprocessing import Process, Pipe
+from urllib.parse import quote_plus
 
 from helpers.logHelpers import createLog
 from lib.dataModel import WorkRecord, InstanceRecord, Agent, Identifier, Subject, Measurement
@@ -228,6 +229,7 @@ def parseClassification(classification):
 
     return Identifier.createFromDict(**classDict)
 
+
 def parseAuthor(author):
     """Parse a supplied author into an agent record."""
     authorDict = {
@@ -235,5 +237,21 @@ def parseAuthor(author):
         'viaf': author.get('viaf'),
         'lcnaf': author.get('lc')
     }
+
+    if authorDict['viaf'] is None or authorDict['lcnaf'] is None:
+        logger.info('Querying VIAF for {}'.format(authorDict['name']))
+        viafResp = requests.get('{}{}'.format(
+        'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName=',
+            quote_plus(authorDict['name'])
+        ))
+        responseJSON = viafResp.json()
+        logger.debug(responseJSON)
+        if 'viaf' in responseJSON:
+            logger.debug('Found VIAF {} for agent'.format(responseJSON.get('viaf', None)))
+            if responseJSON['name'] != authorDict['name']:
+                authorDict['aliases'] = [authorDict['name']]
+                authorDict['name'] = responseJSON.get('name', '')
+            authorDict['viaf'] = responseJSON.get('viaf', None)
+            authorDict['lcnaf'] = responseJSON.get('lcnaf', None)
 
     return Agent.createFromDict(**authorDict)
