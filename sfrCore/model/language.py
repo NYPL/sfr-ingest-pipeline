@@ -99,7 +99,7 @@ class Language(Core, Base):
 
         outLangs = []
         for lang in languages:
-            existing = Language.lookupLanguage(session, language)
+            existing = Language.lookupLanguage(session, lang)
             if existing:
                 outLangs.append(existing)
             else:

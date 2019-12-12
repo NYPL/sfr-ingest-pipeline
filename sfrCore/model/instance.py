@@ -345,7 +345,6 @@ class Instance(Core, Base):
         identifiers = set()
         for idType, values in filteredIdentifiers.items():
             for val in values:
-                print(idType, val)
                 identifiers.add(self.upsertIdentifier(
                     {'type': idType, 'identifier': val}
                 ))
