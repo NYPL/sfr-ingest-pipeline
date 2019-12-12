@@ -88,10 +88,11 @@ class Item(Core, Base):
 
     SOURCE_REGEX = {
         'gut': r'gutenberg.org\/ebooks\/[0-9]+\.epub\.(?:no|)images$',
-        'ia': r'archive.org\/details\/[a-z0-9]+$'
+        'ia': r'archive.org\/details\/[a-z0-9]+$',
+        'frontier': r'frontiersin\.org\/research-topics\/[0-9]+\/[a-zA-Z0-9\-]+$'
     }
 
-    EPUB_SOURCES = ['gut']
+    EPUB_SOURCES = ['gut', 'frontier']
 
     def __init__(self, session=None):
         self.session = session
