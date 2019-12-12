@@ -380,7 +380,7 @@ class Instance(Core, Base):
 
     def insertLanguage(self, lang):
         try:
-            self.language.add(
+            self.language.update(
                 Language.updateOrInsert(self.session, lang)
             )
         except DataError:
