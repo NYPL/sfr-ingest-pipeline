@@ -1,3 +1,4 @@
+from collections import defaultdict
 import requests
 from sqlalchemy import (
     Column,
@@ -336,9 +337,18 @@ class Instance(Core, Base):
 
         Existing identifiers are skipped.
         """
-        identifiers = {
-            self.upsertIdentifier(iden) for iden in self.tmp_identifiers
-        }
+
+        filteredIdentifiers = defaultdict(set)
+        for iden in self.tmp_identifiers:
+            filteredIdentifiers[iden['type']].add(iden['identifier'])
+
+        identifiers = set()
+        for idType, values in filteredIdentifiers.items():
+            for val in values:
+                print(idType, val)
+                identifiers.add(self.upsertIdentifier(
+                    {'type': idType, 'identifier': val}
+                ))
 
         # This removes all existing identifiers from set, removing unnecessary
         # operations
