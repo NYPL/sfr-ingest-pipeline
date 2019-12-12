@@ -161,11 +161,13 @@ class Language(Core, Base):
             else:
                 if ';' in lang:
                     langs = lang.split(';')
-                    pyLang = [cls.loadFromString(l) for l in langs]
+                    pyLang = [cls.parseLangStr(l) for l in langs]
                 else:
                     pyLang = pycountry.languages.get(name=lang.capitalize())
 
-            if isinstance(lang, list) is False:
+            if isinstance(pyLang, list) is True:
+                pyLang = [l for sub in pyLang for l in sub]
+            else:
                 pyLang = [pyLang]
 
             return list(set(pyLang))

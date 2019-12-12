@@ -58,3 +58,18 @@ class TestLanguage(unittest.TestCase):
     def test_missing_load(self):
         lang = Language.loadFromString('test')
         self.assertEqual(lang, [])
+
+    def test_parse_lang_plain(self):
+        langList = Language.parseLangStr('deu')
+        self.assertEqual(langList[0].name, 'German')
+
+    def test_parse_lang_multi(self):
+        langList = sorted([l.name for l in Language.parseLangStr('fra;deu')])
+        self.assertListEqual(langList, ['French', 'German'])
+    
+    def test_parse_lang_multi_bad(self):
+        langList = sorted([
+            l.name for l in Language.parseLangStr('fra;zzz')
+            if l is not None
+        ])
+        self.assertListEqual(langList, ['French'])
