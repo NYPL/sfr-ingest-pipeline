@@ -127,7 +127,7 @@ class Language(Core, Base):
             .join(model.__tablename__)\
             .filter(cls.id == lang.id)\
             .filter(model.id == record.id)\
-            .one_or_none()
+            .first()
     
     @classmethod
     def loadFromString(cls, lang):
