@@ -119,7 +119,7 @@ class Language(Core, Base):
         if found, otherwise return None"""
         return session.query(cls)\
             .filter(cls.iso_3 == language['iso_3'])\
-            .one_or_none()
+            .first()
     
     @classmethod
     def lookupRelLang(cls, session, lang, model, record):
@@ -127,7 +127,7 @@ class Language(Core, Base):
             .join(model.__tablename__)\
             .filter(cls.id == lang.id)\
             .filter(model.id == record.id)\
-            .first()
+            .one_or_none()
     
     @classmethod
     def loadFromString(cls, lang):
