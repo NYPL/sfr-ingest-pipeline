@@ -147,7 +147,7 @@ class Format(DataObject):
 
 
 class Agent(DataObject):
-    def __init__(self, name=None, role=None, aliases=None, link=None):
+    def __init__(self, name=None, role=None, aliases=[], link=None):
         super()
         self.name = name
         self.sort_name = None

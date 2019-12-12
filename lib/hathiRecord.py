@@ -1,5 +1,7 @@
-import re
 from datetime import datetime
+import re
+import requests
+from urllib.parse import quote_plus
 
 from lib.hathiCover import HathiCover
 from lib.dataModel import (
@@ -388,6 +390,8 @@ class HathiRecord():
         ('oclc', 'oclcs')
     ]
 
+    viafRoot = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName='  # noqa: E501
+
     def __init__(self, ingestRecord, ingestDateTime=None):
         # Initialize with empty SFR data objects
         # self.ingest contains the source data
@@ -517,18 +521,22 @@ class HathiRecord():
             self.ingest['copyright_date']
         ))
 
-        coverFetch = HathiCover(self.ingest['htid'])
-        pageURL = coverFetch.getPageFromMETS()
-        if pageURL is not None:
-            logger.debug('Add cover image {} to instance'.format(pageURL))
-            self.instance.addClassItem('links', Link, **{
-                'url': pageURL,
-                'media_type': 'image/jpeg',
-                'flags': {
-                    'cover': True,
-                    'temporary': True,
-                }
-            })
+        try:
+            coverFetch = HathiCover(self.ingest['htid'])
+            pageURL = coverFetch.getPageFromMETS()
+            if pageURL is not None:
+                logger.debug('Add cover image {} to instance'.format(pageURL))
+                self.instance.addClassItem('links', Link, **{
+                    'url': pageURL,
+                    'media_type': 'image/jpeg',
+                    'flags': {
+                        'cover': True,
+                        'temporary': True,
+                    }
+                })
+        except Exception as err:
+            logger.error('Unable to load cover for {}'.format(self.ingest['htid']))
+            logger.debug(err)
 
         self.parsePubInfo(self.ingest['publisher_pub_date'])
 
@@ -734,7 +742,27 @@ class HathiRecord():
                     'date_type': 'death_date'
                 })
         logger.debug('Appending agent record {} to work'.format(authorRec))
+
+        self.getVIAF(authorRec)
+
         self.work.agents.append(authorRec)
+
+    def getVIAF(self, agent):
+        logger.info('Querying VIAF for {}'.format(agent.name))
+        viafResp = requests.get('{}{}'.format(
+            self.viafRoot, quote_plus(agent.name)
+        ))
+        responseJSON = viafResp.json()
+        logger.debug(responseJSON)
+        if 'viaf' in responseJSON:
+            logger.debug('Found VIAF {} for agent'.format(
+                responseJSON.get('viaf', None)
+            ))
+            if responseJSON['name'] != agent.name:
+                agent.aliases.append(agent.name)
+                agent.name = responseJSON.get('name', '')
+            agent.viaf = responseJSON.get('viaf', None)
+            agent.lcnaf = responseJSON.get('lcnaf', None)
 
     def parsePubPlace(self, pubPlace, countryCodes):
         """Attempt to load a country/state name from the countryCodes list
