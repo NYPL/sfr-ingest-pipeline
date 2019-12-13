@@ -9,6 +9,7 @@ from multiprocessing.connection import wait
 from urllib.parse import quote_plus
 
 from helpers.logHelpers import createLog
+from helpers.errorHelpers import DataError
 from lib.dataModel import WorkRecord, InstanceRecord, Agent, Identifier, Subject, Measurement
 from lib.outputManager import OutputManager
 
@@ -36,6 +37,11 @@ def readFromClassify(workXML, workUUID):
     oclcTitle = work.get('title')
     oclcNo = Identifier('oclc', work.text, 1)
     owiNo = Identifier('owi', work.get('owi'), 1)
+
+    if OutputManager.checkRecentQueries('lookup/{}/{}'.format('owi', owiNo)) is True:
+        raise DataError('Work {} with OWI {} already classified'.format(
+            workUUID, owiNo
+        ))
 
     measurements = []
     for measure in ['editions', 'holdings', 'eholdings']:
@@ -110,9 +116,6 @@ def loadEditions(editions, uuid):
         proc.start()
         cConn.close()
 
-    for proc in processes:
-        proc.join()
-
     outEds = []
     while outPipes:
         for p in wait(outPipes):
@@ -124,6 +127,9 @@ def loadEditions(editions, uuid):
                     outEds.append(ed)
             except EOFError:
                 outPipes.remove(p)
+
+    for proc in processes:
+        proc.join()
 
     return outEds
 
