@@ -452,6 +452,16 @@ class HathiRecord():
         # generated rights information
         self.createRights()
 
+        for agent in self.work.agents:
+            self.getVIAF(agent)
+
+        for instance in self.work.instances:
+            for agent in instance.agents:
+                self.getVIAF(agent)
+            for item in instance.formats:
+                for agent in item.agents:
+                    self.getVIAF(agent)
+
     def buildWork(self):
         """Construct the SFR Work object from the Hathi data"""
         self.work.title = self.ingest['title']
@@ -743,8 +753,6 @@ class HathiRecord():
                 })
         logger.debug('Appending agent record {} to work'.format(authorRec))
 
-        self.getVIAF(authorRec)
-
         self.work.agents.append(authorRec)
 
     def getVIAF(self, agent):
@@ -759,7 +767,8 @@ class HathiRecord():
                 responseJSON.get('viaf', None)
             ))
             if responseJSON['name'] != agent.name:
-                agent.aliases.append(agent.name)
+                if agent.name not in agent.aliases:
+                    agent.aliases.append(agent.name)
                 agent.name = responseJSON.get('name', '')
             agent.viaf = responseJSON.get('viaf', None)
             agent.lcnaf = responseJSON.get('lcnaf', None)

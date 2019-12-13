@@ -7,6 +7,7 @@ import sys
 import requests
 from datetime import datetime
 from multiprocessing import Process, Pipe
+from multiprocessing.connection import wait
 import traceback
 
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
@@ -210,7 +211,7 @@ def fileParser(fileRows, columns):
         logger.info('Starting child Process')
 
         # Create pipe connections for sending results
-        pConn, cConn = Pipe()
+        pConn, cConn = Pipe(duplex=False)
 
         # Open a new process for each chunk and start processing
         proc = Process(
@@ -222,21 +223,21 @@ def fileParser(fileRows, columns):
         # Store process and connection objects to close and handle later
         processes.append(proc)
         conns.append(pConn)
+        cConn.close()
+
+    while conns:
+        for c in wait(conns):
+            try:
+                out = c.recv()
+                if out == 'DONE':
+                    conns.remove(c)
+                else:
+                    outcomes.append(out)
+            except EOFError:
+                conns.remove(c)
 
     for proc in processes:
         proc.join()
-
-    for pConn in conns:
-        while True:
-            try:
-                out = pConn.recv()
-                if out == 'DONE':
-                    break
-                outcomes.append(out)
-            except EOFError:
-                break
-
-        pConn.close()
 
     return outcomes
 
@@ -275,10 +276,11 @@ def processChunk(chunk, columns, countryCodes, cConn):
         except ProcessingError as err:
             cConn.send(('failure', err.source, err.message))
         except Exception as err:
+            logger.debug('======ERROR======')
             logger.error(err)
-            raise err
 
     cConn.send('DONE')
+    cConn.close()
 
 
 def rowParser(row, columns, countryCodes):
