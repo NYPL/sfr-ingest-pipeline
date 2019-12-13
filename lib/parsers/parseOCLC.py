@@ -38,9 +38,9 @@ def readFromClassify(workXML, workUUID):
     oclcNo = Identifier('oclc', work.text, 1)
     owiNo = Identifier('owi', work.get('owi'), 1)
 
-    if OutputManager.checkRecentQueries('lookup/{}/{}'.format('owi', owiNo)) is True:
+    if OutputManager.checkRecentQueries('lookup/{}/{}'.format('owi', work.get('owi'))) is True:
         raise DataError('Work {} with OWI {} already classified'.format(
-            workUUID, owiNo
+            workUUID, work.get('owi')
         ))
 
     measurements = []
