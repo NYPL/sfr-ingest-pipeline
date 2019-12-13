@@ -108,6 +108,7 @@ def loadEditions(editions, uuid):
         processes.append(proc)
         outPipes.append(pConn)
         proc.start()
+        cConn.close()
 
     for proc in processes:
         proc.join()
