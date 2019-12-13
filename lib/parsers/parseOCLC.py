@@ -5,6 +5,7 @@ from lxml import etree
 import math
 import requests
 from multiprocessing import Process, Pipe
+from multiprocessing.connection import wait
 from urllib.parse import quote_plus
 
 from helpers.logHelpers import createLog
@@ -102,23 +103,26 @@ def loadEditions(editions, uuid):
         end = start + chunkSize
         logger.info('Processing chunk {} to {}'.format(start, end))
 
-        pConn, cConn = Pipe()
+        pConn, cConn = Pipe(duplex=False)
         proc = Process(target=parseChunk, args=(editions[start:end], cConn))
         processes.append(proc)
         outPipes.append(pConn)
         proc.start()
 
-    outEds = []
-    for pOut in outPipes:
-        while True:
-            ed = pOut.recv()
-            if ed == 'DONE':
-                break
-            outEds.append(ed)
-        pOut.close()
-
     for proc in processes:
         proc.join()
+
+    outEds = []
+    while outPipes:
+        for p in wait(outPipes):
+            try:
+                ed = p.recv()
+                if ed == 'DONE':
+                    outPipes.remove(p)
+                else:
+                    outEds.append(ed)
+            except EOFError:
+                outPipes.remove(p)
 
     return outEds
 
@@ -139,6 +143,7 @@ def parseChunk(editions, cConn):
         cConn.send(parseEdition(edition))
 
     cConn.send('DONE')
+    cConn.close()
 
 
 def parseEdition(edition):
