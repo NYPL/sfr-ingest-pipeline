@@ -89,7 +89,7 @@ class Item(Core, Base):
     SOURCE_REGEX = {
         'gut': r'gutenberg.org\/ebooks\/[0-9]+\.epub\.(?:no|)images$',
         'ia': r'archive.org\/details\/[a-z0-9]+$',
-        'frontier': r'frontiersin\.org\/research-topics\/[0-9]+\/[a-zA-Z0-9\-]+$'
+        'frontier': r'frontiersin\.org\/research-topics\/[0-9]+\/epub$'
     }
 
     EPUB_SOURCES = ['gut', 'frontier']
@@ -119,6 +119,7 @@ class Item(Core, Base):
     @classmethod
     def createOrStore(cls, session, item, instance):
         links = deque(item.pop('links', []))
+        fileName = item.pop('fileName', None)
         item['links'] = []
         deferredLoad = False
         while len(links) > 0:
@@ -141,7 +142,8 @@ class Item(Core, Base):
                             localPayload = cls.createLocalEpub(
                                 item,
                                 link,
-                                instance.id
+                                instance.id,
+                                fileName
                             )
                             instance.epubsToLoad.append(localPayload)
                             break
@@ -159,7 +161,7 @@ class Item(Core, Base):
         return None
 
     @classmethod
-    def createLocalEpub(cls, item, link, instanceID):
+    def createLocalEpub(cls, item, link, instanceID, fileName):
         """Pass new item to epub storage pipeline. Does not store item record
         at this time, but defers until epub has been processed.
         The payload object takes several parameters:
@@ -175,6 +177,8 @@ class Item(Core, Base):
             'updated': item['modified'],
             'data': putItem
         }
+        if fileName:
+            epubPayload['fileName'] = fileName
 
         for measure in item['measurements']:
             if measure['quantity'] == 'bytes':
