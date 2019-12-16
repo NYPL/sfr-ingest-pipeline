@@ -104,7 +104,7 @@ class Language(Core, Base):
                 outLangs.append(existing)
             else:
                 logger.info('Inserting new language {}'.format(str(language)))
-                outLangs.append(Language.insert(language))
+                outLangs.append(Language.insert(lang))
 
         return outLangs
 
