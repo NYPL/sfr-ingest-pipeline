@@ -45,7 +45,8 @@ class TestLanguage(unittest.TestCase):
     
     def test_single_char_load(self):
         lang = Language.loadFromString('e')
-        self.assertEqual(lang, [])
+        self.assertEqual(lang[0]['iso_3'], 'eee')
+        self.assertEqual(lang[0]['iso_2'], None)
     
     def test_iso3_load(self):
         lang = Language.loadFromString('eng')

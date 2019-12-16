@@ -137,9 +137,17 @@ class Language(Core, Base):
         for lang in parsedLangs:
             if lang is not None:
                 try:
+                    # Some language objects don't have an ISO 639-1 code
+                    # Since it generally not used we can set it to None for
+                    # any languages that don't have it
+                    try:
+                        iso2 = lang.alpha_2
+                    except AttributeError:
+                        iso2 = None
+
                     outLangs.append({
                         'language': lang.name,
-                        'iso_2': lang.alpha_2,
+                        'iso_2': iso2,
                         'iso_3': lang.alpha_3
                     })
                 except AttributeError as err:
