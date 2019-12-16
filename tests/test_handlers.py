@@ -16,7 +16,7 @@ from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 class TestHandler(unittest.TestCase):
 
     @patch('service.loadLocalCSV', return_value=['row1', 'row2'])
-    @patch('service.fileParser', return_value=True)
+    @patch('service.fileParser', return_value=[1, 2])
     def test_handler_local(self, mock_parser, mock_load):
         testRec = {
             'source': 'local.file',
@@ -27,10 +27,10 @@ class TestHandler(unittest.TestCase):
         resp = handler(testRec, None)
         mock_load.assert_called_once()
         mock_parser.assert_called_once()
-        self.assertTrue(resp)
+        self.assertEqual(resp, [1, 2])
 
     @patch('service.fetchHathiCSV', return_value=['row1', 'row2'])
-    @patch('service.fileParser', return_value=True)
+    @patch('service.fileParser', return_value=[1, 2])
     def test_handler_scheduled(self, mock_parser, mock_fetch):
         testRec = {
             'source': 'Kinesis',
@@ -40,10 +40,10 @@ class TestHandler(unittest.TestCase):
         resp = handler(testRec, None)
         mock_fetch.assert_called_once()
         mock_parser.assert_called_once()
-        self.assertTrue(resp)
+        self.assertEqual(resp, [1, 2])
 
     @patch('service.fetchHathiCSV', return_value=['row1', 'row2'])
-    @patch('service.fileParser', return_value=True)
+    @patch('service.fileParser', return_value=[])
     def test_handler_empty(self, mock_file, mock_fetch):
         testRec = {
             'source': 'Kinesis',
@@ -51,7 +51,7 @@ class TestHandler(unittest.TestCase):
         }
         resp = handler(testRec, None)
         mock_fetch.assert_called_once()
-        self.assertTrue(resp)
+        self.assertEqual(resp, [])
 
     def test_local_csv_success(self):
         mOpen = mock_open(read_data='id1,r1.2,pd\nid2,r2.2,pd\n')
@@ -105,13 +105,15 @@ class TestHandler(unittest.TestCase):
     @patch('service.loadCountryCodes', return_value={})
     @patch('service.Process')
     @patch('service.Pipe')
-    def test_file_parser(self, mock_pipe, mock_process, mock_codes):
+    @patch('service.wait')
+    def test_file_parser(self, mock_wait, mock_pipe, mock_process, mock_codes):
         testRows = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
         mock_parent = MagicMock()
         outList = ['success'] * 8 + ['DONE'] * 6
         mock_parent.recv.side_effect = outList
         mock_child = MagicMock()
         mock_pipe.return_value = (mock_parent, mock_child)
+        mock_wait.return_value = [mock_parent]
         res = fileParser(testRows, ['test'])
         self.assertEqual(len(res), 8)
         self.assertEqual(res[7], 'success')

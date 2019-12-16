@@ -103,7 +103,7 @@ def handler(event, context):
         traceback.print_exc()
 
     logger.info('Successfully invoked lambda')
-
+    logger.debug('Processed Rows {}'.format(len(output)))
     return output
 
 
@@ -272,7 +272,8 @@ def processChunk(chunk, columns, countryCodes, cConn):
 
     for row in chunk:
         try:
-            cConn.send(rowParser(row, columns, countryCodes))
+            parsedRec = rowParser(row, columns, countryCodes)
+            cConn.send(parsedRec)
         except ProcessingError as err:
             cConn.send(('failure', err.source, err.message))
         except Exception as err:
