@@ -50,7 +50,9 @@ class FrontierParser:
                     except AttributeError:
                         print('Unable to load filename from {}'.format(dispHeader))
                         continue
-                    outFile = '{}_{}.epub'.format(self.identifier, filename)
+                    outFile = '{}_{}.epub'.format(
+                        self.identifier, filename.lower()
+                    )
             links.append((
                 urlStr.format(self.identifier),
                 attrs['flags'],
