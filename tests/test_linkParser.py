@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import MagicMock, patch, call
 
-from lib.linkParser import LinkParser, DefaultParser, FrontierParser, Link
+from lib.linkParser import LinkParser, DefaultParser, FrontierParser, Link, Identifier
 
 
 class TestLinkParser(unittest.TestCase):
@@ -38,8 +38,8 @@ class TestLinkParser(unittest.TestCase):
         mockItem = MagicMock()
         mockParser = MagicMock()
         mockParser.createLinks.return_value = [
-            ('url1', 'flags1', 'type1'),
-            ('url2', 'flags2', 'type2')
+            ('url1', 'flags1', 'type1', '1_test.epub'),
+            ('url2', 'flags2', 'type2', None)
         ]
 
         testParser = LinkParser(mockItem, 'mockURI', 'mockType')
@@ -50,6 +50,9 @@ class TestLinkParser(unittest.TestCase):
         mockItem.addClassItem.assert_has_calls([
             call(
                 'links', Link, url='url1', media_type='type1', flags='flags1'
+            ),
+            call(
+                'identifiers', Identifier, type='doab', identifier='1_test.epub', weight=1
             ),
             call(
                 'links', Link, url='url2', media_type='type2', flags='flags2'
