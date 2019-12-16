@@ -45,7 +45,7 @@ class OutputManager():
 
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
-        
+
         try:
             cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
@@ -53,8 +53,9 @@ class OutputManager():
                 PartitionKey=uuid
             )
 
-        except:
+        except Exception as err:
             logger.error('Kinesis Write error!')
+            logger.debug(err)
             raise OutputError('Failed to write result to output stream!')
 
     @classmethod
