@@ -45,6 +45,8 @@ class WorkUpdater(AbstractUpdater):
                         self.attempts + 1
                     )
                 )
+                if primaryID is not None:
+                    self.data['primary_identifier'] = primaryID
                 self.kinesisMsgs[os.environ['UPDATE_STREAM']].append({
                     'data': self.data,
                     'recType': 'work',
