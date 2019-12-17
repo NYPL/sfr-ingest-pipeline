@@ -63,7 +63,7 @@ def enhanceRecord(record):
                 workUUID
             )
 
-        # OutputManager.putKinesis(outputObject, os.environ['OUTPUT_KINESIS'], workUUID)
+        OutputManager.putKinesis(outputObject, os.environ['OUTPUT_KINESIS'], workUUID)
 
     except OCLCError as err:
         logger.error('OCLC Query for work {} failed with message: {}'.format(workUUID, err.message))
