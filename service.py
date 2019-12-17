@@ -1,11 +1,14 @@
 import csv
 import gzip
+from itertools import islice
 import os
 from math import ceil
 import sys
 import requests
 from datetime import datetime
-from multiprocessing import Process, Pipe, Lock
+from multiprocessing import Process, Pipe
+from multiprocessing.connection import wait
+import traceback
 
 from helpers.errorHelpers import ProcessingError, DataError, KinesisError
 from helpers.logHelpers import createLog
@@ -73,7 +76,7 @@ def handler(event, context):
         ]
     if event['source'] == 'local.file':
         logger.info('Loading records from local file')
-        csvFile = loadLocalCSV(event['localFile'])
+        csvFile = loadLocalCSV(event['localFile'], event['start'], event['size'])
     else:
         logger.info('Checking for updates from HathiTrust TSV files')
 
@@ -90,14 +93,21 @@ def handler(event, context):
 
     logger.info('Parsing records from CSV/TSV file')
 
-    output = fileParser(csvFile, columns)
+    output = None
+    try:
+        output = fileParser(csvFile, columns)
+    except Exception as err:
+        logger.debug('Got weird error')
+        logger.error(err)
+        logger.error(repr(err))
+        traceback.print_exc()
 
     logger.info('Successfully invoked lambda')
-
+    logger.debug('Processed Rows {}'.format(len(output)))
     return output
 
 
-def loadLocalCSV(localFile):
+def loadLocalCSV(localFile, readStart, readSize):
     """Load HathiTrust records from supplied local CSV file. This checks for
     the existence of a header row and skips if present
 
@@ -118,9 +128,9 @@ def loadLocalCSV(localFile):
 
     with hathiFile:
         rightsSkips = ['ic', 'icus', 'ic-world', 'und']
-        hathiReader = csv.reader(hathiFile, delimiter='\t')
+        hathiReader = csv.reader(hathiFile)
         rows = [
-            r for r in hathiReader
+            r for r in islice(hathiReader, readStart, (readStart + readSize))
             if r[2] not in rightsSkips and r[0] != 'htid'
         ]
     logger.debug('Loaded {} rows from {}'.format(str(len(rows)), localFile))
@@ -194,13 +204,14 @@ def fileParser(fileRows, columns):
     # Vars for managing multiprocessing component
     outcomes = []
     processes = []
+    conns = []
     chunkSize = int(ceil(len(fileRows) / 6))
 
     for chunk in generateChunks(fileRows, chunkSize):
         logger.info('Starting child Process')
 
         # Create pipe connections for sending results
-        pConn, cConn = Pipe()
+        pConn, cConn = Pipe(duplex=False)
 
         # Open a new process for each chunk and start processing
         proc = Process(
@@ -210,17 +221,23 @@ def fileParser(fileRows, columns):
         proc.start()
 
         # Store process and connection objects to close and handle later
-        processes.append((proc, pConn))
+        processes.append(proc)
+        conns.append(pConn)
+        cConn.close()
 
-    for proc, pConn in processes:
-        # Append results to outcomes array and ensure process exits cleanly
-        try:
-            outcomes.extend(pConn.recv())
-            proc.join()
-            logger.info('Closing child Process')
-        except EOFError:
-            logger.warning('Unable to close the pipe connection. Closing proc')
-            proc.join()
+    while conns:
+        for c in wait(conns):
+            try:
+                out = c.recv()
+                if out == 'DONE':
+                    conns.remove(c)
+                else:
+                    outcomes.append(out)
+            except EOFError:
+                conns.remove(c)
+
+    for proc in processes:
+        proc.join()
 
     return outcomes
 
@@ -253,13 +270,18 @@ def processChunk(chunk, columns, countryCodes, cConn):
     @cConn -- a multiprocessing.Pipe object that returns the output of method
     """
 
-    outcomes = []
     for row in chunk:
         try:
-            outcomes.append(rowParser(row, columns, countryCodes))
+            parsedRec = rowParser(row, columns, countryCodes)
+            cConn.send(parsedRec)
         except ProcessingError as err:
-            outcomes.append(('failure', err.source, err.message))
-    cConn.send(outcomes)
+            cConn.send(('failure', err.source, err.message))
+        except Exception as err:
+            logger.debug('======ERROR======')
+            logger.error(err)
+
+    cConn.send('DONE')
+    cConn.close()
 
 
 def rowParser(row, columns, countryCodes):
@@ -309,7 +331,7 @@ def rowParser(row, columns, countryCodes):
             'method': 'insert',
             'data': hathiRec.work,
             'source': 'hathitrust'
-        }, os.environ['OUTPUT_STREAM'])
+        }, os.environ['OUTPUT_STREAM'], hathiRec.ingest['bib_key'])
     except KinesisError as err:
         logger.error('Unable to output record {} to Kinesis'.format(
             hathiRec.ingest['htid']
