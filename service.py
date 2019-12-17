@@ -55,7 +55,7 @@ def parseRecords(records):
     """Iterator for handling multiple incoming messages"""
     logger.debug('Parsing Messages')
 
-    MANAGER.createSession()
+    MANAGER.createSession(autoflush=True)
 
     updater = DBUpdater(MANAGER.session)
     results = []
