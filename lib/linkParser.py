@@ -1,4 +1,4 @@
-from lib.dataModel import Link
+from lib.dataModel import Link, Identifier
 
 from lib.parsers.defaultParser import DefaultParser
 from lib.parsers.frontierParser import FrontierParser
@@ -27,6 +27,14 @@ class LinkParser:
                 'media_type': link[2],
                 'flags': link[1] 
             })
+
+            if link[3] is not None:
+                setattr(self.item, 'fileName', link[3])
+                self.item.addClassItem('identifiers', Identifier, **{
+                    'type': 'doab',
+                    'identifier': link[3],
+                    'weight': 1
+                })
 
 
 
