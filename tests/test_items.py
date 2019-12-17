@@ -88,8 +88,7 @@ class ItemTest(unittest.TestCase):
         record = Item.createOrStore('session', testItem, mock_inst)
         self.assertEqual(record, 'test_item')
 
-    
-    def test_create_epub(self):
+    def test_create_epub_with_filename(self):
         testItem = {
             'source': 'testing',
             'modified': '2019-01-01',
@@ -101,10 +100,28 @@ class ItemTest(unittest.TestCase):
         testLink = {
             'url': 'test_link'
         }
-        testPayload = Item.createLocalEpub(testItem, testLink, 1)
+        testPayload = Item.createLocalEpub(testItem, testLink, 1, '1_test.epub')
         self.assertEqual(testPayload['url'], 'test_link')
         self.assertEqual(testPayload['id'], 1)
-    
+        self.assertEqual(testPayload['fileName'], '1_test.epub')
+
+    def test_create_epub_without_filename(self):
+        testItem = {
+            'source': 'testing',
+            'modified': '2019-01-01',
+            'measurements': [{
+                'quantity': 'bytes',
+                'value': 0
+            }]
+        }
+        testLink = {
+            'url': 'test_link'
+        }
+        testPayload = Item.createLocalEpub(testItem, testLink, 1, None)
+        self.assertEqual(testPayload['url'], 'test_link')
+        self.assertEqual(testPayload['id'], 1)
+        self.assertEqual(testPayload.get('fileName'), None)
+
     @patch.object(Item, 'lookup', return_value=None)
     @patch.object(Item, 'createItem', return_value='newItem')
     def test_updateInsert_insert(self, mock_create, mock_lookup):

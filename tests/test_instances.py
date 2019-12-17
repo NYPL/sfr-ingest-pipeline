@@ -301,7 +301,7 @@ class InstanceTest(unittest.TestCase):
     def test_insert_language(self):
         with patch('sfrCore.model.instance.Language.updateOrInsert') as mock_lang:  # noqa: E501
             mock_insert = MagicMock()
-            mock_lang.return_value = mock_insert
+            mock_lang.return_value = [mock_insert]
             testInst = Instance()
             testInst.insertLanguage('test_lang')
             self.assertEqual(list(testInst.language)[0], mock_insert)

@@ -382,7 +382,7 @@ class Work(Core, Base):
                 self.updateLanguage(lang)
 
     def updateLanguage(self, lang):
-        self.language.add(self.addLanguage(lang))
+        self.language.extend(self.addLanguage(lang))
 
     def addAltTitles(self):
         self.alt_titles = {AltTitle(title=a) for a in self.tmp_alt_titles}

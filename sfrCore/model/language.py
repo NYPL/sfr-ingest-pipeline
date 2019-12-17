@@ -91,14 +91,22 @@ class Language(Core, Base):
             raise DataError('Cannot parse None as language value')
 
         if isinstance(language, str):
-            language = Language.loadFromString(language)
-            if language is None: raise DataError('Unable to parse language')
-        
-        existing = Language.lookupLanguage(session, language)
-        if existing: return existing
+            languages = Language.loadFromString(language)
+            if languages is None:
+                raise DataError('Unable to parse language')
+        else:
+            languages = [language]
 
-        logger.info('Inserting new language {}'.format(str(language)))
-        return Language.insert(language)
+        outLangs = []
+        for lang in languages:
+            existing = Language.lookupLanguage(session, lang)
+            if existing:
+                outLangs.append(existing)
+            else:
+                logger.info('Inserting new language {}'.format(str(language)))
+                outLangs.append(Language.insert(lang))
+
+        return outLangs
 
     @classmethod
     def insert(cls, languageData):
@@ -110,8 +118,8 @@ class Language(Core, Base):
         """Query database for language related to current record. Return language
         if found, otherwise return None"""
         return session.query(cls)\
-            .filter(cls.language == language['language'])\
-            .one_or_none()
+            .filter(cls.iso_3 == language['iso_3'])\
+            .first()
     
     @classmethod
     def lookupRelLang(cls, session, lang, model, record):
@@ -123,22 +131,54 @@ class Language(Core, Base):
     
     @classmethod
     def loadFromString(cls, lang):
-        
-        if lang in cls.BAD_ISO_STRINGS: lang = cls.BAD_ISO_STRINGS[lang]
+        parsedLangs = cls.parseLangStr(lang)
 
-        if len(lang) == 2:
-            pyLang = pycountry.languages.get(alpha_2=lang.lower())
-        elif len(lang) == 3:
-            pyLang = pycountry.languages.get(alpha_3=lang.lower())
-        else:
-            pyLang = pycountry.languages.get(name=lang.capitalize())
-        
+        outLangs = []
+        for lang in parsedLangs:
+            if lang is not None:
+                try:
+                    # Some language objects don't have an ISO 639-1 code
+                    # Since it generally not used we can set it to None for
+                    # any languages that don't have it
+                    try:
+                        iso2 = lang.alpha_2
+                    except AttributeError:
+                        iso2 = None
+
+                    outLangs.append({
+                        'language': lang.name,
+                        'iso_2': iso2,
+                        'iso_3': lang.alpha_3
+                    })
+                except AttributeError as err:
+                    logger.warning('Unable to format lang {}'.format(lang))
+                    logger.debug(err)
+
+        return outLangs
+
+    @classmethod
+    def parseLangStr(cls, lang):
+        if lang in cls.BAD_ISO_STRINGS:
+            lang = cls.BAD_ISO_STRINGS[lang]
+
         try:
-            return {
-                'language': pyLang.name,
-                'iso_2': pyLang.alpha_2,
-                'iso_3': pyLang.alpha_3
-            }
+            if len(lang) == 2:
+                pyLang = pycountry.languages.get(alpha_2=lang.lower())
+            elif len(lang) == 3:
+                pyLang = pycountry.languages.get(alpha_3=lang.lower())
+            else:
+                if ';' in lang:
+                    langs = lang.split(';')
+                    pyLang = [cls.parseLangStr(l) for l in langs]
+                else:
+                    pyLang = pycountry.languages.get(name=lang.capitalize())
+
+            if isinstance(pyLang, list) is True:
+                pyLang = [l for sub in pyLang for l in sub]
+            else:
+                pyLang = [pyLang]
+
+            return list(set(pyLang))
         except AttributeError as err:
             logger.warning('Unable to parse language string {}'.format(lang))
             logger.debug(err)
