@@ -1,11 +1,10 @@
 # SFR Directory of Open Access Books Data Parser
 
+[![Build Status](https://travis-ci.com/NYPL/sfr-doab-reader.svg?branch=development)](https://travis-ci.com/NYPL/sfr-doab-reader) [![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-doab-reader.svg)](https://badge.fury.io/gh/nypl%2Fsfr-doab-reader)
+
 A function for parsing Directory of Open Access Books (DOAB) data into a SFR-compliant data model. The records from DOAB are comprised of books that have been explicitly issued with a CreativeCommons by-nc-nd 4.0 license and which are readable both online and as a downloadable PDF. 
 
 This function retrieves these records by querying DOAB's OAI-PMH feed for records updated in a provided time period, parsing them, and placing them in the SFR data ingest pipeline (alongside records also retrieved from Project Gutenberg and HathiTrust)
-
-## Version
-v0.0.1
 
 ## Requirements
 Python 3.6+ (written with Python 3.7)
