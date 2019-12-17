@@ -157,7 +157,7 @@ class Agent(DataObject):
         if aliases is None:
             self.aliases = []
         else:
-            self.aliases = None
+            self.aliases = aliases
         self.link = link
         self.dates = []
 
