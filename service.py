@@ -1,5 +1,6 @@
 import base64
 import binascii
+from copy import deepcopy
 import json
 import os
 from sqlalchemy.exc import OperationalError, IntegrityError
@@ -108,7 +109,7 @@ def parseRecord(encodedRec, updater):
     outRec = None
     try:
         MANAGER.startSession()  # Start transaction
-        outRec = updater.importRecord(record)
+        outRec = updater.importRecord(deepcopy(record))
         MANAGER.commitChanges()
     except OperationalError as opErr:
         logger.error('Conflicting updates caused deadlock, retry')
