@@ -20,11 +20,8 @@ class TestKinesis(unittest.TestCase):
             'ShardId': '1',
             'SequenceNumber': '0'
         }
-        mock_id = MagicMock()
-        mock_id.identifier = 'test'
         mock_data = MagicMock()
         mock_data.test = 'data'
-        mock_data.identifiers = [mock_id]
         record = {
             'type': 'work',
             'method': 'update',
@@ -34,13 +31,13 @@ class TestKinesis(unittest.TestCase):
         expected_params = {
             'Data': 'testing',
             'StreamName': 'testStream',
-            'PartitionKey': 'test'
+            'PartitionKey': 'testUUID'
         }
 
         stubber.add_response('put_record', expResp, expected_params)
         stubber.activate()
 
-        kinesis.putKinesis(record, 'testStream')
+        kinesis.putKinesis(record, 'testStream', 'testUUID')
 
     @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_SHARD': '0', 'OUTPUT_STAGE': 'test'})
     @patch('lib.outputManager.OutputManager._convertToJSON', return_value='testing')
@@ -48,11 +45,8 @@ class TestKinesis(unittest.TestCase):
         kinesis = OutputManager()
         stubber = Stubber(kinesis.KINESIS_CLIENT)
 
-        mock_id = MagicMock()
-        mock_id.identifier = 'test'
         mock_data = MagicMock()
         mock_data.test = 'data'
-        mock_data.identifiers = [mock_id]
         record = {
             'type': 'work',
             'method': 'update',
@@ -62,13 +56,13 @@ class TestKinesis(unittest.TestCase):
         expected_params = {
             'Data': 'testing',
             'StreamName': 'tester',
-            'PartitionKey': '0'
+            'PartitionKey': 'testUUID'
         }
 
         stubber.add_client_error('put_record', expected_params=expected_params)
         stubber.activate()
         try:
-            kinesis.putKinesis(record, 'testStream')
+            kinesis.putKinesis(record, 'testStream', 'testUUID')
         except OutputError:
             pass
         self.assertRaises(OutputError)

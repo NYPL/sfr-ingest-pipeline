@@ -29,7 +29,7 @@ class OutputManager():
         pass
 
     @classmethod
-    def putKinesis(cls, data, stream):
+    def putKinesis(cls, data, stream, uuid):
         """Puts records into a Kinesis stream for processing by other parts of
         the SFR data pipeline. Takes data as an object and converts it into a
         JSON string. This is then passed to the specified stream.
@@ -43,23 +43,19 @@ class OutputManager():
             'data': data
         }
 
-        try:
-            partKey = data['data'].identifiers[0].identifier
-        except KeyError:
-            partKey = data['fields']['identifier']
-
         # The default lambda function here converts all objects into dicts
         kinesisStream = OutputManager._convertToJSON(outputObject)
-        
+
         try:
             cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
                 Data=kinesisStream,
-                PartitionKey=partKey
+                PartitionKey=uuid
             )
 
-        except:
+        except Exception as err:
             logger.error('Kinesis Write error!')
+            logger.debug(err)
             raise OutputError('Failed to write result to output stream!')
 
     @classmethod

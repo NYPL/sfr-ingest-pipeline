@@ -1,11 +1,16 @@
-import os
-from lxml import etree
-from itertools import repeat
+import copyreg
 from datetime import datetime
+from io import BytesIO
+from lxml import etree
+import math
+import requests
+from multiprocessing import Process, Pipe
+from multiprocessing.connection import wait
+from urllib.parse import quote_plus
 
-from helpers.errorHelpers import OCLCError
 from helpers.logHelpers import createLog
-from lib.dataModel import WorkRecord, InstanceRecord, Format, Agent, Identifier, Link, Subject, Measurement
+from helpers.errorHelpers import DataError
+from lib.dataModel import WorkRecord, InstanceRecord, Agent, Identifier, Subject, Measurement
 from lib.outputManager import OutputManager
 
 logger = createLog('classify_parse')
@@ -22,7 +27,7 @@ MARC_FIELDS = {
 }
 
 
-def readFromClassify(workXML):
+def readFromClassify(workXML, workUUID):
     """Parse Classify XML document into a object that complies with the
     SFR data model. Accepts a single XML document and returns a WorkRecord."""
     logger.debug('Parsing Returned Work')
@@ -32,6 +37,11 @@ def readFromClassify(workXML):
     oclcTitle = work.get('title')
     oclcNo = Identifier('oclc', work.text, 1)
     owiNo = Identifier('owi', work.get('owi'), 1)
+
+    if OutputManager.checkRecentQueries('lookup/{}/{}'.format('owi', work.get('owi'))) is True:
+        raise DataError('Work {} with OWI {} already classified'.format(
+            workUUID, work.get('owi')
+        ))
 
     measurements = []
     for measure in ['editions', 'holdings', 'eholdings']:
@@ -47,7 +57,7 @@ def readFromClassify(workXML):
     authorList = list(map(parseAuthor, authors))
 
     editions = workXML.findall('.//edition', namespaces=NAMESPACE)
-    editionList = list(map(parseEdition, editions))
+    editionList = loadEditions(editions, workUUID)
 
     headings = workXML.findall('.//heading', namespaces=NAMESPACE)
     headingList = list(map(parseHeading, headings))
@@ -85,6 +95,64 @@ def parseHeading(heading):
 
     return subject
 
+
+def loadEditions(editions, uuid):
+    processes = []
+    outPipes = []
+    cores = 4
+    logger.info('Processing {} editions'.format(len(editions)))
+
+    chunkSize = math.ceil(len(editions) / cores)
+
+    for i in range(cores):
+        start = i * chunkSize
+        end = start + chunkSize
+        logger.info('Processing chunk {} to {}'.format(start, end))
+
+        pConn, cConn = Pipe(duplex=False)
+        proc = Process(target=parseChunk, args=(editions[start:end], cConn))
+        processes.append(proc)
+        outPipes.append(pConn)
+        proc.start()
+        cConn.close()
+
+    outEds = []
+    while outPipes:
+        for p in wait(outPipes):
+            try:
+                ed = p.recv()
+                if ed == 'DONE':
+                    outPipes.remove(p)
+                else:
+                    outEds.append(ed)
+            except EOFError:
+                outPipes.remove(p)
+
+    for proc in processes:
+        proc.join()
+
+    return outEds
+
+
+def etreePickler(tree):
+    return etreeUnPickler, (etree.tostring(tree),)
+
+
+def etreeUnPickler(data):
+    return etree.parse(BytesIO(data))
+
+
+copyreg.pickle(etree._Element, etreePickler, etreeUnPickler)
+
+
+def parseChunk(editions, cConn):
+    for edition in editions:
+        cConn.send(parseEdition(edition))
+
+    cConn.send('DONE')
+    cConn.close()
+
+
 def parseEdition(edition):
     """Parse an edition into a Instance record"""
     oclcIdentifier = edition.get('oclc')
@@ -98,12 +166,21 @@ def parseEdition(edition):
         oclcNo
     ]
 
-    # Put OCLC# into Kinesis stream for reading by OCLC Lookup service
-    if OutputManager.checkRecentQueries('lookup/{}/{}'.format(oclcNo.type, oclcNo.identifier)) is False:
-        OutputManager.putQueue({
-            'type': oclcNo.type,
-            'identifier': oclcNo.identifier
-        }, os.environ['OUTPUT_SQS'])
+    fullEditionRec = None
+    if OutputManager.checkRecentQueries('lookup/{}/{}'.format('oclc', oclcIdentifier)) is False:
+        try:
+            logger.info('Querying OCLC lookup for {}'.format(oclcIdentifier))
+            oclcRoot = 'https://dev-platform.nypl.org/api/v0.1/research-now/v3/utils/oclc-catalog'
+            oclcQuery = '{}?identifier={}&type={}'.format(
+                oclcRoot, oclcIdentifier, 'oclc'
+            )
+            edResp = requests.get(oclcQuery, timeout=10)
+            if edResp.status_code == 200:
+                logger.debug('Found matching OCLC record')
+                fullEditionRec = edResp.json()
+        except Exception as err:
+            logger.debug('Error received when querying OCLC catalog')
+            logger.error(err)
 
     classifications = edition.findall('.//class', namespaces=NAMESPACE)
     classificationList = list(map(parseClassification, classifications))
@@ -138,7 +215,18 @@ def parseEdition(edition):
         ]
     }
 
-    return InstanceRecord.createFromDict(**editionDict)
+    if fullEditionRec is not None:
+        outEdition = fullEditionRec
+        outEdition['title'] = editionDict['title']
+        outEdition['identifiers'].extend(editionDict['identifiers']) 
+        outEdition['measurements'].extend(editionDict['measurements'])
+        outEdition['language'] = list(set(
+           [outEdition['language'], editionDict['language']]
+        ))
+    else:
+        outEdition = editionDict
+    return InstanceRecord.createFromDict(**outEdition)
+
 
 def parseClassification(classification):
     """Parse a classification into an identifier for the work record."""
@@ -153,6 +241,7 @@ def parseClassification(classification):
 
     return Identifier.createFromDict(**classDict)
 
+
 def parseAuthor(author):
     """Parse a supplied author into an agent record."""
     authorDict = {
@@ -160,5 +249,21 @@ def parseAuthor(author):
         'viaf': author.get('viaf'),
         'lcnaf': author.get('lc')
     }
+
+    if authorDict['viaf'] is None or authorDict['lcnaf'] is None:
+        logger.info('Querying VIAF for {}'.format(authorDict['name']))
+        viafResp = requests.get('{}{}'.format(
+        'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName=',
+            quote_plus(authorDict['name'])
+        ))
+        responseJSON = viafResp.json()
+        logger.debug(responseJSON)
+        if 'viaf' in responseJSON:
+            logger.debug('Found VIAF {} for agent'.format(responseJSON.get('viaf', None)))
+            if responseJSON['name'] != authorDict['name']:
+                authorDict['aliases'] = [authorDict['name']]
+                authorDict['name'] = responseJSON.get('name', '')
+            authorDict['viaf'] = responseJSON.get('viaf', None)
+            authorDict['lcnaf'] = responseJSON.get('lcnaf', None)
 
     return Agent.createFromDict(**authorDict)

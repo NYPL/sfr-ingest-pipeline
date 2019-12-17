@@ -34,7 +34,7 @@ def enhanceRecord(record):
         classifyData = classifyRecord(searchType, searchFields, workUUID)
 
         # Step 2: Parse the data recieved from Classify into the SFR data model
-        parsedData = readFromClassify(classifyData)
+        parsedData = readFromClassify(classifyData, workUUID)
 
         # This sets the primary identifier for processing by the db manager
         parsedData.primary_identifier = Identifier('uuid', workUUID, 1)
@@ -46,7 +46,24 @@ def enhanceRecord(record):
             'method': 'update',
             'data': parsedData
         }
-        OutputManager.putKinesis(outputObject, os.environ['OUTPUT_KINESIS'])
+        while len(parsedData.instances) > 100:
+            instanceChunk = parsedData.instances[0:100]
+            del parsedData.instances[0:100]
+            OutputManager.putKinesis(
+                {
+                    'status': 200,
+                    'type': 'work',
+                    'method': 'update',
+                    'data': {
+                        'instances': instanceChunk,
+                        'primary_identifier': Identifier('uuid', workUUID, 1)
+                    }
+                },
+                os.environ['OUTPUT_KINESIS'],
+                workUUID
+            )
+
+        OutputManager.putKinesis(outputObject, os.environ['OUTPUT_KINESIS'], workUUID)
 
     except OCLCError as err:
         logger.error('OCLC Query for work {} failed with message: {}'.format(workUUID, err.message))
