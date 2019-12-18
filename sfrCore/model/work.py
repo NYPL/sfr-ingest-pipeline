@@ -363,9 +363,9 @@ class Work(Core, Base):
             if isinstance(self.tmp_language, str):
                 self.tmp_language = [self.tmp_language]
 
-            self.language = {
-                self.addLanguage(l) for l in self.tmp_language
-            }
+            for lang in self.tmp_language:
+                print(self.addLanguage(lang))
+                self.language.update(self.addLanguage(lang))
 
     def addLanguage(self, language):
         try:
@@ -382,7 +382,7 @@ class Work(Core, Base):
                 self.updateLanguage(lang)
 
     def updateLanguage(self, lang):
-        self.language.extend(self.addLanguage(lang))
+        self.language.update(self.addLanguage(lang))
 
     def addAltTitles(self):
         self.alt_titles = {AltTitle(title=a) for a in self.tmp_alt_titles}
