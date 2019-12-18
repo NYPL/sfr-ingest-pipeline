@@ -279,7 +279,7 @@ class WorkTest(unittest.TestCase):
         mock_val = MagicMock()
         mock_val.value = 'test_language'
 
-        mock_add.return_value = mock_val
+        mock_add.return_value = [mock_val]
 
         testWork.addLanguages()
         self.assertEqual(len(list(testWork.language)), 1)
@@ -292,7 +292,7 @@ class WorkTest(unittest.TestCase):
         mock_val = MagicMock()
         mock_val.value = 'test_language'
 
-        mock_add.return_value = mock_val
+        mock_add.return_value = [mock_val]
 
         testWork.addLanguages()
         self.assertEqual(len(list(testWork.language)), 1)
