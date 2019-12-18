@@ -99,13 +99,14 @@ class VIAFSearch():
             )
 
         while True:
-
             try:
                 match = viafJSON.pop(0)
             except IndexError:
                 return VIAFSearch.formatResponse(
                     404,
-                    {'message': 'Could not find record of matching type {}'.format(self.queryType)}
+                    {'message': 'Could not find matching {} record'.format(
+                        self.queryType
+                    )}
                 )
             if match['nametype'] != self.queryType:
                 continue
