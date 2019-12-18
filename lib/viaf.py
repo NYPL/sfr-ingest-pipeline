@@ -15,9 +15,13 @@ class VIAFSearch():
     cache that stores values which have been previously retrieved, or a non-200
     status code if no VIAF information can be found.
     """
+    QUERY_TYPES = ['personal', 'corporate']
 
-    def __init__(self, queryName):
+    def __init__(self, queryName, queryType):
         self.queryName = queryName
+        self.queryType = queryType.lower() if queryType else 'personal'
+        self.validateType()
+
         self.logger = createLog('viafSearch')
         self.viaf_endpoint = os.environ['VIAF_API']
         self.redis = redis.Redis(
@@ -94,13 +98,25 @@ class VIAFSearch():
                 {'message': 'Could not find matching VIAF record'}
             )
 
-        topHit = viafJSON[0]
-        self.logger.debug('Found top match {}'.format(str(topHit)))
-        viafData = {
-            'name': topHit['displayForm'],
-            'viaf': topHit.get('viafid', None),
-            'lcnaf': topHit.get('lc', None)
-        }
+        while True:
+
+            try:
+                match = viafJSON.pop(0)
+            except IndexError:
+                return VIAFSearch.formatResponse(
+                    404,
+                    {'message': 'Could not find record of matching type {}'.format(self.queryType)}
+                )
+            if match['nametype'] != self.queryType:
+                continue
+
+            self.logger.debug('Found matching record {}'.format(str(match)))
+            viafData = {
+                'name': match['displayForm'],
+                'viaf': match.get('viafid', None),
+                'lcnaf': match.get('lc', None)
+            }
+            break
 
         # Set this object in the cache
         self.setCache(viafData)
@@ -119,7 +135,9 @@ class VIAFSearch():
         self.logger.debug('Checking for known VIAF # of {}'.format(
             self.queryName
         ))
-        nameNumbers = self.redis.hgetall(self.queryName)
+        nameNumbers = self.redis.hgetall('{}/{}'.format(
+            self.queryType, self.queryName
+        ))
 
         if not len(nameNumbers.keys()):
             self.logger.debug('Did not find matching cache key')
@@ -136,11 +154,12 @@ class VIAFSearch():
             viafObj {dist} -- A dict containing the controlled form of the
             current name and the VIAF and LCNAF IDs.
         """
-        self.logger.debug('Setting cache hash for {}'.format(self.queryName))
+        cacheKey = '{}/{}'.format(self.queryType, self.queryName)
+        self.logger.debug('Setting cache hash for {}'.format(cacheKey))
         viafObj = {
             key: item for key, item in viafObj.items() if item is not None
         }
-        self.redis.hmset(self.queryName, viafObj)
+        self.redis.hmset(cacheKey, viafObj)
 
     @staticmethod
     def formatResponse(status, data):
@@ -163,3 +182,7 @@ class VIAFSearch():
             'isBase64Encoded': False,
             'body': json.dumps(data)
         }
+
+    def validateType(self):
+        if self.queryType not in self.QUERY_TYPES:
+            raise VIAFError('queryType must be either personal or corporate')

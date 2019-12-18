@@ -10,7 +10,7 @@ The function is intended to be invoked by the AWS API Gateway and is configured 
 
 ## Version
 
-v0.1.1
+v0.2.0
 
 ## Requirements
 
@@ -31,7 +31,8 @@ v0.1.1
 {
   "httpMethod": "GET",
   "queryStringParameters": {
-    "queryName": "[agent_name_here]"
+    "queryName": "[agent_name_here]",
+    "queryType": "[personal(DEFAULT)|corporate]"
   }
 }
 ```

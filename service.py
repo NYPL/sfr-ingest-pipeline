@@ -33,11 +33,12 @@ def handler(event, context):
 
     try:
         queryName = event['queryStringParameters']['queryName']
+        queryType = event['queryStringParameters'].get('queryType', None)
     except KeyError:
         logger.error('Missing required lookup name parameter')
         raise InvalidExecutionType('queryName parameter required')
 
-    viaf = VIAFSearch(queryName)
+    viaf = VIAFSearch(queryName, queryType)
 
     try:
         returnObj = viaf.query()
