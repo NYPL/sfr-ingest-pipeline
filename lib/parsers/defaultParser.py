@@ -16,4 +16,4 @@ class DefaultParser:
         if 'text/html' not in self.media_type:
             flags['download'] = True
 
-        return [(self.uri, flags, self.media_type)]
+        return [(self.uri, flags, self.media_type, None)]
