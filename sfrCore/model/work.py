@@ -286,10 +286,12 @@ class Work(Core, Base):
                 idKey = '{}/{}'.format(idType, value)
                 instDict[idKey] = inst
 
+        return instDict
+
     def matchLocalInstance(self, inst, instDict):
         matches = defaultdict(int)
         for iden in inst['identifiers']:
-            idKey = '{}/{}'.format(iden['type'], iden['identfier'])
+            idKey = '{}/{}'.format(iden['type'], iden['identifier'])
             try:
                 matchInst = instDict[idKey]
             except KeyError:
