@@ -256,6 +256,7 @@ class Work(Core, Base):
         newInstance, newEpubs = Instance.createNew(self.session, instance)
         self.instances.add(newInstance)
         self.epubsToLoad.extend(newEpubs)
+        return newInstance
 
     def updateInstances(self):
         logger.info('Upserting instances for work')
@@ -264,8 +265,10 @@ class Work(Core, Base):
             existing = self.matchLocalInstance(instance, instIDs)
             if existing:
                 self.updateInstance(existing, instance)
+                self.addNewIdentifiers(existing, instIDs)
             else:
-                self.addInstance(instance)
+                new = self.addInstance(instance)
+                self.addNewIdentifiers(new, instIDs)
 
     def updateInstance(self, existing, newInst):
         try:
@@ -277,16 +280,18 @@ class Work(Core, Base):
     def getLocalInstanceIdentifiers(self):
         instDict = {}
         for inst in self.instances:
-            for iden in inst.identifiers:
-                idType = iden.type if iden.type else 'generic'
-                if idType in ['ddc', 'lcc']:
-                    continue
-                idRec = getattr(iden, idType)[0]
-                value = getattr(idRec, 'value')
-                idKey = '{}/{}'.format(idType, value)
-                instDict[idKey] = inst
-
+            self.addNewIdentifiers(inst, instDict)
         return instDict
+
+    def addNewIdentifiers(self, instance, instDict):
+        for iden in instance.identifiers:
+            idType = iden.type if iden.type else 'generic'
+            if idType in ['ddc', 'lcc']:
+                continue
+            idRec = getattr(iden, idType)[0]
+            value = getattr(idRec, 'value')
+            idKey = '{}/{}'.format(idType, value)
+            instDict[idKey] = instance
 
     def matchLocalInstance(self, inst, instDict):
         matches = defaultdict(int)
@@ -294,6 +299,9 @@ class Work(Core, Base):
             idKey = '{}/{}'.format(iden['type'], iden['identifier'])
             try:
                 matchInst = instDict[idKey]
+                logger.debug('Found match to {} on {}'.format(
+                    matchInst, idKey
+                ))
             except KeyError:
                 continue
 
@@ -305,6 +313,9 @@ class Work(Core, Base):
             reverse=True
         )
         if len(sortedMatches) > 0:
+            logger.info('Matched new instance to {}'.format(
+                sortedMatches[0][0]
+            ))
             return sortedMatches[0][0]
 
         return None
