@@ -139,11 +139,15 @@ class WorkTest(unittest.TestCase):
         testWork.tmp_instances = ['inst1', 'inst2']
         existingInst = MagicMock()
         matchLocalInstance.side_effect = [None, existingInst]
+        getLocalInstanceIdentifiers.return_value = {}
+        addInstance.return_value = 'newInstance'
         testWork.updateInstances()
         getLocalInstanceIdentifiers.assert_called_once()
         updateInstance.assert_called_once_with(existingInst, 'inst2')
         addInstance.assert_called_once_with('inst1')
-        addNewIdentifiers.assert_called_twice()
+        addNewIdentifiers.assert_has_calls(
+            [call('newInstance', {}), call(existingInst, {})]
+        )
 
     @patch('sfrCore.model.work.Instance')
     def test_update_instance(self, mockInst):
