@@ -260,6 +260,7 @@ class Work(Core, Base):
 
     def updateInstances(self):
         logger.info('Upserting instances for work')
+        self.epubsToLoad = []
         instIDs = self.getLocalInstanceIdentifiers()
         for instance in self.tmp_instances:
             existing = self.matchLocalInstance(instance, instIDs)
@@ -272,7 +273,8 @@ class Work(Core, Base):
 
     def updateInstance(self, existing, newInst):
         try:
-            existing.update(self.session, newInst)
+            epubsToLoad = existing.update(self.session, newInst)
+            self.epubsToLoad.extend(epubsToLoad)
         except (DataError, DBError) as err:
             logger.warning('Unable to upsert instance record')
             logger.debug(err)

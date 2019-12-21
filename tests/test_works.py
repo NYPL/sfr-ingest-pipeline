@@ -152,6 +152,7 @@ class WorkTest(unittest.TestCase):
     @patch('sfrCore.model.work.Instance')
     def test_update_instance(self, mockInst):
         testWork = Work()
+        testWork.epubsToLoad = []
         testWork.session = 'session'
 
         testWork.updateInstance(mockInst, 'newInst')
