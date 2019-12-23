@@ -392,6 +392,11 @@ class HathiRecord():
 
     viafRoot = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName='  # noqa: E501
 
+    corporateRoles = [
+        'publisher', 'manufacturer', 'repository', 'digitizer',
+        'responsible_organization'
+    ]
+
     def __init__(self, ingestRecord, ingestDateTime=None):
         # Initialize with empty SFR data objects
         # self.ingest contains the source data
@@ -757,9 +762,12 @@ class HathiRecord():
 
     def getVIAF(self, agent):
         logger.info('Querying VIAF for {}'.format(agent.name))
-        viafResp = requests.get('{}{}'.format(
+        reqStr = '{}{}'.format(
             self.viafRoot, quote_plus(agent.name)
-        ))
+        )
+        if (len(list(set(agent.roles) & set(self.corporateRoles))) > 0):
+            reqStr = '{}&queryType=corporate'
+        viafResp = requests.get(reqStr)
         responseJSON = viafResp.json()
         logger.debug(responseJSON)
         if 'viaf' in responseJSON:
