@@ -766,7 +766,7 @@ class HathiRecord():
             self.viafRoot, quote_plus(agent.name)
         )
         if (len(list(set(agent.roles) & set(self.corporateRoles))) > 0):
-            reqStr = '{}&queryType=corporate'
+            reqStr = '{}&queryType=corporate'.format(reqStr)
         viafResp = requests.get(reqStr)
         responseJSON = viafResp.json()
         logger.debug(responseJSON)
