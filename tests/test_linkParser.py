@@ -1,7 +1,9 @@
 import unittest
 from unittest.mock import MagicMock, patch, call
 
-from lib.linkParser import LinkParser, DefaultParser, FrontierParser, Link, Identifier
+from lib.linkParser import (
+    LinkParser,DefaultParser, FrontierParser, SpringerParser, Link, Identifier
+)
 
 
 class TestLinkParser(unittest.TestCase):
@@ -13,7 +15,8 @@ class TestLinkParser(unittest.TestCase):
     
     @patch.object(DefaultParser, 'validateURI')
     @patch.object(FrontierParser, 'validateURI')
-    def test_selectParser_first(self, frontValidate, defaultValidate):
+    @patch.object(SpringerParser, 'validateURI')
+    def test_selectParser_first(self, springValidate, frontValidate, defaultValidate):
         frontValidate.return_value = True
         testParser = LinkParser('mockItem', 'mockURI', 'mockType')
         testParser.selectParser()
@@ -24,8 +27,10 @@ class TestLinkParser(unittest.TestCase):
 
     @patch.object(DefaultParser, 'validateURI')
     @patch.object(FrontierParser, 'validateURI')
-    def test_selectParser_last(self, frontValidate, defaultValidate):
+    @patch.object(SpringerParser, 'validateURI')
+    def test_selectParser_last(self, springValidate, frontValidate, defaultValidate):
         frontValidate.return_value = False
+        springValidate.return_value = False
         defaultValidate.return_value = True
         testParser = LinkParser('mockItem', 'mockURI', 'mockType')
         testParser.selectParser()

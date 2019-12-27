@@ -15,7 +15,7 @@ class SpringerParser:
             },
             'media_type': 'application/epub+zip'
         },
-        'https://link.springre.com/content/pdf/{}/{}.pdf': {
+        'https://link.springer.com/content/pdf/{}/{}.pdf': {
             'flags': {
                 'local': False,
                 'download': False,
