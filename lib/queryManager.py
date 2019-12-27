@@ -19,14 +19,12 @@ LOOKUP_IDENTIFIERS = [
     'oclc',   # OCLC Number
     'isbn',   # ISBN (10 or 13)
     'issn',   # ISSN
-    'lccn',   # LCCN
     'swid',   # OCLC Work Identifier
 ]
 
 IDENTIFIER_TYPES = {
         'oclc': OCLC,
         'swid': OWI,
-        'lccn': LCCN,
         'isbn': ISBN,
         'issn': ISSN,
     }

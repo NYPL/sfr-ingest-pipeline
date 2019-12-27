@@ -44,12 +44,11 @@ class TestQueryManager(unittest.TestCase):
         mockSession.query().join().filter().all.side_effect = [
             [],
             [],
-            [],
             [(1,), (2,), (3,)],
             []
         ]
         testIdentifiers = getIdentifiers(mockSession, MagicMock())
-        self.assertEqual(testIdentifiers, {'lccn': [1, 2, 3]})
+        self.assertEqual(testIdentifiers, {'issn': [1, 2, 3]})
 
     def test_getAuthors(self):
         mockRel1 = MagicMock()
