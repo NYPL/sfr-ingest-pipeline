@@ -1,3 +1,4 @@
+from collections import defaultdict
 import re
 import uuid
 from sqlalchemy import (
@@ -249,23 +250,77 @@ class Work(Core, Base):
         logger.info('Adding instances to work')
         self.epubsToLoad = []
         for inst in self.tmp_instances:
-            newInstance, newEpubs = Instance.createNew(self.session, inst)
-            self.instances.add(newInstance)
-            self.epubsToLoad.extend(newEpubs)
+            self.addInstance(inst)
+
+    def addInstance(self, instance):
+        newInstance, newEpubs = Instance.createNew(self.session, instance)
+        self.instances.add(newInstance)
+        self.epubsToLoad.extend(newEpubs)
+        return newInstance
 
     def updateInstances(self):
         logger.info('Upserting instances for work')
+        self.epubsToLoad = []
+        instIDs = self.getLocalInstanceIdentifiers()
         for instance in self.tmp_instances:
-            self.updateInstance(instance)
+            existing = self.matchLocalInstance(instance, instIDs)
+            if existing:
+                self.updateInstance(existing, instance)
+                self.addNewIdentifiers(existing, instIDs)
+            else:
+                new = self.addInstance(instance)
+                self.addNewIdentifiers(new, instIDs)
 
-    def updateInstance(self, inst):
+    def updateInstance(self, existing, newInst):
         try:
-            self.instances.add(
-                Instance.updateOrInsert(self.session, inst, work=self)
-            )
+            epubsToLoad = existing.update(self.session, newInst)
+            self.epubsToLoad.extend(epubsToLoad)
         except (DataError, DBError) as err:
             logger.warning('Unable to upsert instance record')
             logger.debug(err)
+
+    def getLocalInstanceIdentifiers(self):
+        instDict = {}
+        for inst in self.instances:
+            self.addNewIdentifiers(inst, instDict)
+        return instDict
+
+    def addNewIdentifiers(self, instance, instDict):
+        for iden in instance.identifiers:
+            idType = iden.type if iden.type else 'generic'
+            if idType in ['ddc', 'lcc']:
+                continue
+            idRec = getattr(iden, idType)[0]
+            value = getattr(idRec, 'value')
+            idKey = '{}/{}'.format(idType, value)
+            instDict[idKey] = instance
+
+    def matchLocalInstance(self, inst, instDict):
+        matches = defaultdict(int)
+        for iden in inst['identifiers']:
+            idKey = '{}/{}'.format(iden['type'], iden['identifier'])
+            try:
+                matchInst = instDict[idKey]
+                logger.debug('Found match to {} on {}'.format(
+                    matchInst, idKey
+                ))
+            except KeyError:
+                continue
+
+            matches[matchInst] += 1
+
+        sortedMatches = sorted(
+            matches.items(),
+            key=lambda x: x[1],
+            reverse=True
+        )
+        if len(sortedMatches) > 0:
+            logger.info('Matched new instance to {}'.format(
+                sortedMatches[0][0]
+            ))
+            return sortedMatches[0][0]
+
+        return None
 
     def addAgents(self):
         logger.info('Adding agents to work')

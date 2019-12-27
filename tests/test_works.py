@@ -123,34 +123,144 @@ class WorkTest(unittest.TestCase):
 
         testWork.addInstances()
         self.assertEqual(list(testWork.instances)[0].name, 'testInstance')
-    
-    @patch.object(Work, 'updateInstance')
-    def test_update_instances(self, mock_update):
+
+    @patch.multiple(
+        Work,
+        updateInstance=DEFAULT,
+        addInstance=DEFAULT,
+        getLocalInstanceIdentifiers=DEFAULT,
+        matchLocalInstance=DEFAULT,
+        addNewIdentifiers=DEFAULT
+    )
+    def test_update_instances(self, updateInstance, addInstance,
+                              getLocalInstanceIdentifiers, matchLocalInstance,
+                              addNewIdentifiers):
         testWork = Work()
-        testWork.tmp_instances = ['inst1']
+        testWork.tmp_instances = ['inst1', 'inst2']
+        existingInst = MagicMock()
+        matchLocalInstance.side_effect = [None, existingInst]
+        getLocalInstanceIdentifiers.return_value = {}
+        addInstance.return_value = 'newInstance'
         testWork.updateInstances()
-        mock_update.called_once_with('inst1')
-    
-    @patch('sfrCore.model.work.Instance')
-    def test_update_instance(self, mock_inst):
-        testWork = Work()
-        mock_val = MagicMock()
-        mock_val.value = 'testInst'
-        mock_inst.updateOrInsert.return_value = mock_val
+        getLocalInstanceIdentifiers.assert_called_once()
+        updateInstance.assert_called_once_with(existingInst, 'inst2')
+        addInstance.assert_called_once_with('inst1')
+        addNewIdentifiers.assert_has_calls(
+            [call('newInstance', {}), call(existingInst, {})]
+        )
 
-        testWork.updateInstance('inst1')
-        self.assertEqual(list(testWork.instances)[0].value, 'testInst')
-    
     @patch('sfrCore.model.work.Instance')
-    def test_update_instance_err(self, mock_inst):
+    def test_update_instance(self, mockInst):
         testWork = Work()
-        mock_val = MagicMock()
-        mock_val.value = 'testInst'
-        mock_inst.updateOrInsert.side_effect = DataError('test err')
+        testWork.epubsToLoad = []
+        testWork.session = 'session'
 
-        testWork.updateInstance('inst1')
+        testWork.updateInstance(mockInst, 'newInst')
+
+        mockInst.update.assert_called_once_with('session', 'newInst')
+
+    @patch('sfrCore.model.work.Instance')
+    def test_update_instance_err(self, mockInst):
+        testWork = Work()
+        testWork.session = 'session'
+        mockInst.update.side_effect = DataError('test err')
+
+        testWork.updateInstance(mockInst, 'inst1')
         self.assertEqual(testWork.instances, set())
-    
+
+    def test_getLocalInstanceIdentifiers(self):
+        testWork = Work()
+        testInstances = []
+        for i in range(1, 3):
+            instIDs = []
+            for j in range(i*2, i*3):
+                mockID = MagicMock()
+                mockID.value = j
+                mockParent = MagicMock()
+                mockParent.type = 'test'
+                mockParent.test = [mockID]
+                instIDs.append(mockParent)
+
+            mockInst = MagicMock()
+            mockInst.identifiers = instIDs
+            testInstances.append(mockInst)
+
+        testWork.instances = set(testInstances)
+
+        idDict = testWork.getLocalInstanceIdentifiers()
+        self.assertEqual(len(idDict.keys()), 3)
+        self.assertEqual(sorted(list(idDict.keys()))[0], 'test/2')
+        self.assertEqual(sorted(list(idDict.items()))[0][1], testInstances[0])
+
+    def test_matchLocalInstance_foundMatch(self):
+        testDict = {
+            'test/1': 'inst1',
+            'test/2': 'inst1',
+            'test/4': 'inst3'
+        }
+        testInstance = {
+            'identifiers': [
+                {
+                    'type': 'test',
+                    'identifier': 1
+                }, {
+                    'type': 'other',
+                    'identifier': 1
+                }, {
+                    'type': 'test',
+                    'identifier': 2
+                }
+            ]
+        }
+        testWork = Work()
+        matchedInstance = testWork.matchLocalInstance(testInstance, testDict)
+        self.assertEqual(matchedInstance, 'inst1')
+
+    def test_matchLocalInstance_found_multiple(self):
+        testDict = {
+            'test/1': 'inst1',
+            'test/2': 'inst1',
+            'test/4': 'inst3'
+        }
+        testInstance = {
+            'identifiers': [
+                {
+                    'type': 'test',
+                    'identifier': 1
+                }, {
+                    'type': 'test',
+                    'identifier': 4
+                }, {
+                    'type': 'test',
+                    'identifier': 2
+                }
+            ]
+        }
+        testWork = Work()
+        matchedInstance = testWork.matchLocalInstance(testInstance, testDict)
+        self.assertEqual(matchedInstance, 'inst1')
+
+    def test_matchLocalInstance_no_match(self):
+        testDict = {
+            'test/1': 'inst1',
+            'test/2': 'inst1',
+            'test/4': 'inst3'
+        }
+        testInstance = {
+            'identifiers': [
+                {
+                    'type': 'other',
+                    'identifier': 1
+                }, {
+                    'type': 'other',
+                    'identifier': 2
+                }
+            ]
+        }
+        testWork = Work()
+        matchedInstance = testWork.matchLocalInstance(testInstance, testDict)
+        self.assertEqual(matchedInstance, None)
+
     @patch.object(Work, 'addIdentifier')
     def test_add_identifiers(self, mock_add):
         testWork = Work()
