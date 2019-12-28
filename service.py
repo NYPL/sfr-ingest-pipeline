@@ -55,7 +55,7 @@ def parseRecords(records):
     logger.debug('Parsing Messages')
 
     logger.debug('Creating Session')
-    session = MANAGER.createSession()
+    session = MANAGER.createSession(autoflush=True)
     dbManager = DBManager(session)
     parseResults = []
     try:
