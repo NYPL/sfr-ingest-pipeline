@@ -74,7 +74,9 @@ def readFromClassify(workXML, workUUID):
         'measurements': measurements
     }
 
-    return WorkRecord.createFromDict(**workDict)
+    instanceCount = int(work.get('editions', 0))
+
+    return WorkRecord.createFromDict(**workDict), instanceCount
 
 
 def extractAndAppendEditions(work, classifyXML):
@@ -152,7 +154,12 @@ copyreg.pickle(etree._Element, etreePickler, etreeUnPickler)
 
 def parseChunk(editions, cConn):
     for edition in editions:
-        cConn.send(parseEdition(edition))
+        try:
+            editionData = parseEdition(edition)
+            cConn.send(editionData)
+        except Exception as err:
+            logger.error('Unable to parse edition, skipping')
+            logger.debug(err)
 
     cConn.send('DONE')
     cConn.close()

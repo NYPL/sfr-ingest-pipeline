@@ -35,7 +35,7 @@ def enhanceRecord(record):
 
         # Step 2: Parse the data recieved from Classify into the SFR data model
         classifiedWork, instanceCount = readFromClassify(classifyData, workUUID)
-
+        logger.debug('Instances found {}'.format(instanceCount))
         if instanceCount > 500:
             for i in range(500, instanceCount, 500):
                 classifyPage = classifyRecord(
