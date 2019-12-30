@@ -57,7 +57,7 @@ def readFromClassify(workXML, workUUID):
     authorList = list(map(parseAuthor, authors))
 
     editions = workXML.findall('.//edition', namespaces=NAMESPACE)
-    editionList = loadEditions(editions, workUUID)
+    editionList = loadEditions(editions)
 
     headings = workXML.findall('.//heading', namespaces=NAMESPACE)
     headingList = list(map(parseHeading, headings))
@@ -75,6 +75,11 @@ def readFromClassify(workXML, workUUID):
     }
 
     return WorkRecord.createFromDict(**workDict)
+
+
+def extractAndAppendEditions(work, classifyXML):
+    editions = classifyXML.findall('.//edition', namespaces=NAMESPACE)
+    work.instances.extend(loadEditions(editions))
 
 
 def parseHeading(heading):
@@ -96,7 +101,7 @@ def parseHeading(heading):
     return subject
 
 
-def loadEditions(editions, uuid):
+def loadEditions(editions):
     processes = []
     outPipes = []
     cores = 4

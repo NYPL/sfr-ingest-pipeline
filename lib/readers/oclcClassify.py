@@ -14,7 +14,7 @@ NAMESPACE = {
 }
 
 
-def classifyRecord(searchType, searchFields, workUUID):
+def classifyRecord(searchType, searchFields, workUUID, start=0):
     """Generates a query for the OCLC Classify service and returns the raw
     XML response received from that service. This method takes 3 arguments:
     - searchType: identifier|authorTitle
@@ -26,7 +26,8 @@ def classifyRecord(searchType, searchFields, workUUID):
             searchFields.get('identifier', None),
             searchFields.get('idType', None),
             searchFields.get('authors', None),
-            searchFields.get('title', None)
+            searchFields.get('title', None),
+            start
         )
         classifyQuery.generateQueryURL()
         logger.info('Fetching data for url: {}'.format(classifyQuery.query))
@@ -156,13 +157,14 @@ class QueryManager():
         'stdnbr'# Sandard Number (unclear)
     ]
 
-    def __init__(self, searchType, recID, recType, author, title):
+    def __init__(self, searchType, recID, recType, author, title, start):
         self.searchType = searchType
         self.recID = recID
         self.recType = recType
         self.author = QueryManager.parseString(author)
         self.title = QueryManager.parseString(title)
         self.query = None
+        self.start = start
 
     def generateQueryURL(self):
         """Parses the received data and generates a Classify query based either
@@ -231,7 +233,9 @@ class QueryManager():
         single work response and "maxRecs" controls the upper limit on the
         number of possible editions returned with a work.
         """
-        self.query = '{}&summary=false&maxRecs=500'.format(self.query)
+        self.query = '{}&summary=false&startRec={}&maxRecs=500'.format(
+            self.query, self.start
+        )
 
     def execQuery(self):
         """Executes the constructed query against the OCLC endpoint
