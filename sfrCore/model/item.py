@@ -89,7 +89,8 @@ class Item(Core, Base):
     SOURCE_REGEX = {
         'gut': r'gutenberg.org\/ebooks\/[0-9]+\.epub\.(?:no|)images$',
         'ia': r'archive.org\/details\/[a-z0-9]+$',
-        'frontier': r'frontiersin\.org\/research-topics\/[0-9]+\/epub$'
+        'frontier': r'frontiersin\.org\/research-topics\/[0-9]+\/epub$',
+        'springer': r'link.springer\.com\/download\/epub\/10\.[0-9]+\/[0-9\-]+\.epub$'  # noqa: E501
     }
 
     EPUB_SOURCES = ['gut', 'frontier']
