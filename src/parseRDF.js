@@ -1,3 +1,4 @@
+import Axios from 'axios'
 import { parseString } from 'xml2js'
 import moment from 'moment'
 
@@ -189,6 +190,29 @@ exports.getAgent = (agent, role) => {
     const death = exports.getRecordField(agent, 'pgterms:deathdate')
     newAgent.addDate(death, death, 'death_date')
   }
+
+  const corporateRoles = ['publisher', 'manufacturer']
+  const queryType = corporateRoles.indexOf(role) > -1 ? 'corporate' : 'personal'
+
+  Axios.get('https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup', {
+    params: {
+      queryName: newAgent.name,
+      queryType,
+    },
+  })
+    .then((response) => {
+      if ('viaf' in response) {
+        newAgent.viaf = response.viaf
+        newAgent.lcnaf = response.lcnaf
+        if (response.name !== newAgent.name) {
+          newAgent.aliases.push(newAgent.name)
+          newAgent.name = response.name
+        }
+      }
+    })
+    .catch(() => {
+      // Skip this lookup, its not necessary
+    })
 
   return newAgent
 }
