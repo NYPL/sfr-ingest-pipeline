@@ -13,7 +13,8 @@ class TestOCLCClassify(unittest.TestCase):
             'testID',
             'testType',
             'testAuthor',
-            'testTitle'
+            'testTitle',
+            0
         )
         self.assertEqual(testQuery.title, 'testTitle')
         self.assertEqual(testQuery.query, None)
@@ -26,7 +27,8 @@ class TestOCLCClassify(unittest.TestCase):
             'testID',
             'testType',
             'testAuthor',
-            'testTitle'
+            'testTitle',
+            0
         )
         testQuery.generateQueryURL()
         mock_title.assert_called_once()
@@ -40,7 +42,8 @@ class TestOCLCClassify(unittest.TestCase):
             'testID',
             'testType',
             'testAuthor',
-            'testTitle'
+            'testTitle',
+            0
         )
         testQuery.generateQueryURL()
         mock_id.assert_called_once()
@@ -48,14 +51,14 @@ class TestOCLCClassify(unittest.TestCase):
     
     def test_clean_title(self):
         rawTitle = ' Hello\r weird\n title thingy '
-        testQuery = QueryManager(None, None, None, None, rawTitle)
+        testQuery = QueryManager(None, None, None, None, rawTitle, 0)
         testQuery.cleanTitle()
         self.assertEqual(testQuery.title, 'Hello weird title thingy')
     
     @patch('lib.readers.oclcClassify.QueryManager.cleanTitle')
     @patch('lib.readers.oclcClassify.QueryManager.addClassifyOptions')
     def test_author_generate(self, mock_add, mock_clean):
-        testQuery = QueryManager(None, None, None, 'Tester', 'Test Title')
+        testQuery = QueryManager(None, None, None, 'Tester', 'Test Title', 0)
         testQuery.generateAuthorTitleURL()
 
         self.assertEqual(
@@ -67,18 +70,18 @@ class TestOCLCClassify(unittest.TestCase):
     
     def test_author_missing(self):
         with self.assertRaises(DataError):
-            testQuery = QueryManager(None, None, None, None, 'Sole Title')
+            testQuery = QueryManager(None, None, None, None, 'Sole Title', 0)
             testQuery.generateAuthorTitleURL()
 
     def test_author_missing_empty_string(self):
         with self.assertRaises(DataError):
-            testQuery = QueryManager(None, None, None, '', 'Sole Title')
+            testQuery = QueryManager(None, None, None, '', 'Sole Title', 0)
             testQuery.generateAuthorTitleURL()
             
     
     @patch('lib.readers.oclcClassify.QueryManager.addClassifyOptions')
     def test_identifier_generate(self, mock_add):
-        testQuery = QueryManager(None, 'testID', 'isbn', None, None)
+        testQuery = QueryManager(None, 'testID', 'isbn', None, None, 0)
         testQuery.generateIdentifierURL()
 
         self.assertEqual(
@@ -89,13 +92,13 @@ class TestOCLCClassify(unittest.TestCase):
     
     @patch('lib.readers.oclcClassify.QueryManager.generateAuthorTitleURL')
     def test_identifier_none(self, mock_author):
-        testQuery = QueryManager(None, None, None, None, None)
+        testQuery = QueryManager(None, None, None, None, None, 0)
         testQuery.generateIdentifierURL()
 
         mock_author.asert_called_once()
     
     def test_identifier_error(self):
-        testQuery = QueryManager(None, 'testID', 'testType', None, None)
+        testQuery = QueryManager(None, 'testID', 'testType', None, None, 0)
         try:
             testQuery.generateIdentifierURL()
         except DataError:
@@ -103,12 +106,12 @@ class TestOCLCClassify(unittest.TestCase):
         self.assertRaises(DataError)
     
     def test_add_options(self):
-        testQuery = QueryManager(None, None, None, None, None)
+        testQuery = QueryManager(None, None, None, None, None, 0)
         testQuery.query = 'testQuery'
         testQuery.addClassifyOptions()
         self.assertEqual(
             testQuery.query,
-            'testQuery&summary=false&maxRecs=500'
+            'testQuery&summary=false&startRec=0&maxRecs=500'
         )
     
     @patch('lib.readers.oclcClassify.requests')
@@ -118,7 +121,7 @@ class TestOCLCClassify(unittest.TestCase):
         mock_resp.text = 'testing'
         mock_requests.get.return_value = mock_resp
         
-        testQuery = QueryManager(None, None, None, None, None)
+        testQuery = QueryManager(None, None, None, None, None, 0)
         testRes = testQuery.execQuery()
         self.assertEqual(testRes, 'testing')
 
@@ -129,7 +132,7 @@ class TestOCLCClassify(unittest.TestCase):
         mock_resp.text = 'testing'
         mock_requests.get.return_value = mock_resp
         
-        testQuery = QueryManager(None, None, None, None, None)
+        testQuery = QueryManager(None, None, None, None, None, 0)
         
         try:
             testQuery.execQuery()

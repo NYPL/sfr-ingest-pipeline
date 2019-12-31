@@ -1,12 +1,11 @@
 import unittest
-from unittest.mock import patch, mock_open, call
+from unittest.mock import patch, MagicMock
 
 from lib.enhancer import enhanceRecord
 from helpers.errorHelpers import OCLCError, DataError
-from lib.dataModel import WorkRecord
+
 
 class TestEnhancer(unittest.TestCase):
-
     @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_REGION': 'us-test-1'})
     @patch('lib.enhancer.classifyRecord', return_value=(True, True))
     @patch('lib.enhancer.readFromClassify')
@@ -19,6 +18,9 @@ class TestEnhancer(unittest.TestCase):
                 'test': 'test'
             }
         }
+        mockWork = MagicMock()
+        mockWork.instances = [1, 2, 3]
+        mock_read.return_value = (mockWork, 3)
 
         res = enhanceRecord(testRec)
         self.assertTrue(res)
@@ -28,11 +30,34 @@ class TestEnhancer(unittest.TestCase):
             'source': 'test',
             'recordID': 1
         }
-        try:
-            res = enhanceRecord(testRec)
-        except DataError:
-            pass
-        self.assertRaises(OCLCError)
+        with self.assertRaises(DataError):
+            enhanceRecord(testRec)
+    
+    @patch.dict('os.environ', {'OUTPUT_KINESIS': 'tester', 'OUTPUT_REGION': 'us-test-1'})
+    @patch('lib.enhancer.extractAndAppendEditions')
+    @patch('lib.enhancer.OutputManager.putKinesis')
+    @patch('lib.enhancer.readFromClassify')
+    @patch('lib.enhancer.classifyRecord')
+    def test_enhancer_500_plus(self, mockClassify, mockRead, mockPut, mockExtract):
+        testRec = {
+            'uuid': '11111111-1111-1111-1111-111111111111',
+            'type': 'test',
+            'fields': {
+                'test': 'test'
+            }
+        }
+        mockWork = MagicMock()
+        mockWork.instances = [True] * 600
+        mockRead.return_value = (mockWork, 600)
+
+        res = enhanceRecord(testRec)
+
+        self.assertEqual(len(mockClassify.mock_calls), 2)
+        mockRead.assert_called_once()
+        mockExtract.assert_called_once()
+        self.assertEqual(len(mockPut.mock_calls), 6)
+        self.assertTrue(res)
+
 
     @patch('lib.enhancer.classifyRecord', return_value=(True, True), side_effect=OCLCError('testing'))
     def test_enhancer_err(self, mock_classify):
@@ -41,8 +66,5 @@ class TestEnhancer(unittest.TestCase):
             'recordID': 1,
             'body': 'some data'
         }
-        try:
-            res = enhanceRecord(testRec)
-        except DataError:
-            pass
-        self.assertRaises(OCLCError)
+        with self.assertRaises(DataError):
+            enhanceRecord(testRec)

@@ -4,7 +4,7 @@ from helpers.errorHelpers import OCLCError, DataError
 from helpers.logHelpers import createLog
 from lib.dataModel import Agent, Identifier
 from lib.readers.oclcClassify import classifyRecord
-from lib.parsers.parseOCLC import readFromClassify
+from lib.parsers.parseOCLC import readFromClassify, extractAndAppendEditions
 from lib.outputManager import OutputManager
 
 logger = createLog('enhancer')
@@ -34,21 +34,28 @@ def enhanceRecord(record):
         classifyData = classifyRecord(searchType, searchFields, workUUID)
 
         # Step 2: Parse the data recieved from Classify into the SFR data model
-        parsedData = readFromClassify(classifyData, workUUID)
+        classifiedWork, instanceCount = readFromClassify(classifyData, workUUID)
+        logger.debug('Instances found {}'.format(instanceCount))
+        if instanceCount > 500:
+            for i in range(500, instanceCount, 500):
+                classifyPage = classifyRecord(
+                    searchType, searchFields, workUUID, start=i
+                )
+                extractAndAppendEditions(classifiedWork, classifyPage)
 
         # This sets the primary identifier for processing by the db manager
-        parsedData.primary_identifier = Identifier('uuid', workUUID, 1)
+        classifiedWork.primary_identifier = Identifier('uuid', workUUID, 1)
 
         # Step 3: Output this block to kinesis
         outputObject = {
             'status': 200,
             'type': 'work',
             'method': 'update',
-            'data': parsedData
+            'data': classifiedWork
         }
-        while len(parsedData.instances) > 100:
-            instanceChunk = parsedData.instances[0:100]
-            del parsedData.instances[0:100]
+        while len(classifiedWork.instances) > 100:
+            instanceChunk = classifiedWork.instances[0:100]
+            del classifiedWork.instances[0:100]
             OutputManager.putKinesis(
                 {
                     'status': 200,
@@ -62,7 +69,6 @@ def enhanceRecord(record):
                 os.environ['OUTPUT_KINESIS'],
                 workUUID
             )
-
         OutputManager.putKinesis(outputObject, os.environ['OUTPUT_KINESIS'], workUUID)
 
     except OCLCError as err:

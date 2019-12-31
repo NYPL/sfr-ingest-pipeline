@@ -57,7 +57,7 @@ def readFromClassify(workXML, workUUID):
     authorList = list(map(parseAuthor, authors))
 
     editions = workXML.findall('.//edition', namespaces=NAMESPACE)
-    editionList = loadEditions(editions, workUUID)
+    editionList = loadEditions(editions)
 
     headings = workXML.findall('.//heading', namespaces=NAMESPACE)
     headingList = list(map(parseHeading, headings))
@@ -74,7 +74,14 @@ def readFromClassify(workXML, workUUID):
         'measurements': measurements
     }
 
-    return WorkRecord.createFromDict(**workDict)
+    instanceCount = int(work.get('editions', 0))
+
+    return WorkRecord.createFromDict(**workDict), instanceCount
+
+
+def extractAndAppendEditions(work, classifyXML):
+    editions = classifyXML.findall('.//edition', namespaces=NAMESPACE)
+    work.instances.extend(loadEditions(editions))
 
 
 def parseHeading(heading):
@@ -96,7 +103,7 @@ def parseHeading(heading):
     return subject
 
 
-def loadEditions(editions, uuid):
+def loadEditions(editions):
     processes = []
     outPipes = []
     cores = 4
@@ -147,7 +154,12 @@ copyreg.pickle(etree._Element, etreePickler, etreeUnPickler)
 
 def parseChunk(editions, cConn):
     for edition in editions:
-        cConn.send(parseEdition(edition))
+        try:
+            editionData = parseEdition(edition)
+            cConn.send(editionData)
+        except Exception as err:
+            logger.error('Unable to parse edition, skipping')
+            logger.debug(err)
 
     cConn.send('DONE')
     cConn.close()
