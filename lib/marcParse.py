@@ -209,11 +209,11 @@ def extractAgentValue(data, rec, field, marcRels):
     """
     for agentField in data[field]:
         if len(agentField['a']) == 0: continue
-        agent = Agent(role=[])
-        agent.name = agentField['a'][0].value
+        name = agentField['a'][0].value
         roleCode = agentField['4'][0].value if len(agentField['4']) > 0 else 'aut'
-        agent.roles.append(marcRels[roleCode])
-        rec.agents.append(agent)
+        agentType = 'corporate' if field not in ['100', '700'] else 'personal'
+        newAgent = buildAgent(name, marcRels[roleCode], agentType=agentType)
+        rec.agents.append(newAgent)
 
 
 def extractHoldingsLinks(holdings, instance, item):
@@ -342,7 +342,7 @@ def extractSubfieldValue(data, record, fieldData):
             fieldValue = fieldInstance.subfield(subfield)[0].value
             if attr == 'agents':
                 role = fieldData[3]
-                record.agents.append(buildAgent(fieldValue, role))
+                record.agents.append(buildAgent(fieldValue, role, agentType='corporate'))
             elif attr == 'identifiers':
                 controlField = fieldData[3]
                 record.addClassItem('identifiers', Identifier, **{
@@ -370,13 +370,14 @@ def extractSubfieldValue(data, record, fieldData):
         ))
         logger.debug(err)
 
-def buildAgent(name, role):
+def buildAgent(name, role, agentType='personal'):
 
     newAgent = Agent(name=name, role=role)
 
-    viafResp = requests.get('{}{}'.format(
+    viafResp = requests.get('{}{}&queryType={}'.format(
         'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName=',
-        quote_plus(name)
+        quote_plus(name),
+        agentType
     ))
     responseJSON = viafResp.json()
     logger.debug(responseJSON)
