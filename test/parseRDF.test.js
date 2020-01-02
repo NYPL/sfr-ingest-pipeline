@@ -213,7 +213,7 @@ describe('RDF Parser [parseRDF.js]', () => {
   })
 
   describe('exports.loadGutenbergRecord()', () => {
-    it('should return a valid JSON object', () => {
+    it('should return a valid JSON object', async () => {
       const formatStub = sinon.stub(RDFParser, 'getFormats')
       const subjectStub = sinon.stub(RDFParser, 'getSubjects')
       const entityStub = sinon.stub(RDFParser, 'getAgents')
@@ -230,7 +230,7 @@ describe('RDF Parser [parseRDF.js]', () => {
 
       attribStub.returns('Test Attrib')
 
-      const parsedData = RDFParser.loadGutenbergRecord(jsonInput, testLC)
+      const parsedData = await RDFParser.loadGutenbergRecord(jsonInput, testLC)
       expect(parsedData.title).to.equal('Test Value')
       expect(parsedData.instances).to.have.lengthOf(1)
       expect(parsedData.instances[0].formats).to.have.lengthOf(2)
