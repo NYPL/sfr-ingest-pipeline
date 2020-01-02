@@ -1,3 +1,4 @@
+import Axios from 'axios'
 import { parseString } from 'xml2js'
 import moment from 'moment'
 
@@ -40,11 +41,11 @@ exports.parseRDF = (data, gutenbergID, gutenbergURI, lcRels, callback) => {
   const rdfData = data.data.repository.object
   const rdfText = rdfData.text
   // Read XML/RDF string into javascript object
-  parseString(rdfText, (err, result) => {
+  parseString(rdfText, async (err, result) => {
     if (err) return callback(err, null)
 
     // On success, parse resulting object into Metadata Model Object
-    const gutenbergData = exports.loadGutenbergRecord(result['rdf:RDF'], gutenbergID, lcRels)
+    const gutenbergData = await exports.loadGutenbergRecord(result['rdf:RDF'], gutenbergID, lcRels)
     callback(null, gutenbergData)
   })
 }
@@ -53,7 +54,7 @@ exports.parseRDF = (data, gutenbergID, gutenbergURI, lcRels, callback) => {
 // This does the transformation work from RDF to the SFR standard
 // It relies on models imported from sfrMetadataModel, which defines each
 // type of record created here
-exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
+exports.loadGutenbergRecord = async (rdf, gutenbergID, lcRels) => {
   // Load main metadata blocks from RDF
   const ebook = rdf['pgterms:ebook'][0]
   const work = rdf['cc:Work'][0]
@@ -82,7 +83,7 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   bibRecord.subjects = exports.getSubjects(ebook['dcterms:subject'])
 
   // Add Agents to the work
-  bibRecord.agents = exports.getAgents(ebook, lcRels)
+  bibRecord.agents = await exports.getAgents(ebook, lcRels)
 
   // Add a rights statement to the work
   const license = exports.getFieldAttrib(work['cc:license'][0], 'rdf:resource')
@@ -125,16 +126,36 @@ exports.loadGutenbergRecord = (rdf, gutenbergID, lcRels) => {
   return bibRecord
 }
 
+const getMARCRelAgents = async (rels, ebook) => {
+  const agents = []
+  for (let i = 0; i < rels.length; i++) {
+    const roleTerm = `marcrel:${rels[i][0]}`
+
+    if (roleTerm in ebook) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        const ent = await exports.getAgent(
+          ebook[roleTerm][0]['pgterms:agent'][0], rels[i][1],
+        )
+        agents.push(ent)
+      } catch (err) {
+        // Do nothing
+      }
+    }
+  }
+  return agents
+}
+
 // Load agents from the RDF block
 // This loads the special "creator" field as well as the arbitrarily defined
 // marcrel relationships, which it scans the document for
-exports.getAgents = (ebook, lcRels) => {
+exports.getAgents = async (ebook, lcRels) => {
   const agents = []
 
   // Try to load a creator. Not all RDF files have creators associated, so
   // this will catch any error if it does not exist
   try {
-    const creator = exports.getAgent(ebook['dcterms:creator'][0]['pgterms:agent'][0], 'author')
+    const creator = await exports.getAgent(ebook['dcterms:creator'][0]['pgterms:agent'][0], 'author')
     agents.push(creator)
   } catch (e) {
     if (e instanceof TypeError) logger.notice('No creator associated')
@@ -142,25 +163,38 @@ exports.getAgents = (ebook, lcRels) => {
   }
 
   // Search RDF document for all marcrel relationships and create Agents
-  lcRels.forEach((rel) => {
-    const roleTerm = `marcrel:${rel[0]}`
-
-    if (roleTerm in ebook) {
-      try {
-        const ent = exports.getAgent(ebook[roleTerm][0]['pgterms:agent'][0], rel[1])
-        agents.push(ent)
-      } catch (err) {
-        // Do nothing
-      }
-    }
-  })
+  const relAgents = await getMARCRelAgents(lcRels, ebook)
+  agents.push(...relAgents)
 
   return agents
 }
 
+const getAgentVIAF = async (newAgent, queryType) => {
+  try {
+    const resp = await Axios.get('https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup', {
+      params: {
+        queryName: newAgent.name,
+        queryType,
+      },
+    })
+    const viafData = resp.data
+    if ('viaf' in viafData) {
+      newAgent.viaf = viafData.viaf
+      newAgent.lcnaf = viafData.lcnaf
+      if (viafData.name !== newAgent.name) {
+        newAgent.aliases.push(newAgent.name)
+        newAgent.name = viafData.name
+      }
+    }
+  } catch (err) {
+    // Nothing to do, just skip the enhancement
+  }
+
+  return true
+}
 
 // This function explicitly creates each agent
-exports.getAgent = (agent, role) => {
+exports.getAgent = async (agent, role) => {
   // By default we know the role, and likely do not have a website/link
   const entRec = { role, webpage: null }
 
@@ -189,6 +223,11 @@ exports.getAgent = (agent, role) => {
     const death = exports.getRecordField(agent, 'pgterms:deathdate')
     newAgent.addDate(death, death, 'death_date')
   }
+
+  const corporateRoles = ['publisher', 'manufacturer']
+  const queryType = corporateRoles.indexOf(role) > -1 ? 'corporate' : 'personal'
+
+  await getAgentVIAF(newAgent, queryType)
 
   return newAgent
 }
