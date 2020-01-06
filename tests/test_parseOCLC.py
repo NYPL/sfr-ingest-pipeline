@@ -1,6 +1,6 @@
 from lxml import etree
 import unittest
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import MagicMock, patch
 
 from lib.parsers.parseOCLC import readFromClassify, loadEditions, extractAndAppendEditions
 from lib.dataModel import WorkRecord
@@ -10,7 +10,7 @@ from lib.outputManager import OutputManager
 class TestOCLCParse(unittest.TestCase):
     @patch.object(OutputManager, 'checkRecentQueries', return_value=False)
     def test_classify_read(self, mockCheck):
-        mockXML = Mock()
+        mockXML = MagicMock()
         work = etree.Element(
             'work',
             title='Test Work',
@@ -19,14 +19,16 @@ class TestOCLCParse(unittest.TestCase):
             eholdings='1',
             owi='1111111',
         )
+        start = etree.Element('start')
+        start.text = '0'
         work.text = '0000000000'
-        mockXML.find = MagicMock(return_value=work)
-        mockXML.findall = MagicMock(return_value=[])
+        mockXML.find.side_effect = [work, start]
+        mockXML.findall.return_value = []
         resWork, resCount, oclcID = readFromClassify(mockXML, 'testUUID')
         self.assertIsInstance(resWork, WorkRecord)
         self.assertEqual(resCount, 1)
         self.assertEqual(oclcID, '0000000000')
-        mockCheck.assert_called_once_with('lookup/owi/1111111')
+        mockCheck.assert_called_once_with('lookup/owi/1111111/0')
 
     @patch('lib.parsers.parseOCLC.parseEdition', return_value=True)
     def test_loadEditions(self, mockParse):

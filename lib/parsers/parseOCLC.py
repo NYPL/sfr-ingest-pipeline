@@ -33,12 +33,15 @@ def readFromClassify(workXML, workUUID):
     logger.debug('Parsing Returned Work')
 
     work = workXML.find('.//work', namespaces=NAMESPACE)
+    start = workXML.find('.//start', namespaces=NAMESPACE)
 
     oclcTitle = work.get('title')
     oclcNo = Identifier('oclc', work.text, 1)
     owiNo = Identifier('owi', work.get('owi'), 1)
 
-    if OutputManager.checkRecentQueries('lookup/{}/{}'.format('owi', work.get('owi'))) is True:
+    if OutputManager.checkRecentQueries('lookup/{}/{}/{}'.format(
+        'owi', work.get('owi'), start.text
+    )) is True:
         raise DataError('Work {} with OWI {} already classified'.format(
             workUUID, work.get('owi')
         ))
