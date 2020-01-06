@@ -76,7 +76,7 @@ def readFromClassify(workXML, workUUID):
 
     instanceCount = int(work.get('editions', 0))
 
-    return WorkRecord.createFromDict(**workDict), instanceCount
+    return WorkRecord.createFromDict(**workDict), instanceCount, work.text
 
 
 def extractAndAppendEditions(work, classifyXML):

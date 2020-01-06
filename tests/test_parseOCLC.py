@@ -22,9 +22,10 @@ class TestOCLCParse(unittest.TestCase):
         work.text = '0000000000'
         mockXML.find = MagicMock(return_value=work)
         mockXML.findall = MagicMock(return_value=[])
-        resWork, resCount = readFromClassify(mockXML, 'testUUID')
+        resWork, resCount, oclcID = readFromClassify(mockXML, 'testUUID')
         self.assertIsInstance(resWork, WorkRecord)
         self.assertEqual(resCount, 1)
+        self.assertEqual(oclcID, '0000000000')
         mockCheck.assert_called_once_with('lookup/owi/1111111')
 
     @patch('lib.parsers.parseOCLC.parseEdition', return_value=True)
