@@ -51,17 +51,16 @@ def parseRecords(records):
     """Simple method to parse list of records and process each entry."""
     logger.debug('Parsing Queue Messages')
 
-    session = MANAGER.createSession()
     esConn = ESConnection()
 
-    updates = [parseRecord(r, session) for r in records]
+    updates = [parseRecord(r) for r in records]
 
     MANAGER.closeConnection()
 
     return updates
 
 
-def parseRecord(encodedRec, session):
+def parseRecord(encodedRec):
     """Parse an individual record. Verifies that an object was able to be
     decoded from the input base64 encoded string and if so, hands this to the
     enhancer method"""
@@ -70,19 +69,16 @@ def parseRecord(encodedRec, session):
         logger.info('Creating editions for work {}'.format(
             record['identifier']
         ))
-        clustManager = ClusterManager(record, session)
+        clustManager = ClusterManager(record, MANAGER)
         clustManager.clusterInstances()
         
         try:
-            MANAGER.startSession() # Start transaction
             clustManager.deleteExistingEditions()
             clustManager.storeEditions()
-            MANAGER.commitChanges()
         except Exception as err:  # noqa: Q000
             # There are a large number of SQLAlchemy errors that can be thrown
             # These should be handled elsewhere, but this should catch anything
             # and rollback the session if we encounter something unexpected
-            print(MANAGER, MANAGER.session)
             MANAGER.session.rollback() # Rollback current record only
             logger.error('Failed to store record {}'.format(
                 record['identifier']
@@ -93,11 +89,13 @@ def parseRecord(encodedRec, session):
                 clustManager.work.uuid,
                 clustManager.work.title
             ))
-        
 
+        session = MANAGER.createSession()
+        session.add(clustManager.work)
         esManager = ElasticManager(clustManager.work)
         esManager.enhanceWork()
         esManager.saveWork()
+        session.close()
         return ('success', '{}|{}'.format(
             clustManager.work.uuid,
             clustManager.work.title

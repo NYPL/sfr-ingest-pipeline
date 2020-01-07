@@ -4,8 +4,8 @@ from sfrCore import Work, Edition, Instance
 from helpers.logHelpers import createLog
 
 class ClusterManager:
-    def __init__(self, record, session):
-        self.session = session
+    def __init__(self, record, dbManager):
+        self.dbManager = dbManager
         self.parseMessage(record)
         self.logger = createLog('clusterManager')
     
@@ -17,29 +17,38 @@ class ClusterManager:
             raise DataError('Missing identifier for invocation')
     
     def clusterInstances(self):
-        self.work = self.fetchWork()
+        session = self.dbManager.createSession()
+        self.work = self.fetchWork(session)
         self.logger.info('Creating editions for {}'.format(self.work))
 
         mlModel = KModel(self.work.instances)
         mlModel.createDF()
+        session.close()
         mlModel.generateClusters()
         self.editions = mlModel.parseEditions()
     
     def deleteExistingEditions(self):
+        session = self.dbManager.createSession()
+        session.add(self.work)
         self.logger.info('Deleting previous editions for {}'.format(self.work))
         for ed in self.work.editions:
             self.logger.debug('Deleting edition {}'.format(ed))
-            print(ed)
-            self.session.delete(ed)
+            session.delete(ed)
+        session.commit()
+        session.close()
 
     def storeEditions(self):
         self.logger.debug('Adding new editions to session')
-        self.session.add_all([
-            self.createEdition(ed)
+        session = self.dbManager.createSession()
+        session.add(self.work)
+        session.add_all([
+            self.createEdition(session, ed)
             for ed in self.editions
         ])
+        session.commit()
+        session.close()
     
-    def createEdition(self, edition):
+    def createEdition(self, session, edition):
         self.logger.info('Creating edition for {}'.format(self.work))
         merged = self.mergeInstances(edition)
         self.logger.debug('Merged edition for {}|{}'.format(
@@ -49,7 +58,7 @@ class ClusterManager:
         return Edition.createEdition(
             merged,
             self.work,
-            self.fetchInstances(merged.pop('rowIDs'))
+            self.fetchInstances(session, merged.pop('rowIDs'))
         )
 
     def mergeInstances(self, edition):
@@ -80,12 +89,12 @@ class ClusterManager:
 
         return out
 
-    def fetchWork(self):
+    def fetchWork(self, session):
         if self.idType == 'uuid':
             self.logger.debug('Fetching Work by UUID {}'.format(
                 self.identifier
             ))
-            return Work.getByUUID(self.session, self.identifier)
+            return Work.getByUUID(session, self.identifier)
         else:
             identifierDict = {
                 'type': self.idType,
@@ -95,9 +104,9 @@ class ClusterManager:
                 self.idType,
                 self.identifier
             ))
-            return Work.lookupWork(self.session, [identifierDict])
+            return Work.lookupWork(session, [identifierDict])
     
-    def fetchInstances(self, instIDs):
+    def fetchInstances(self, session, instIDs):
         self.logger.debug('Fetching instances for work {}'.format(self.work))
-        return self.session.query(Instance)\
+        return session.query(Instance)\
             .filter(Instance.id.in_([int(i) for i in instIDs])).all()
