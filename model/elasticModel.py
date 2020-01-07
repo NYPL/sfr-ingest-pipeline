@@ -13,9 +13,15 @@ from elasticsearch_dsl import (
     Date,
     DateRange,
     Date,
-    Boolean
+    Boolean,
+    analyzer
 )
 
+plain_ascii = analyzer(
+    'plain_ascii',
+    tokenizer='standard',
+    filter=['standard', 'lowercase', 'stop', 'asciifolding']
+)
 
 class BaseDoc(Document):
     date_created = Date()
@@ -69,7 +75,7 @@ class Rights(BaseInner):
 class Subject(BaseInner):
     authority = Keyword()
     uri = Keyword()
-    subject = Text(fields={'keyword': Keyword()})
+    subject = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
     weight = HalfFloat()
 
     @classmethod
@@ -78,7 +84,7 @@ class Subject(BaseInner):
 
 
 class Agent(BaseInner):
-    name = Text(fields={'keyword': Keyword()})
+    name = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
     sort_name = Keyword(index=False)
     aliases = Text(fields={'keyword': Keyword()})
     lcnaf = Keyword()
@@ -140,8 +146,8 @@ class Language(BaseInner):
 
 
 class Instance(BaseInner):
-    title = Text(fields={'keyword': Keyword()})
-    sub_title = Text(fields={'keyword': Keyword()})
+    title = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
+    sub_title = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
     alt_titles = Text(fields={'keyword': Keyword()})
     pub_place = Text(fields={'keyword': Keyword()})
     pub_date = DateRange(format='date_optional_time')
@@ -177,7 +183,7 @@ class Instance(BaseInner):
 
 
 class Work(BaseDoc):
-    title = Text(fields={'keyword': Keyword()})
+    title = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
     sort_title = Keyword(index=False)
     uuid = Keyword(store=True)
     medium = Text(fields={'keyword': Keyword()})
