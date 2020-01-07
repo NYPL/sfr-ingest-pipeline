@@ -73,7 +73,7 @@ class TestHandler(object):
         testRec = {
             'body': json.dumps({'type': 'test', 'identifier': 'xxxxxxxxx'})
         }
-        res = mockManager[2](testRec, 'session')
+        res = mockManager[2](testRec)
         assert res == ('success', 'uuid|title')
     
     def test_parseRecord_failure(self, mocker, mockManager):
@@ -82,15 +82,15 @@ class TestHandler(object):
         mockCluster.work.uuid = 'uuid'
         mockCluster.work.title = 'title'
         mockCluster.storeEditions.side_effect = Exception
-        res = mockManager[2]({'body': json.dumps({'identifier': 'xxxxxxxxx'})}, 'session')
+        res = mockManager[2]({'body': json.dumps({'identifier': 'xxxxxxxxx'})})
         assert res == ('failure', 'uuid|title')
     
     def test_parseRecord_json_err(self, mocker, mockManager):
         mockCluster = mocker.patch('service.ClusterManager')()
         with pytest.raises(DataError):
-            mockManager[2]({'body': 'randomString'}, 'session')
+            mockManager[2]({'body': 'randomString'})
     
     def test_parseRecord_key_err(self, mocker, mockManager):
         mockCluster = mocker.patch('service.ClusterManager')()
         with pytest.raises(DataError):
-            mockManager[2]({'other': 'randomString'}, 'session')
+            mockManager[2]({'other': 'randomString'})
