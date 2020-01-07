@@ -12,8 +12,8 @@ aws_access_key_id:
 aws_secret_access_key:
 
 # dist_directory: dist
-timeout: 300
-memory_size: 2048
+timeout: 720
+memory_size: 3008
 concurrency: 20
 
 subnet_ids: ['subnet-12aa8a65']
