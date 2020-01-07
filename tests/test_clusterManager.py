@@ -10,9 +10,11 @@ class TestClusterManager(object):
         mockLogger = mocker.patch('lib.clusterManager.createLog')
         mockLogger.return_value = MagicMock()
         mockParse = patch.object(ClusterManager, 'parseMessage')
+
+        mockManager = MagicMock() # Mock DB Manager object
         
         mockParse.start()
-        testCluster = ClusterManager('record', MagicMock())
+        testCluster = ClusterManager('record', mockManager)
         mockParse.stop()
         return testCluster
     
@@ -81,19 +83,24 @@ class TestClusterManager(object):
     def test_deleteEditions(self, testManager):
         testManager.work = MagicMock()
         testManager.work.editions = ['ed1', 'ed2']
+        mockSession = MagicMock()
         mockDelete = MagicMock()
-        testManager.session.delete = mockDelete
+        testManager.dbManager.createSession.return_value = mockSession
+        mockSession.delete = mockDelete
         testManager.deleteExistingEditions()
         mockDelete.assert_has_calls([call('ed1'), call('ed2')])
     
     def test_storeEditions(self, mocker, testManager):
         testManager.editions = ['ed1', 'ed2']
+        testManager.work = MagicMock()
         mockCreate = mocker.patch.object(ClusterManager, 'createEdition')
         mockCreate.side_effect = ['ed1', 'ed2']
+        mockSession = MagicMock()
         mockAddAll = MagicMock()
-        testManager.session.add_all = mockAddAll
+        mockSession.add_all = mockAddAll
+        testManager.dbManager.createSession.return_value = mockSession
         testManager.storeEditions()
-        mockCreate.assert_has_calls([call('ed1'), call('ed2')])
+        mockCreate.assert_has_calls([call(mockSession, 'ed1'), call(mockSession, 'ed2')])
         mockAddAll.assert_called_once_with(['ed1', 'ed2'])
     
     def test_createEdition(self, mocker, testManager):
@@ -112,10 +119,10 @@ class TestClusterManager(object):
         mockFetch = mocker.patch.object(ClusterManager, 'fetchInstances')
         mockFetch.return_value = 0
 
-        newEd = testManager.createEdition('ed1')
+        newEd = testManager.createEdition('session', 'ed1')
         assert newEd is True
         mockMerge.assert_called_once_with('ed1')
-        mockFetch.assert_called_once_with(0)
+        mockFetch.assert_called_once_with('session', 0)
         mockCreate.assert_called_once_with(mergeData, 'testWork', 0)
     
     def test_mergeInstances_date(self, testManager, mockEditions):
@@ -143,9 +150,9 @@ class TestClusterManager(object):
         mockGetUUID = mocker.patch.object(Work, 'getByUUID')
         mockGetUUID.return_value = 'testWork'
 
-        outWork = testManager.fetchWork()
+        outWork = testManager.fetchWork('session')
         assert outWork == 'testWork'
-        mockGetUUID.assert_called_once_with(testManager.session, 'xxxxxxxxx')
+        mockGetUUID.assert_called_once_with('session', 'xxxxxxxxx')
     
     def test_fetchWork_other(self, mocker, testManager):
         testManager.idType = 'test'
@@ -154,15 +161,17 @@ class TestClusterManager(object):
         mockLookup = mocker.patch.object(Work, 'lookupWork')
         mockLookup.return_value = 'testWork'
 
-        outWork = testManager.fetchWork()
+        outWork = testManager.fetchWork('session')
         assert outWork == 'testWork'
         mockLookup.assert_called_once_with(
-            testManager.session,
+            'session',
             [{'type': 'test', 'identifier': 'xxxxxxxxx'}]
         )
     
     def test_fetchInstances(self, testManager):
-        testManager.session.query().filter().all.return_value = [1, 2, 3]
+        mockSession = MagicMock()
+        testManager.dbManager.createSession.return_value = mockSession
+        mockSession.query().filter().all.return_value = [1, 2, 3]
         testManager.work = 'testWork'
-        outInstances = testManager.fetchInstances([1, 2, 3])
+        outInstances = testManager.fetchInstances(mockSession, [1, 2, 3])
         assert outInstances == [1, 2, 3]
