@@ -150,6 +150,18 @@ const parseLinks = (work, nestedType) => {
   })
 }
 
+const parseDates = (work, nestedType) => {
+  if (nestedType === 'editions') {
+    const yearMatch = /^\[([0-9]+)/
+    for (let i = 0; i < work.editions.length; i++) {
+      const dateRange = work.editions[i].publication_date
+      if (dateRange === null) continue
+      const pubYear = dateRange.match(yearMatch)[1]
+      work.editions[i].publication_date = pubYear
+    }
+  }
+}
+
 module.exports = {
   formatResponseEditionRange,
   formatSingleResponseEditionRange,
@@ -157,4 +169,5 @@ module.exports = {
   startEndCompare,
   parseAgents,
   parseLinks,
+  parseDates,
 }
