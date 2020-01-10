@@ -133,14 +133,16 @@ const parseLinks = (work, nestedType) => {
     if (inner.items) {
       inner.items.forEach((items) => {
         items.links.forEach((link) => {
+          let flags
           try {
-            const flags = JSON.parse(link.flags)
-            Object.keys(flags).forEach((key) => {
-              link[key] = flags[key]
-            })
+            flags = JSON.parse(link.flags)
           } catch (err) {
-            // If no flags are set this can be safely ignored
+            // eslint-disable-next-line prefer-destructuring
+            flags = link.flags
           }
+          Object.keys(link.flags).forEach((key) => {
+            link[key] = flags[key]
+          })
           delete link.flags
         })
       })
