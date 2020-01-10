@@ -44,7 +44,7 @@ def loadSingleRecord(loader, marcRels, singleURL):
     oaiRecord = loader.loadOAIRecord(singleURL)
     resToken, marcRecords = parseOAI(oaiRecord)
     sfrRecords = parseMARC(marcRecords, marcRels)
-    for rec in sfrRecords:
+    for rec, doabID in sfrRecords:
         outRec = {
             'source': 'doab',
             'type': 'work',
@@ -53,7 +53,7 @@ def loadSingleRecord(loader, marcRels, singleURL):
             'status': 200,
             'message': 'Retrieved Gutenberg Metadata'
         }
-        KinesisOutput.putRecord(outRec, os.environ['OUTPUT_STREAM'])
+        KinesisOutput.putRecord(outRec, os.environ['OUTPUT_STREAM'], doabID)
 
 
 
@@ -79,7 +79,7 @@ def readOAIFeed(loader, marcRels, resToken=None):
 
     logger.info('Parsing DOAB records into SFR data model objects')
     sfrRecords = parseMARC(marcRecords, marcRels)
-    for rec in sfrRecords:
+    for rec, doabID in sfrRecords:
         outRec = {
             'source': 'doab',
             'type': 'work',
@@ -88,7 +88,7 @@ def readOAIFeed(loader, marcRels, resToken=None):
             'status': 200,
             'message': 'Retrieved Gutenberg Metadata'
         }
-        KinesisOutput.putRecord(outRec, os.environ['OUTPUT_STREAM'])
+        KinesisOutput.putRecord(outRec, os.environ['OUTPUT_STREAM'], doabID)
     
     logger.info('Putting parsed records into {} stream'.format(
         os.environ['OUTPUT_STREAM']

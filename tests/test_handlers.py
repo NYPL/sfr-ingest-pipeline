@@ -41,7 +41,7 @@ class TestHandler(unittest.TestCase):
     
     @patch('service.Loaders')
     @patch('service.parseOAI', return_value=('token', 'records'))
-    @patch('service.parseMARC', return_value=['records'])
+    @patch('service.parseMARC', return_value=[('records', 1)])
     @patch('service.KinesisOutput')
     def test_load_single(self, mock_kinesis, mock_marc, mock_oai, mock_loaders):
         loadSingleRecord(mock_loaders, 'test_rels', 'test_url')
@@ -52,7 +52,7 @@ class TestHandler(unittest.TestCase):
     @patch('service.Loaders')
     @patch('service.readOAIFeed')
     @patch('service.parseOAI', return_value=(None, ['records']))
-    @patch('service.parseMARC', return_value=['records'])
+    @patch('service.parseMARC', return_value=[('records', 1)])
     @patch('service.KinesisOutput')
     def test_read_feed(self, mock_kinesis, mock_marc, mock_oai, mock_feed, mock_loaders):
         readOAIFeed(mock_loaders, 'test_rels')
@@ -68,13 +68,13 @@ class TestHandler(unittest.TestCase):
             'status': 200,
             'message': 'Retrieved Gutenberg Metadata'
         }
-        mock_kinesis.putRecord.assert_called_with(testOut, 'test_stream')
+        mock_kinesis.putRecord.assert_called_with(testOut, 'test_stream', 1)
         mock_feed.assert_not_called()
     
     @patch('service.Loaders')
     @patch('service.readOAIFeed')
     @patch('service.parseOAI', return_value=('token', ['records']))
-    @patch('service.parseMARC', return_value=['records'])
+    @patch('service.parseMARC', return_value=[('records', 1)])
     @patch('service.KinesisOutput')
     def test_read_recursive(self, mock_kinesis, mock_marc, mock_oai, mock_feed, mock_loaders):
         readOAIFeed(mock_loaders, 'test_rels')
@@ -90,7 +90,7 @@ class TestHandler(unittest.TestCase):
             'status': 200,
             'message': 'Retrieved Gutenberg Metadata'
         }
-        mock_kinesis.putRecord.assert_called_with(testOut, 'test_stream')
+        mock_kinesis.putRecord.assert_called_with(testOut, 'test_stream', 1)
         mock_feed.assert_called_with(mock_loaders, 'test_rels', 'token')
 
 if __name__ == '__main__':

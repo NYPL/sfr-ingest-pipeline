@@ -17,7 +17,7 @@ class KinesisOutput():
         pass
 
     @classmethod
-    def putRecord(cls, outputObject, stream):
+    def putRecord(cls, outputObject, stream, doabID):
         """Put an event into the specific Kinesis stream"""
         logger.info('Writing results to Kinesis {}'.format(stream))
 
@@ -32,7 +32,7 @@ class KinesisOutput():
             cls.KINESIS_CLIENT.put_record(
                 StreamName=stream,
                 Data=kinesisStream,
-                PartitionKey=os.environ['OUTPUT_SHARD']
+                PartitionKey=doabID
             )
         except:
             logger.error('Kinesis Write error!')
