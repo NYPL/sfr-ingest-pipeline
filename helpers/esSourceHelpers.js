@@ -133,19 +133,35 @@ const parseLinks = (work, nestedType) => {
     if (inner.items) {
       inner.items.forEach((items) => {
         items.links.forEach((link) => {
+          let flags
           try {
-            const flags = JSON.parse(link.flags)
-            Object.keys(flags).forEach((key) => {
-              link[key] = flags[key]
-            })
+            flags = JSON.parse(link.flags)
           } catch (err) {
-            // If no flags are set this can be safely ignored
+            // eslint-disable-next-line prefer-destructuring
+            flags = link.flags
           }
+          Object.keys(link.flags).forEach((key) => {
+            link[key] = flags[key]
+          })
           delete link.flags
         })
       })
     }
   })
+}
+
+const parseDates = (work, nestedType) => {
+  if (nestedType === 'editions') {
+    const yearMatch = /^\[([0-9]+)/
+    // eslint-disable-next-line no-plusplus
+    for (let i = 0; i < work.editions.length; i++) {
+      const dateRange = work.editions[i].publication_date
+      // eslint-disable-next-line no-continue
+      if (dateRange === null) continue
+      const pubYear = dateRange.match(yearMatch)[1]
+      work.editions[i].publication_date = pubYear
+    }
+  }
 }
 
 module.exports = {
@@ -155,4 +171,5 @@ module.exports = {
   startEndCompare,
   parseAgents,
   parseLinks,
+  parseDates,
 }
