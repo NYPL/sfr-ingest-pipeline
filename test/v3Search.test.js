@@ -454,8 +454,8 @@ describe('v3 simple search tests', () => {
         sort: [3, 4],
       }
       const testWorks = [testWork1, testWork2]
-      mockGet.onCall(0).returns({})
-      mockGet.onCall(1).returns({})
+      mockGet.onCall(0).returns({ title: 'Test1' })
+      mockGet.onCall(1).returns({ title: 'Test2' })
       outWorks = await testSearch.loadWorks(testWorks)
       expect(outWorks.length).to.equal(2)
       expect(outWorks[1].edition_range).to.equal('1900-1905')
@@ -464,6 +464,8 @@ describe('v3 simple search tests', () => {
       expect(mockGetInner.getCall(0)).to.be.calledWith(
         testWork1,
         {
+          title: 'Test1',
+          sort_title: 'test1',
           instances: null,
           editions: null,
           edition_count: 0,
@@ -482,7 +484,7 @@ describe('v3 simple search tests', () => {
         sort: [1, 2],
       }
       const testWorks = [testWork1]
-      mockGet.onCall(0).returns({})
+      mockGet.onCall(0).returns({ title: 'Testing' })
       outWorks = await testSearch.loadWorks(testWorks, 'instances')
       expect(outWorks.length).to.equal(1)
       expect(outWorks[0].edition_range).to.equal('2015-2019')
@@ -491,6 +493,8 @@ describe('v3 simple search tests', () => {
       expect(mockGetInner.getCall(0)).to.be.calledWith(
         testWork1,
         {
+          title: 'Testing',
+          sort_title: 'testing',
           instances: null,
           editions: null,
           edition_count: 0,
@@ -520,6 +524,7 @@ describe('v3 simple search tests', () => {
 
     it('should call getEditions when innerType set to editions', async () => {
       const mockGetEds = sinon.stub(V3Search.prototype, 'getEditions')
+      const mockParseDates = sinon.stub(Helpers, 'parseDates')
       const testWork = {
         instanceIds: [
           {
@@ -536,6 +541,7 @@ describe('v3 simple search tests', () => {
       expect(mockGetEds).to.be.calledOnceWith([1, 2, 3])
       expect(testDBWork.edition_count).to.equal(3)
       mockGetEds.restore()
+      mockParseDates.restore()
     })
 
     it('should call getInstances when innerType set to instances', async () => {

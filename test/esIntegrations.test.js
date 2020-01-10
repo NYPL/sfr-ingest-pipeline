@@ -179,7 +179,7 @@ describe('Testing ElasticSearch Integration', () => {
         dbTracker.uninstall()
       })
       it('should respond with standard response object on success', async () => {
-        v3Mock.post('/sfr_v3/_search')
+        v3Mock.post('/sfr_new_v3/_search')
           .reply(200, {
             took: 0,
             timed_out: false,
@@ -228,6 +228,7 @@ describe('Testing ElasticSearch Integration', () => {
                   id: 4,
                   pub_place: 'Testtown',
                   items: [],
+                  publication_date: '[2020-01-01,2021-01-01)',
                 },
               ])
             },
@@ -252,7 +253,7 @@ describe('Testing ElasticSearch Integration', () => {
       })
 
       it('should respond with standard error message if ElasticSearch errors', async () => {
-        v3Mock.post('/sfr_v3/_search')
+        v3Mock.post('/sfr_new_v3/_search')
           .reply(400, {
             name: 'ElasticError',
             response: {
@@ -312,7 +313,7 @@ describe('Testing ElasticSearch Integration', () => {
         dbTracker.uninstall()
       })
       it('should return a single work record on success', async () => {
-        v3Work.post('/sfr_v3/_search')
+        v3Work.post('/sfr_new_v3/_search')
           .reply(200, {
             took: 0,
             timed_out: false,
@@ -401,7 +402,7 @@ describe('Testing ElasticSearch Integration', () => {
       })
 
       it('should return an error if multiple works are found', async () => {
-        v3Work.post('/sfr_v3/_search')
+        v3Work.post('/sfr_new_v3/_search')
           .reply(200, {
             took: 0,
             timed_out: false,
