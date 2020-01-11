@@ -1,5 +1,7 @@
 const express = require('express')
 const elasticsearch = require('elasticsearch')
+const knex = require('knex')
+const mockDB = require('mock-knex')
 const logger = require('../../lib/logger')
 const pjson = require('../../package.json')
 const { searchEndpoints } = require('./search')
@@ -16,6 +18,18 @@ v3Router.logger = logger
 v3Router.client = new elasticsearch.Client({
   host: process.env.ELASTICSEARCH_HOST,
 })
+
+// Set Database connection
+if (process.env.NODE_ENV === 'test') {
+  v3Router.dbClient = knex({ client: 'pg' })
+  mockDB.mock(this.pg)
+} else {
+  v3Router.dbClient = knex({
+    client: 'pg',
+    connection: process.env.DB_CONNECTION_STR,
+    pool: { min: 0, max: 10 },
+  })
+}
 
 // Status endpoint to verify that v2 is available
 v3Router.get('/', (req, res) => {
