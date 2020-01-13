@@ -165,7 +165,9 @@ class KModel:
             # Calculate the step for the first run at determining k
             # Use the natural log of the value to get a reasonable scale
             # for different values
-            step = int(np.log(self.maxK)**1.5 - 1) if np.log(self.maxK) > 1 else 1
+            print(self.maxK, np.log(self.maxK))
+            step = int(np.log(self.maxK)**1.5 - 1) if np.log(self.maxK) > 1.6 else 1
+            print(step)
             # First pass at finding best value for k, using the step value
             # derived above
             self.getK(1, self.maxK, step)

@@ -211,7 +211,10 @@ class TestElasticManager(object):
     
     def test_addInstance(self, mocker, testManager, testInstanceData):
         mockDateLoader = MagicMock()
-        mockDateLoader.return_value = [2000]
+        mockDate = MagicMock()
+        mockDate.gte = '2000-01-01'
+        mockDate.lte = '2001-01-01'
+        mockDateLoader.return_value = [mockDate]
 
         mockFields = mocker.patch.object(Instance, 'getFields')
         mockFields.return_value = ['title', 'id']
@@ -229,4 +232,4 @@ class TestElasticManager(object):
 
             assert newInstance.title == 'Test Instance'
             assert newInstance.instance_id == 1
-            assert newInstance.pub_date == 2000
+            assert newInstance.pub_date_sort == '2000-01-01'
