@@ -22,7 +22,7 @@ class TestS3Client:
     def test_s3Client_storeNewFile_success(self, mocker, testClient):
         mocker.patch.object(s3Client, 'returnS3URL', return_value=True)
         mocker.patch('lib.s3.BytesIO')()
-        newURL = testClient.storeNewFile('file_contents')
+        newURL = testClient.storeNewFile('file_contents', 'testMime')
         assert newURL is True
 
     def test_returnS3URL(self, testClient):

@@ -1,8 +1,9 @@
 import pytest
 from requests.exceptions import ReadTimeout
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, DEFAULT
 
 from lib.covers import CoverParse
+from lib.resizer import CoverResizer
 from helpers.errorHelpers import InvalidParameter, URLFetchError
 
 
@@ -56,24 +57,39 @@ class TestCoverParse:
             CoverParse(testRecord)
 
     def test_storeCover_success_new(self, mocker, testRecord, mockRequest):
+        resizeMocks = mocker.patch.multiple(
+            CoverResizer,
+            loadOriginal=DEFAULT,
+            loadImageData=DEFAULT,
+            getNewDimensions=DEFAULT,
+            resizeCover=DEFAULT,
+            getCoverInBytes=DEFAULT
+        )
+        resizeMocks['getCoverInBytes'].return_value = 'image_binary'
         mockKey = mocker.patch.object(CoverParse, 'createKey')
+        mockMime = mocker.patch.object(
+            CoverParse, 'getMimeType', return_value='testMime'
+        )
         testParser = CoverParse(testRecord)
         mockS3 = mocker.patch('lib.covers.s3Client')()
         mockS3.checkForFile.return_value = None
         mockS3.storeNewFile.return_value = 'newImageURL'
         testParser.storeCover()
         mockKey.assert_called_once()
+        mockMime.assert_called_once()
         mockS3.checkForFile.assert_called_once()
-        mockS3.storeNewFile.assert_called_once_with('image_binary')
+        mockS3.storeNewFile.assert_called_once_with('image_binary', 'testMime')
         assert testParser.s3CoverURL == 'newImageURL'
 
     def test_storeCover_success_exists(self, mocker, testRecord, mockRequest):
         mockKey = mocker.patch.object(CoverParse, 'createKey')
+        mockMime = mocker.patch.object(CoverParse, 'getMimeType')
         testParser = CoverParse(testRecord)
         mockS3 = mocker.patch('lib.covers.s3Client')()
         mockS3.checkForFile.return_value = 'existingImageURL'
         testParser.storeCover()
         mockKey.assert_called_once()
+        mockMime.assert_called_once()
         mockS3.checkForFile.assert_called_once()
         assert testParser.s3CoverURL == 'existingImageURL'
 
@@ -92,6 +108,7 @@ class TestCoverParse:
 
     def test_storeCover_hathi(self, mocker, testRecord, mockRequest):
         mockKey = mocker.patch.object(CoverParse, 'createKey')
+        mockMime = mocker.patch.object(CoverParse, 'getMimeType')
         testRecord['url'] = testRecord['url'].replace('ebooks', 'hathitrust')
         mockAuth = mocker.patch.object(
             CoverParse,
@@ -103,6 +120,7 @@ class TestCoverParse:
         mockS3.checkForFile.return_value = 'existingImageURL'
         testParser.storeCover()
         mockKey.assert_called_once()
+        mockMime.assert_called_once()
         mockAuth.assert_called_once()
         mockS3.checkForFile.assert_called_once()
         assert testParser.s3CoverURL == 'existingImageURL'

@@ -77,7 +77,11 @@ class CoverParse:
         s3 = s3Client(coverKey)
         existingFile = s3.checkForFile()
         if existingFile is None:
-            self.s3CoverURL = s3.storeNewFile(imgResp.content)
+            resizer = CoverResizer(imgResp.content)
+            resizer.getNewDimensions()
+            resizer.resizeCover()
+            standardCoverBytes = resizer.getCoverInBytes()
+            self.s3CoverURL = s3.storeNewFile(standardCoverBytes, mimeType)
         else:
             self.s3CoverURL = existingFile
 
