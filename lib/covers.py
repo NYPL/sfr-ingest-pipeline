@@ -9,6 +9,9 @@ from helpers.errorHelpers import InvalidParameter, URLFetchError
 from helpers.logHelpers import createLog
 from helpers.configHelpers import decryptEnvVar
 from lib.s3 import s3Client
+from lib.resizer import CoverResizer
+
+LOGGER = createLog('CoverParse')
 
 
 class CoverParse:
@@ -19,11 +22,14 @@ class CoverParse:
     GOOGLE_URL_ID_REGEX = r'\/[^\/]+\?id=([0-9a-zA-Z]+)\S+imgtk=[a-zA-Z_\-0-9]+&source=gbs_api$'  # noqa: E501
 
     def __init__(self, record):
-        self.logger = createLog('CoverParse')
-        self.remoteURL = record.get('url', None)
+        self.logger = LOGGER
         self.source = record.get('source', 'unk')
         self.sourceID = record.get('identifier', None)
+        self.remoteURL = record.get('url', None)
         self.s3CoverURL = None
+        self.logger.debug('Source: {}|ID: {}|URL: {}'.format(
+            self.source, self.sourceID, self.remoteURL
+        ))
 
     @property
     def remoteURL(self):
@@ -32,7 +38,11 @@ class CoverParse:
     @remoteURL.setter
     def remoteURL(self, url):
         if not url:
-            self.logger.error('URL not provided to cover ingester')
+            self.logger.error(
+                'URL not provided from {}({}) to cover ingester'.format(
+                    self.sourceID, self.source
+                )
+            )
             raise InvalidParameter('URL must be supplied to CoverParse()')
         if url[:4] != 'http':
             url = 'https://{}'.format(url)
@@ -94,6 +104,8 @@ class CoverParse:
         elif 'google' in self.remoteURL:
             urlMatch = re.search(self.GOOGLE_URL_ID_REGEX, self.remoteURL)
             urlID = '{}.jpg'.format(urlMatch.group(1))
+        elif 'contentcafe2' in self.remoteURL:
+            urlID = '{}.jpg'.format(self.sourceID)
         else:
             urlMatch = re.search(self.URL_ID_REGEX, self.remoteURL)
             urlID = urlMatch.group(1)
