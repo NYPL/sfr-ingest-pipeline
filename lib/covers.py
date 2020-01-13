@@ -1,3 +1,4 @@
+from mimetypes import guess_type
 import re
 import requests
 from requests.exceptions import ReadTimeout
@@ -74,6 +75,7 @@ class CoverParse:
             )
 
         coverKey = self.createKey()
+        mimeType = self.getMimeType(coverKey)
         s3 = s3Client(coverKey)
         existingFile = s3.checkForFile()
         if existingFile is None:
@@ -96,6 +98,9 @@ class CoverParse:
             urlMatch = re.search(self.URL_ID_REGEX, self.remoteURL)
             urlID = urlMatch.group(1)
         return '{}/{}_{}'.format(self.source, self.sourceID, urlID.lower())
+
+    def getMimeType(self, key):
+        return guess_type(key)[0]
 
     @classmethod
     def createAuth(cls):
