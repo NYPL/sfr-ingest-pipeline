@@ -53,6 +53,7 @@ describe('v3 work retrieval tests', () => {
     let mockIds
     let mockAgents
     let mockLinks
+    let mockDates
     let esWork
     beforeEach(() => {
       testWork = new V3Work(sinon.mock(), {})
@@ -60,6 +61,7 @@ describe('v3 work retrieval tests', () => {
       mockIds = sinon.stub(V3Work.prototype, 'getIdentifiers')
       mockAgents = sinon.stub(Helpers, 'parseAgents')
       mockLinks = sinon.stub(Helpers, 'parseLinks')
+      mockDates = sinon.stub(Helpers, 'parseDates')
       esWork = {
         uuid: 'testUUID',
         edition_range: '2019',
@@ -83,6 +85,7 @@ describe('v3 work retrieval tests', () => {
       mockIds.restore()
       mockAgents.restore()
       mockLinks.restore()
+      mockDates.restore()
     })
     it('should load work from database given parameters', async () => {
       mockGet.returns({ id: 1 })

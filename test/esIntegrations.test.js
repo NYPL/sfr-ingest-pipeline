@@ -382,6 +382,7 @@ describe('Testing ElasticSearch Integration', () => {
                   id: 4,
                   pub_place: 'Testtown',
                   items: [],
+                  publication_date: '[2019-01-01,2020-01-01)',
                 },
               ])
             },
