@@ -27,12 +27,13 @@ class s3Client:
 
         return None
 
-    def storeNewFile(self, fileContents):
+    def storeNewFile(self, fileContents, mimeType):
         self.s3Client.put_object(
             Bucket=self.bucket,
             Key=self.key,
             ACL='public-read',
-            Body=BytesIO(fileContents).read()
+            Body=BytesIO(fileContents).read(),
+            ContentType=mimeType
         )
         return self.returnS3URL()
 
