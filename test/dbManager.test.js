@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 const chai = require('chai')
+const knex = require('knex')
 const sinon = require('sinon')
 const sinonChai = require('sinon-chai')
 const mockDB = require('mock-knex')
@@ -11,11 +12,14 @@ const { expect } = chai
 
 const { DBConnection } = require('../lib/db')
 
+const testClient = knex({ client: 'pg' })
+mockDB.mock(testClient)
+
 describe('DBConnection manager tests', () => {
   describe('createSubQuery()', () => {
     let testDB
     beforeEach(() => {
-      testDB = new DBConnection(sinon.mock())
+      testDB = new DBConnection(sinon.mock(), testClient)
     })
 
     afterEach(() => {
@@ -34,7 +38,7 @@ describe('DBConnection manager tests', () => {
     let testDB
     const dbTracker = mockDB.getTracker()
     beforeEach(() => {
-      testDB = new DBConnection(sinon.mock())
+      testDB = new DBConnection(sinon.mock(), testClient)
       dbTracker.install()
     })
 
