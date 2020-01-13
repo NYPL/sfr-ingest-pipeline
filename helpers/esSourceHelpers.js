@@ -108,22 +108,42 @@ const startEndCompare = (startEnd, sortFlip) => {
 }
 
 const parseAgents = (work, nestedType) => {
-  const setDates = (agent) => {
+  const formatAgent = (agent) => {
     if (agent.dates) {
       agent.dates.forEach((date) => {
         // eslint-disable-next-line no-param-reassign
         agent[`${date.date_type}_display`] = date.display_date
       })
     }
+    agent.roles = new Set([agent.role])
     delete agent.dates
+    delete agent.role
+    return agent
+  }
+
+  const groupAgents = (agents) => {
+    const groupedAgents = []
+    for (let i = 0; i < agents.length; i++) {
+      const existing = groupedAgents.find(findMatchingAgent, agents[i])
+      if (existing) {
+        existing.roles.add(agents[i].role)
+      } else {
+        groupedAgents.push(formatAgent(agents[i]))
+      }
+    }
+    groupedAgents.forEach((agent) => {
+      agent.roles = Array.from(agent.roles)
+    })
+
+    return groupedAgents
   }
 
   if (work.agents) {
-    work.agents.forEach(agent => setDates(agent))
+    work.agents = groupAgents(work.agents)
   }
   work[nestedType].forEach((inner) => {
     if (inner.agents) {
-      inner.agents.forEach(agent => setDates(agent))
+      inner.agents = groupAgents(inner.agents)
     }
   })
 }
@@ -161,7 +181,21 @@ const parseDates = (work, nestedType) => {
       const pubYear = dateRange.match(yearMatch)[1]
       work.editions[i].publication_date = pubYear
     }
+  } else {
+    for (let i = 0; i < work.instances.length; i++) {
+      const pubDate = work.instances[i].dates.find(d => d.date_type === 'publication_date')
+      if (pubDate) {
+        work.instances[i].pub_date = pubDate.date_range
+        work.instances[i].pub_date_display = pubDate.display_date
+      }
+      delete work.instances[i].dates
+    }
   }
+}
+
+
+function findMatchingAgent(element) {
+  return element.name === this.name || element.viaf === this.viaf
 }
 
 module.exports = {
