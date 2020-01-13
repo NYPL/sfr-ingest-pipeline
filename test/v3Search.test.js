@@ -511,20 +511,22 @@ describe('v3 simple search tests', () => {
     let testSearch
     let mockParseAgents
     let mockParseLinks
+    let mockParseDates
     beforeEach(() => {
       testSearch = new V3Search(sinon.mock(), {})
       mockParseAgents = sinon.stub(Helpers, 'parseAgents')
       mockParseLinks = sinon.stub(Helpers, 'parseLinks')
+      mockParseDates = sinon.stub(Helpers, 'parseDates')
     })
 
     afterEach(() => {
       mockParseAgents.restore()
       mockParseLinks.restore()
+      mockParseDates.restore()
     })
 
     it('should call getEditions when innerType set to editions', async () => {
       const mockGetEds = sinon.stub(V3Search.prototype, 'getEditions')
-      const mockParseDates = sinon.stub(Helpers, 'parseDates')
       const testWork = {
         instanceIds: [
           {
@@ -541,7 +543,6 @@ describe('v3 simple search tests', () => {
       expect(mockGetEds).to.be.calledOnceWith([1, 2, 3])
       expect(testDBWork.edition_count).to.equal(3)
       mockGetEds.restore()
-      mockParseDates.restore()
     })
 
     it('should call getInstances when innerType set to instances', async () => {
