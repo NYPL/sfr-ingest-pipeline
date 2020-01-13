@@ -22,7 +22,7 @@ v3Router.client = new elasticsearch.Client({
 // Set Database connection
 if (process.env.NODE_ENV === 'test') {
   v3Router.dbClient = knex({ client: 'pg' })
-  mockDB.mock(this.pg)
+  mockDB.mock(v3Router.dbClient)
 } else {
   v3Router.dbClient = knex({
     client: 'pg',
