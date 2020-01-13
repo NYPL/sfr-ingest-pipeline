@@ -35,4 +35,3 @@ class CoverResizer:
         outBytes = BytesIO()
         self.standard.save(outBytes, format=self.format)
         return outBytes.getvalue()
-
