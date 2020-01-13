@@ -123,6 +123,7 @@ const parseAgents = (work, nestedType) => {
 
   const groupAgents = (agents) => {
     const groupedAgents = []
+    // eslint-disable-next-line no-plusplus
     for (let i = 0; i < agents.length; i++) {
       const existing = groupedAgents.find(findMatchingAgent, agents[i])
       if (existing) {
@@ -182,6 +183,7 @@ const parseDates = (work, nestedType) => {
       work.editions[i].publication_date = pubYear
     }
   } else {
+    // eslint-disable-next-line no-plusplus
     for (let i = 0; i < work.instances.length; i++) {
       const pubDate = work.instances[i].dates.find(d => d.date_type === 'publication_date')
       if (pubDate) {
