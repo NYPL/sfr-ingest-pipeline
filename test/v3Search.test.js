@@ -184,7 +184,7 @@ describe('v3 simple search tests', () => {
       build: sinon.stub(),
     }
     const loadStub = sinon.stub(V3Search.prototype, 'loadWorks')
-    const instanceFilter = sinon.stub(V3Search, 'getInstanceOrEditions')
+    const instanceFilter = sinon.stub(V3Search.prototype, 'getInstanceOrEditions')
     const editionRangeStub = sinon.stub(V3Search, 'formatResponse').returns(1)
     const resp = await testSearch.execSearch()
     expect(resp).to.equal(1)
@@ -456,7 +456,7 @@ describe('v3 simple search tests', () => {
       const testWorks = [testWork1, testWork2]
       mockGet.onCall(0).returns({ title: 'Test1' })
       mockGet.onCall(1).returns({ title: 'Test2' })
-      outWorks = await testSearch.loadWorks(testWorks)
+      outWorks = await testSearch.loadWorks(testWorks, 'editions', {})
       expect(outWorks.length).to.equal(2)
       expect(outWorks[1].edition_range).to.equal('1900-1905')
       /* eslint-disable no-unused-expressions */
@@ -485,7 +485,7 @@ describe('v3 simple search tests', () => {
       }
       const testWorks = [testWork1]
       mockGet.onCall(0).returns({ title: 'Testing' })
-      outWorks = await testSearch.loadWorks(testWorks, 'instances')
+      outWorks = await testSearch.loadWorks(testWorks, 'instances', {})
       expect(outWorks.length).to.equal(1)
       expect(outWorks[0].edition_range).to.equal('2015-2019')
       /* eslint-disable no-unused-expressions */
@@ -567,8 +567,10 @@ describe('v3 simple search tests', () => {
   })
 
   describe('getInstanceOrEditions()', () => {
+    let testSearch
     let mockFormatRange
     beforeEach(() => {
+      testSearch = new V3Search(sinon.mock(), {})
       mockFormatRange = sinon.stub(Helpers, 'formatSingleResponseEditionRange')
     })
 
@@ -593,7 +595,7 @@ describe('v3 simple search tests', () => {
                 instances: [
                   {
                     id: 1,
-                    pub_date: '2000',
+                    pub_date: { gte: '2000', lte: '2001' },
                     instance_id: 10,
                     edition_id: 11,
                   },
@@ -623,7 +625,7 @@ describe('v3 simple search tests', () => {
         aggregations: {},
       }
 
-      const fetchObjects = V3Search.getInstanceOrEditions(testResp)
+      const fetchObjects = testSearch.getInstanceOrEditions(testResp)
       // eslint-disable-next-line no-unused-expressions
       expect(mockFormatRange).to.be.calledOnce
       expect(fetchObjects[0].uuid).to.equal(1)
@@ -649,13 +651,14 @@ describe('v3 simple search tests', () => {
                 instances: [
                   {
                     id: 2,
+                    pub_date: { gte: '2010', lte: '2011' },
                     pub_place: 'Testtown',
                     instance_id: 102,
                     edition_id: 103,
                   },
                   {
                     id: 1,
-                    pub_date: '2000',
+                    pub_date: { gte: '2000', lte: '2001' },
                     instance_id: 10,
                     edition_id: 11,
                   },
@@ -674,13 +677,13 @@ describe('v3 simple search tests', () => {
         aggregations: {},
       }
 
-      const fetchObjects = V3Search.getInstanceOrEditions(testResp)
+      const fetchObjects = testSearch.getInstanceOrEditions(testResp)
       // eslint-disable-next-line no-unused-expressions
       expect(mockFormatRange).to.be.calledOnce
       expect(fetchObjects[0].uuid).to.equal(1)
       expect(fetchObjects[0].instanceIds.length).to.equal(3)
-      expect(fetchObjects[0].instanceIds[0].instance_id).to.equal(102)
-      expect(fetchObjects[0].instanceIds[1].edition_id).to.equal(11)
+      expect(fetchObjects[0].instanceIds[0].instance_id).to.equal(10)
+      expect(fetchObjects[0].instanceIds[1].edition_id).to.equal(103)
       done()
     })
   })
