@@ -71,6 +71,8 @@ class ElasticManager():
     def getCreateWork(self):
         logger.info('Indexing work {}'.format(self.dbWork))
 
+        self.setSortTitle()
+
         workData = {
             field: getattr(self.dbWork, field, None)
             for field in Work.getFields()
@@ -213,7 +215,12 @@ class ElasticManager():
         instData['instance_id'] = instData.pop('id')
         newInst = Instance(**instData)
 
-        newInst.pub_date = ElasticManager._loadDates(instance, ['pub_date'])[0]
+        newInst.pub_date = ElasticManager._loadDates(instance, ['pub_date', 'publication_date'])[0]
+        if newInst.pub_date:
+            if newInst.pub_date.gte:
+                newInst.pub_date_sort = newInst.pub_date.gte
+            if newInst.pub_date.lte:
+                newInst.pub_date_sort_desc = newInst.pub_date.lte
         
         newInst.alt_titles = [
             altTitle.title
@@ -289,3 +296,8 @@ class ElasticManager():
             date.date_range.upper
         ))
         return dateRange
+
+    def setSortTitle(self):
+        if self.dbWork.sort_title is None:
+            self.dbWork.setSortTitle()
+
