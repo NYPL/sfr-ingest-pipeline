@@ -185,12 +185,14 @@ const parseDates = (work, nestedType) => {
   } else {
     // eslint-disable-next-line no-plusplus
     for (let i = 0; i < work.instances.length; i++) {
-      const pubDate = work.instances[i].dates.find(d => d.date_type === 'publication_date')
-      if (pubDate) {
-        work.instances[i].pub_date = pubDate.date_range
-        work.instances[i].pub_date_display = pubDate.display_date
+      if (work.instances[i].dates) {
+        const pubDate = work.instances[i].dates.find(d => d.date_type === 'publication_date')
+        if (pubDate) {
+          work.instances[i].pub_date = pubDate.date_range
+          work.instances[i].pub_date_display = pubDate.display_date
+        }
+        delete work.instances[i].dates
       }
-      delete work.instances[i].dates
     }
   }
 }
