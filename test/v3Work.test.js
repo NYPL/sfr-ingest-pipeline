@@ -142,7 +142,7 @@ describe('v3 work retrieval tests', () => {
           instances: [
             {
               id: 1,
-              pub_date: '2000',
+              pub_date: { gte: '2000-01-01', lte: '2001-01-01' },
               instance_id: 10,
               edition_id: 11,
             },
@@ -213,8 +213,8 @@ describe('v3 work retrieval tests', () => {
       expect(mockFormatRange).to.be.calledOnce
       expect(fetchObjects.uuid).to.equal(1)
       expect(fetchObjects.instanceIds.length).to.equal(3)
-      expect(fetchObjects.instanceIds[0].instance_id).to.equal(102)
-      expect(fetchObjects.instanceIds[1].edition_id).to.equal(11)
+      expect(fetchObjects.instanceIds[0].instance_id).to.equal(10)
+      expect(fetchObjects.instanceIds[1].edition_id).to.equal(42)
       done()
     })
   })
