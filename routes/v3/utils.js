@@ -72,7 +72,7 @@ const fetchCounts = async (app, params) => {
     }
   })
   const esQuery = {
-    index: process.env.ELASTICSEARCH_INDEX_V2,
+    index: process.env.ELASTICSEARCH_INDEX_V3,
     body: body.build(),
   }
   const docCounts = await module.exports.execQuery(app, esQuery)
@@ -121,7 +121,7 @@ const fetchLangs = async (app, params) => {
 
   // Create an object that can be understood by the ElasticSearch service
   const esQuery = {
-    index: process.env.ELASTICSEARCH_INDEX_V2,
+    index: process.env.ELASTICSEARCH_INDEX_V3,
     body: body.build(), // Translates bodybuilder object into nested object
   }
 
