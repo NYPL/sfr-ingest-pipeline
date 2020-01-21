@@ -147,8 +147,8 @@ const buildQuery = (total) => {
   body.query('match_all', {})
   body.size(0)
 
-  body.agg('nested', { path: 'instances.language' }, 'language_inner', (a) => {
-    a.agg('terms', { field: 'instances.language.language', size: 250 }, 'unique_languages', (b) => {
+  body.agg('nested', { path: 'instances.languages' }, 'language_inner', (a) => {
+    a.agg('terms', { field: 'instances.languages.language', size: 250 }, 'unique_languages', (b) => {
       // If total is set, an additional aggregation is necessary to count the root works
       if (total) {
         b.agg('reverse_nested', {}, 'inner_count')
