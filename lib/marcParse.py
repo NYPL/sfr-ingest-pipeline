@@ -200,7 +200,7 @@ def transformMARC(record, marcRels):
     # 80X-83X
     instance.formats.append(item)
     work.instances.append(instance)
-    return work
+    return work, doabID
 
 
 def extractAgentValue(data, rec, field, marcRels):

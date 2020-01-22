@@ -3,7 +3,7 @@ import requests
 
 
 class SpringerParser:
-    REGEX = 'link.springer.com\/book\/(10\.[0-9]+)\/([0-9\-]+)'
+    REGEX = 'link.springer.com\/book\/(10\.[0-9]+)(?:\/|\%2F)([0-9\-]+)'
     REDIRECT_REGEX = '((?:https?:\/\/)?link\.springer\.com\/.+)$'
     LINK_STRINGS = {
         'https://link.springer.com/download/epub/{}/{}.epub': {
@@ -47,7 +47,10 @@ class SpringerParser:
                 self.uri = 'http://{}'.format(self.uri)
             
             redirectHeader = requests.head(self.uri)
-            self.uri = redirectHeader.headers['Location']
+            try:
+                self.uri = redirectHeader.headers['Location']
+            except KeyError:
+                return False
             return self.validateURI()
 
     def createLinks(self):

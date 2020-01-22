@@ -142,14 +142,14 @@ class Format(DataObject):
 
 
 class Agent(DataObject):
-    def __init__(self, name=None, role=None, aliases=[], link=None):
+    def __init__(self, name=None, role=None, aliases=None, link=None):
         super()
         self.name = name
         self.sort_name = None
         self.lcnaf = None
         self.viaf = None
         self.biography = None
-        self.aliases = aliases
+        self.aliases = aliases if aliases is not None else []
         self.link = link
         self.dates = []
 

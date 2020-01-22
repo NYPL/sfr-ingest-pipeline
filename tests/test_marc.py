@@ -45,13 +45,14 @@ class TestMARC(unittest.TestCase):
         
         mock_marc.__getitem__.side_effect = lclgetitem
         
-        testWork = transformMARC(
+        testWork, testID = transformMARC(
             ('doab:test', '2019-01-01', mock_marc),
             'test_rels'
         )
         self.assertEqual(testWork.identifiers[0].identifier, 'doab:test')
         self.assertEqual(testWork.instances[0].rights[0].source, 'doab')
         self.assertEqual(testWork.language[0].iso_3, 'eng')
+        self.assertEqual(testID, 'doab:test')
     
     def test_agent_create(self):
         testRec = MagicMock()
@@ -328,7 +329,7 @@ class TestMARC(unittest.TestCase):
 
         mockMarc.__getitem__.side_effect = lambda field: mockField(field)
 
-        testWork = transformMARC(testRec, {})
+        testWork, testID = transformMARC(testRec, {})
         self.assertIsInstance(testWork, WorkRecord)
         self.assertIsInstance(testWork.instances[0], InstanceRecord)
         self.assertEqual(testWork.instances[0].summary, 'summary')
