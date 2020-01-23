@@ -446,11 +446,13 @@ describe('v3 simple search tests', () => {
       const testWork1 = {
         uuid: 'testUUID1',
         edition_range: '2015-2019',
+        edition_count: 2,
         sort: [1, 2],
       }
       const testWork2 = {
         uuid: 'testUUID2',
         edition_range: '1900-1905',
+        edition_count: 3,
         sort: [3, 4],
       }
       const testWorks = [testWork1, testWork2]
@@ -468,7 +470,7 @@ describe('v3 simple search tests', () => {
           sort_title: 'test1',
           instances: null,
           editions: null,
-          edition_count: 0,
+          edition_count: 2,
           edition_range: '2015-2019',
           sort: [1, 2],
         },
@@ -481,6 +483,7 @@ describe('v3 simple search tests', () => {
       const testWork1 = {
         uuid: 'testUUID1',
         edition_range: '2015-2019',
+        edition_count: 2,
         sort: [1, 2],
       }
       const testWorks = [testWork1]
@@ -497,7 +500,7 @@ describe('v3 simple search tests', () => {
           sort_title: 'testing',
           instances: null,
           editions: null,
-          edition_count: 0,
+          edition_count: 2,
           edition_range: '2015-2019',
           sort: [1, 2],
         },
@@ -541,7 +544,6 @@ describe('v3 simple search tests', () => {
       const testDBWork = {}
       await testSearch.getInnerRecords(testWork, testDBWork, 'editions')
       expect(mockGetEds).to.be.calledOnceWith([1, 2, 3])
-      expect(testDBWork.edition_count).to.equal(3)
       mockGetEds.restore()
     })
 
@@ -561,7 +563,6 @@ describe('v3 simple search tests', () => {
       const testDBWork = {}
       await testSearch.getInnerRecords(testWork, testDBWork, 'instances')
       expect(mockGetInsts).to.be.calledOnceWith([1, 2, 3])
-      expect(testDBWork.edition_count).to.equal(3)
       mockGetInsts.restore()
     })
   })
@@ -625,12 +626,13 @@ describe('v3 simple search tests', () => {
         aggregations: {},
       }
 
-      const fetchObjects = testSearch.getInstanceOrEditions(testResp)
+      const fetchObjects = testSearch.getInstanceOrEditions(testResp, 'editions')
       // eslint-disable-next-line no-unused-expressions
       expect(mockFormatRange).to.be.calledOnce
       expect(fetchObjects[0].uuid).to.equal(1)
       expect(fetchObjects[0].instanceIds[0].instance_id).to.equal(10)
       expect(fetchObjects[0].instanceIds[1].edition_id).to.equal(42)
+      expect(fetchObjects[0].edition_count).to.equal(3)
       done()
     })
 
@@ -677,13 +679,14 @@ describe('v3 simple search tests', () => {
         aggregations: {},
       }
 
-      const fetchObjects = testSearch.getInstanceOrEditions(testResp)
+      const fetchObjects = testSearch.getInstanceOrEditions(testResp, 'editions')
       // eslint-disable-next-line no-unused-expressions
       expect(mockFormatRange).to.be.calledOnce
       expect(fetchObjects[0].uuid).to.equal(1)
       expect(fetchObjects[0].instanceIds.length).to.equal(3)
       expect(fetchObjects[0].instanceIds[0].instance_id).to.equal(10)
       expect(fetchObjects[0].instanceIds[1].edition_id).to.equal(103)
+      expect(fetchObjects[0].edition_count).to.equal(4)
       done()
     })
   })
