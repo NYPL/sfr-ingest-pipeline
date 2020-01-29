@@ -110,7 +110,11 @@ class CoverParse:
         else:
             urlMatch = re.search(self.URL_ID_REGEX, self.remoteURL)
             urlID = urlMatch.group(1)
-        return '{}/{}_{}'.format(self.source, self.sourceID, urlID.lower())
+        return '{}/{}_{}'.format(
+            self.source.lower(),
+            self.sourceID,
+            urlID.lower()
+        )
 
     def getMimeType(self, key):
         return guess_type(key)[0]
