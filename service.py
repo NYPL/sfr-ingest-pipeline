@@ -69,7 +69,7 @@ def parseRecord(encodedRec, outManager):
 
     outManager.putKinesis(
         {
-            'originalURL': coverParser.remoteURL.lower(),
+            'originalURL': coverParser.originalURL.lower(),
             'storedURL': coverParser.s3CoverURL
         },
         os.environ['DB_UPDATE_STREAM'],
