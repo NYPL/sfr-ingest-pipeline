@@ -25,6 +25,7 @@ class CoverParse:
         self.logger = LOGGER
         self.source = record.get('source', 'unk')
         self.sourceID = record.get('identifier', None)
+        self.originalURL = record.get('url', None)
         self.remoteURL = record.get('url', None)
         self.s3CoverURL = None
         self.logger.debug('Source: {}|ID: {}|URL: {}'.format(
