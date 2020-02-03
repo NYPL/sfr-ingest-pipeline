@@ -68,13 +68,15 @@ class Item(Core, Base):
     access_reports = relationship(
         'AccessReport',
         back_populates='item',
-        collection_class=set
+        collection_class=set,
+        cascade='delete, delete-orphan'
     )
     links = relationship(
         'Link',
         secondary=ITEM_LINKS,
         back_populates='items',
-        collection_class=set
+        collection_class=set,
+        cascade='delete'
     )
 
     RELS = [
@@ -93,7 +95,7 @@ class Item(Core, Base):
         'springer': r'link.springer\.com\/download\/epub\/10\.[0-9]+\/[0-9\-]+\.epub$'  # noqa: E501
     }
 
-    EPUB_SOURCES = ['gut', 'frontier']
+    EPUB_SOURCES = ['gut', 'frontier', 'springer']
 
     def __init__(self, session=None):
         self.session = session
