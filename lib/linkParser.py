@@ -2,12 +2,14 @@ from lib.dataModel import Link, Identifier
 
 from lib.parsers.defaultParser import DefaultParser
 from lib.parsers.frontierParser import FrontierParser
+from lib.parsers.mdpiParser import MDPIParser
 from lib.parsers.springerParser import SpringerParser
 
 class LinkParser:
     PARSERS = [
         FrontierParser,
         SpringerParser,
+        MDPIParser,
         DefaultParser
     ]
     def __init__(self, item, uri, media_type):
