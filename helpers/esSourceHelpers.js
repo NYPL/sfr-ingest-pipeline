@@ -164,7 +164,7 @@ const parseLinks = (work, nestedType) => {
               // eslint-disable-next-line prefer-destructuring
               flags = link.flags
             }
-            Object.keys(link.flags).forEach((key) => {
+            Object.keys(flags).forEach((key) => {
               link[key] = flags[key]
             })
             delete link.flags
