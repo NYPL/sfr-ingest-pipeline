@@ -10,7 +10,7 @@ chai.use(sinonChai)
 const { expect } = chai
 
 describe('ElasticSearch Response Parser Helpers', () => {
-  describe('getEditionRangeValue()', () => {
+  describe('formatResponseEditionRange()', () => {
     let stubGetRange
     beforeEach(() => {
       stubGetRange = sinon.stub(Helpers, 'getEditionRangeValue')
