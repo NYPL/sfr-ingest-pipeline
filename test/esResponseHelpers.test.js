@@ -10,7 +10,7 @@ chai.use(sinonChai)
 const { expect } = chai
 
 describe('ElasticSearch Response Parser Helpers', () => {
-  describe('getEditionRangeValue()', () => {
+  describe('formatResponseEditionRange()', () => {
     let stubGetRange
     beforeEach(() => {
       stubGetRange = sinon.stub(Helpers, 'getEditionRangeValue')
@@ -47,58 +47,92 @@ describe('ElasticSearch Response Parser Helpers', () => {
     })
   })
 
-  it('should get a year for a provided set of editions', (done) => {
-    const stubCompare = sinon.stub(Helpers, 'startEndCompare')
-    const testHit = {
-      _source: {
-        instances: [
-          {
-            pub_date: {
-              gte: '2019-01-01',
-              lte: '2020-12-31',
+  describe('getEditionRangeValue()', () => {
+    it('should get a year for a provided set of editions', (done) => {
+      const stubCompare = sinon.stub(Helpers, 'startEndCompare')
+      const testHit = {
+        _source: {
+          instances: [
+            {
+              pub_date: {
+                gte: '2019-01-01',
+                lte: '2020-12-31',
+              },
+            }, {
+              pub_date: null,
             },
-          }, {
-            pub_date: null,
-          },
-        ],
-      },
-    }
+          ],
+        },
+      }
 
-    const testStart = Helpers.getEditionRangeValue(testHit, 'gte', 1)
-    const testEnd = Helpers.getEditionRangeValue(testHit, 'lte', -1)
-    expect(testStart).to.equal(2019)
-    expect(testEnd).to.equal(2020)
-    stubCompare.restore()
-    done()
+      const testStart = Helpers.getEditionRangeValue(testHit, 'gte', 1)
+      const testEnd = Helpers.getEditionRangeValue(testHit, 'lte', -1)
+      expect(testStart).to.equal(2019)
+      expect(testEnd).to.equal(2020)
+      stubCompare.restore()
+      done()
+    })
+
+    it('should return ???? if no pub date found', (done) => {
+      const stubCompare = sinon.stub(Helpers, 'startEndCompare')
+      const testHit = {
+        _source: {
+          instances: [
+            {
+              pub_date: null,
+            },
+          ],
+        },
+      }
+
+      const testStart = Helpers.getEditionRangeValue(testHit, 'gte', 1)
+      const testEnd = Helpers.getEditionRangeValue(testHit, 'lte', -1)
+      expect(testStart).to.equal('????')
+      expect(testEnd).to.equal('????')
+      stubCompare.restore()
+      done()
+    })
   })
 
-  it('should return ???? if no pub date found', (done) => {
-    const stubCompare = sinon.stub(Helpers, 'startEndCompare')
-    const testHit = {
-      _source: {
-        instances: [
-          {
-            pub_date: null,
-          },
-        ],
-      },
-    }
-
-    const testStart = Helpers.getEditionRangeValue(testHit, 'gte', 1)
-    const testEnd = Helpers.getEditionRangeValue(testHit, 'lte', -1)
-    expect(testStart).to.equal('????')
-    expect(testEnd).to.equal('????')
-    stubCompare.restore()
-    done()
+  describe('startEndCompare()', () => {
+    it('should generate a comparison function for sorting', (done) => {
+      const compareFunction = Helpers.startEndCompare('gte', 1)
+      expect(compareFunction).to.be.instanceOf(Function)
+      const edition1 = { pub_date: { gte: '1999-01-01', lte: null } }
+      const edition2 = { pub_date: { gte: '2000-01-01', lte: null } }
+      const order = compareFunction(edition1, edition2)
+      expect(order).to.equal(-1)
+      done()
+    })
   })
 
-  it('should generate a comparison function for sorting', (done) => {
-    const compareFunction = Helpers.startEndCompare('gte', 1)
-    expect(compareFunction).to.be.instanceOf(Function)
-    const edition1 = { pub_date: { gte: '1999-01-01', lte: null } }
-    const edition2 = { pub_date: { gte: '2000-01-01', lte: null } }
-    const order = compareFunction(edition1, edition2)
-    expect(order).to.equal(-1)
-    done()
+  describe('parseLinks()', () => {
+    let testWork
+
+    beforeEach(() => {
+      testWork = {
+        editions: [{
+          items: [{
+            links: [{
+              url: 'testURL',
+              flags: '{"test": "hello"}',
+            }],
+          }],
+        }],
+      }
+    })
+
+    it('should parse all flags to props', (done) => {
+      Helpers.parseLinks(testWork, 'editions')
+      expect(testWork.editions[0].items[0].links[0].test).to.equal('hello')
+      done()
+    })
+
+    it('should drop any item without any links', (done) => {
+      testWork.editions[0].items[0].links = null
+      Helpers.parseLinks(testWork, 'editions')
+      expect(testWork.editions[0].items.length).to.equal(0)
+      done()
+    })
   })
 })

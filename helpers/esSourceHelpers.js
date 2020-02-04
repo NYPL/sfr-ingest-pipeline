@@ -152,20 +152,24 @@ const parseAgents = (work, nestedType) => {
 const parseLinks = (work, nestedType) => {
   work[nestedType].forEach((inner) => {
     if (inner.items) {
-      inner.items.forEach((items) => {
-        items.links.forEach((link) => {
-          let flags
-          try {
-            flags = JSON.parse(link.flags)
-          } catch (err) {
-            // eslint-disable-next-line prefer-destructuring
-            flags = link.flags
-          }
-          Object.keys(link.flags).forEach((key) => {
-            link[key] = flags[key]
+      inner.items.forEach((item) => {
+        if (!item.links) {
+          inner.items.pop(item)
+        } else {
+          item.links.forEach((link) => {
+            let flags
+            try {
+              flags = JSON.parse(link.flags)
+            } catch (err) {
+              // eslint-disable-next-line prefer-destructuring
+              flags = link.flags
+            }
+            Object.keys(flags).forEach((key) => {
+              link[key] = flags[key]
+            })
+            delete link.flags
           })
-          delete link.flags
-        })
+        }
       })
     }
   })
