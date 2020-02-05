@@ -152,9 +152,9 @@ const parseAgents = (work, nestedType) => {
 const parseLinks = (work, nestedType) => {
   work[nestedType].forEach((inner) => {
     if (inner.items) {
-      inner.items.forEach((item) => {
+      inner.items.forEach((item, i) => {
         if (!item.links) {
-          inner.items.pop(item)
+          inner.items.slice(i)
         } else {
           item.links.forEach((link) => {
             let flags
