@@ -69,14 +69,14 @@ class Item(Core, Base):
         'AccessReport',
         back_populates='item',
         collection_class=set,
-        cascade='delete, delete-orphan'
+        cascade='save-update, delete, delete-orphan'
     )
     links = relationship(
         'Link',
         secondary=ITEM_LINKS,
         back_populates='items',
         collection_class=set,
-        cascade='delete'
+        cascade='save-update, delete'
     )
 
     RELS = [
