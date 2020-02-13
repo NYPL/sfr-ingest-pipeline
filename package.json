@@ -39,21 +39,23 @@
     "supertest": "^3.4.2"
   },
   "scripts": {
-    "test": "./node_modules/.bin/eslint ./ && NODE_ENV=test ./node_modules/.bin/mocha test --exit",
+    "test": "npm run lint && NODE_ENV=test ./node_modules/.bin/nyc --require mocha npm run run-test",
+    "run-test": "./node_modules/.bin/mocha test --exit",
     "start": "node app.js",
     "start-dev": "nodemon ./app.js localhost 3000",
     "deploy-development": "",
     "deploy-qa": "",
     "deploy-production": "",
     "lint": "./node_modules/.bin/eslint ./",
-    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
+    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov",
     "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report",
     "coverage:open-report": "open -a 'Google Chrome' ./coverage/index.html"
   },
   "nyc": {
     "exclude": [
       "lib/errors.js",
-      "lib/logger.js"
+      "lib/logger.js",
+      "test/*"
     ]
   },
   "standard": {
