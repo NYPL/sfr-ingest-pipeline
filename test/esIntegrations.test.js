@@ -24,7 +24,7 @@ describe('Testing ElasticSearch Integration', () => {
 
   it('response to v1 search', async () => {
     const v1Mock = nock(process.env.ELASTICSEARCH_HOST)
-      .post('/sfr/_search')
+      .post(`/${process.env.ELASTICSEARCH_INDEX}/_search`)
       .reply(200, {
         took: 0,
         timed_out: false,
@@ -69,7 +69,7 @@ describe('Testing ElasticSearch Integration', () => {
     })
 
     it('responds to v2 search', async () => {
-      v2Mock.post('/sfr_test/_search')
+      v2Mock.post(`/${process.env.ELASTICSEARCH_INDEX_V2}/_search`)
         .reply(200, {
           took: 0,
           timed_out: false,
@@ -102,7 +102,7 @@ describe('Testing ElasticSearch Integration', () => {
     })
 
     it('sorts response by author', async () => {
-      v2Mock.post('/sfr_test/_search')
+      v2Mock.post(`/${process.env.ELASTICSEARCH_INDEX_V2}/_search`)
         .reply(200, {
           took: 0,
           timed_out: false,
@@ -179,7 +179,7 @@ describe('Testing ElasticSearch Integration', () => {
         dbTracker.uninstall()
       })
       it('should respond with standard response object on success', async () => {
-        v3Mock.post('/sfr_new_v3/_search')
+        v3Mock.post(`/${process.env.ELASTICSEARCH_INDEX_V3}/_search`)
           .reply(200, {
             took: 0,
             timed_out: false,
@@ -253,7 +253,7 @@ describe('Testing ElasticSearch Integration', () => {
       })
 
       it('should respond with standard error message if ElasticSearch errors', async () => {
-        v3Mock.post('/sfr_new_v3/_search')
+        v3Mock.post(`/${process.env.ELASTICSEARCH_INDEX_V3}/_search`)
           .reply(400, {
             name: 'ElasticError',
             response: {
@@ -313,7 +313,7 @@ describe('Testing ElasticSearch Integration', () => {
         dbTracker.uninstall()
       })
       it('should return a single work record on success', async () => {
-        v3Work.post('/sfr_new_v3/_search')
+        v3Work.post(`/${process.env.ELASTICSEARCH_INDEX_V3}/_search`)
           .reply(200, {
             took: 0,
             timed_out: false,
@@ -403,7 +403,7 @@ describe('Testing ElasticSearch Integration', () => {
       })
 
       it('should return an error if multiple works are found', async () => {
-        v3Work.post('/sfr_new_v3/_search')
+        v3Work.post(`/${process.env.ELASTICSEARCH_INDEX_V3}/_search`)
           .reply(200, {
             took: 0,
             timed_out: false,
@@ -447,7 +447,7 @@ describe('Testing ElasticSearch Integration', () => {
   describe('Utility Endpoints', () => {
     it('should respond with a list of languages for utils/languages', async () => {
       const langMock = nock(process.env.ELASTICSEARCH_HOST)
-        .post('/sfr_test/_search')
+        .post(`/${process.env.ELASTICSEARCH_INDEX_V2}/_search`)
         .reply(200, {
           took: 0,
           timed_out: false,
@@ -484,7 +484,7 @@ describe('Testing ElasticSearch Integration', () => {
 
     it('should return list of languages with counts with total option on utils/languages', async () => {
       const langMock = nock(process.env.ELASTICSEARCH_HOST)
-        .post('/sfr_test/_search')
+        .post(`/${process.env.ELASTICSEARCH_INDEX_V2}/_search`)
         .reply(200, {
           took: 0,
           timed_out: false,
@@ -531,7 +531,7 @@ describe('Testing ElasticSearch Integration', () => {
 
     it('should return an object of document counts on utils/totals', async () => {
       const totalMock = nock(process.env.ELASTICSEARCH_HOST)
-        .post('/sfr_test/_search')
+        .post(`/${process.env.ELASTICSEARCH_INDEX_V2}/_search`)
         .reply(200, {
           took: 0,
           timed_out: false,
