@@ -92,10 +92,11 @@ class Item(Core, Base):
         'gut': r'gutenberg.org\/ebooks\/[0-9]+\.epub\.(?:no|)images$',
         'ia': r'archive.org\/details\/[a-z0-9]+$',
         'frontier': r'frontiersin\.org\/research-topics\/[0-9]+\/epub$',
-        'springer': r'link.springer\.com\/download\/epub\/10\.[0-9]+\/[0-9\-]+\.epub$'  # noqa: E501
+        'springer': r'link.springer\.com\/download\/epub\/10\.[0-9]+\/[0-9\-]+\.epub$', # noqa: E501
+        'openedition': r'books.openedition.org/[a-z]+\/epub\/[0-9]+$'
     }
 
-    EPUB_SOURCES = ['gut', 'frontier', 'springer']
+    EPUB_SOURCES = ['gut', 'frontier', 'springer', 'openedition']
 
     def __init__(self, session=None):
         self.session = session
