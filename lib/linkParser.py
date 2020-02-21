@@ -1,14 +1,15 @@
 from lib.dataModel import Link, Identifier
+from .parsers import (
+    DefaultParser, FrontierParser, MDPIParser,
+    OpenEditionParser, SpringerParser
+)
 
-from lib.parsers.defaultParser import DefaultParser
-from lib.parsers.frontierParser import FrontierParser
-from lib.parsers.mdpiParser import MDPIParser
-from lib.parsers.springerParser import SpringerParser
 
 class LinkParser:
     PARSERS = [
         FrontierParser,
         SpringerParser,
+        OpenEditionParser,
         MDPIParser,
         DefaultParser
     ]

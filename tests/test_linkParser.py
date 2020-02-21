@@ -3,7 +3,7 @@ from unittest.mock import MagicMock, patch, call
 
 from lib.linkParser import (
     LinkParser, DefaultParser, FrontierParser, SpringerParser, MDPIParser,
-    Link, Identifier
+    OpenEditionParser, Link, Identifier
 )
 
 
@@ -14,26 +14,38 @@ class TestLinkParser(unittest.TestCase):
         self.assertEqual(testParser.uri, 'mockURI')
         self.assertEqual(testParser.media_type, 'mockType')
     
+    @patch.object(OpenEditionParser, 'validateURI')
     @patch.object(DefaultParser, 'validateURI')
     @patch.object(MDPIParser, 'validateURI')
     @patch.object(FrontierParser, 'validateURI')
     @patch.object(SpringerParser, 'validateURI')
-    def test_selectParser_first(self, springValidate, frontValidate, mdpiValidate, defaultValidate):
+    def test_selectParser_first(
+        self, springValidate, frontValidate, mdpiValidate, defaultValidate,
+        openEdValidate
+    ):
         frontValidate.return_value = True
         testParser = LinkParser('mockItem', 'mockURI', 'mockType')
         testParser.selectParser()
 
         frontValidate.assert_called_once()
+        springValidate.assert_not_called()
+        openEdValidate.assert_not_called()
+        mdpiValidate.assert_not_called()
         defaultValidate.assert_not_called()
         self.assertIsInstance(testParser.parser, FrontierParser)
 
+    @patch.object(OpenEditionParser, 'validateURI')
     @patch.object(DefaultParser, 'validateURI')
     @patch.object(MDPIParser, 'validateURI')
     @patch.object(FrontierParser, 'validateURI')
     @patch.object(SpringerParser, 'validateURI')
-    def test_selectParser_last(self, springValidate, frontValidate, mdpiValidate, defaultValidate):
+    def test_selectParser_last(
+        self, springValidate, frontValidate, mdpiValidate, defaultValidate,
+        openEdValidate
+    ):
         frontValidate.return_value = False
         springValidate.return_value = False
+        openEdValidate.return_value = False
         mdpiValidate.return_value = False
         defaultValidate.return_value = True
         testParser = LinkParser('mockItem', 'mockURI', 'mockType')
