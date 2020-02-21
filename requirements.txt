@@ -1,3 +1,4 @@
+beautifulsoup
 boto3
 lxml
 marcalyx
