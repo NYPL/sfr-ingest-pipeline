@@ -1,6 +1,7 @@
 import json
 import base64
 import os
+import psycopg2
 import traceback
 from sqlalchemy.exc import OperationalError, IntegrityError
 
@@ -111,18 +112,23 @@ def parseRecord(encodedRec, manager):
     except OperationalError as opErr:
         logger.error('Conflicting updates caused deadlock, retry')
         logger.debug(opErr)
-        OutputManager.putKinesis(
-            record.get('data'),
-            os.environ['INGEST_STREAM'],
-            recType=record.get('type', 'work'),
-        )
+        if opErr.orig.pgcode == '54000':
+            logger.warning(
+                'ProgramLimitExceeded received, cannot retry this batch'
+            )
+        else:
+            OutputManager.putKinesis(
+                record.get('data'),
+                os.environ['INGEST_STREAM'],
+                recType=record.get('type', 'work'),
+            )
         MANAGER.session.rollback()  # Rollback current record only
     except IntegrityError as intErr:
         logger.error('Unique constraint violated, retry')
         logger.debug(intErr)
         OutputManager.putKinesis(
             record.get('data'),
-            os.environ['UPDATE_STREAM'],
+            os.environ['INGEST_STREAM'],
             recType=record.get('type', 'work'),
         )
         MANAGER.session.rollback()  # Rollback current record only
