@@ -116,6 +116,10 @@ class KModel:
                 'publisher': KModel.getPublisher(i.agent_instances),
                 'pubDate': KModel.getPubDateFloat(i.dates),
                 'edition': i.edition_statement,
+                'volume': i.volume,
+                'table_of_contents': i.table_of_contents,
+                'extent': i.extent,
+                'summary': i.summary,
                 'rowID': i.id
             }
             for i in self.instances
@@ -254,7 +258,11 @@ class KModel:
                     'publisher': ed.iloc[0]['publisher'],
                     'pubPlace': ed.iloc[0]['place'],
                     'rowID': ed.iloc[0]['rowID'],
-                    'edition': ed.iloc[0]['edition']
+                    'edition': ed.iloc[0]['edition'],
+                    'volume': ed.iloc[0]['volume'],
+                    'table_of_contents': ed.iloc[0]['table_of_contents'],
+                    'extent': ed.iloc[0]['extent'],
+                    'summary': ed.iloc[0]['summary']
                 })
             eds.extend([(year, data) for year, data in yearEds.items()])
             eds.sort(key=lambda x: x[0])
