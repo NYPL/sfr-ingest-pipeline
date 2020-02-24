@@ -69,10 +69,10 @@ def parseRecord(encodedRec):
         logger.info('Creating editions for work {}'.format(
             record['identifier']
         ))
-        clustManager = ClusterManager(record, MANAGER)
-        clustManager.clusterInstances()
         
         try:
+            clustManager = ClusterManager(record, MANAGER)
+            clustManager.clusterInstances()
             clustManager.deleteExistingEditions()
             clustManager.storeEditions()
         except Exception as err:  # noqa: Q000

@@ -21,6 +21,9 @@ class ClusterManager:
         self.work = self.fetchWork(session)
         self.logger.info('Creating editions for {}'.format(self.work))
 
+        if len(self.work.instances) < 1:
+            raise DataError('Work Record has no attached instance Records')
+
         mlModel = KModel(self.work.instances)
         mlModel.createDF()
         session.close()
