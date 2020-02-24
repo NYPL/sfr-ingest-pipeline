@@ -48,14 +48,22 @@ class TestKMeansModel(object):
                     'publisher': 'test',
                     'place': 'testtown',
                     'rowID': 1,
-                    'edition': ''
+                    'edition': '',
+                    'volume': '',
+                    'extent': '',
+                    'table_of_contents': '',
+                    'summary': ''
                 }, index=[0]),
                 DataFrame({
                     'pubDate': 1900,
                     'publisher': 'test',
                     'place': 'testtown',
                     'rowID': 2,
-                    'edition': ''
+                    'edition': '',
+                    'volume': '',
+                    'extent': '',
+                    'table_of_contents': '',
+                    'summary': ''
                 }, index=[0])
             ],
             1: [
@@ -64,14 +72,22 @@ class TestKMeansModel(object):
                     'publisher': 'test',
                     'place': 'testtown',
                     'rowID': 3,
-                    'edition': ''
+                    'edition': '',
+                    'volume': '',
+                    'extent': '',
+                    'table_of_contents': '',
+                    'summary': ''
                 }, index=[0]),
                 DataFrame({
                     'pubDate': 1950,
                     'publisher': 'test',
                     'place': 'testtown',
                     'rowID': 4,
-                    'edition': ''
+                    'edition': '',
+                    'volume': '',
+                    'extent': '',
+                    'table_of_contents': '',
+                    'summary': ''
                 }, index=[0])
             ]
         }

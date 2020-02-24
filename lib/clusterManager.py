@@ -77,7 +77,7 @@ class ClusterManager:
             inst.pop('publisher')
             cleanInst = {
                 key: value for key, value in inst.items()
-                if value is not None if value != ''
+                if value is not None and value != ''
             }
             out = {**out, **cleanInst}
             out['rowIDs'].append(rowID)
