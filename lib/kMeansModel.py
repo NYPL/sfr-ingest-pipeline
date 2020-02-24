@@ -76,17 +76,14 @@ class KModel:
                     ]))
                 ],
                 transformer_weights={
-                    'place': 1.0,
+                    'place': 0.5,
                     'publisher': 1.0,
-                    'date': 1.5
+                    'date': 2.0 
                 }
             )),
             ('kmeans', KMeans(
                 n_clusters=self.currentK,
-                n_jobs=4,
-                n_init=20,
-                init='random',
-                max_iter=500
+                n_jobs=-1
             ))
         ])
     
@@ -125,6 +122,12 @@ class KModel:
             if KModel.emptyInstance(i) != False
         ])
         self.maxK = len(self.df.index) if len(self.df.index) > 1 else 2
+        if self.maxK > 1000:
+            self.maxK = int(self.maxK * (2/9))
+        elif self.maxK > 500:
+            self.maxK = int(self.maxK * (3/9))
+        elif self.maxK > 250:
+            self.maxK = int(self.maxK * (4/9))
     
     @staticmethod
     def emptyInstance(instance):
@@ -187,7 +190,10 @@ class KModel:
             labels = [0] * len(self.instances)
         
         for n, item in enumerate(labels):
-            self.clusters[item].append(self.df.loc[[n]])
+            try:
+                self.clusters[item].append(self.df.loc[[n]])
+            except KeyError:
+                continue
     
     def getK(self, start, stop, step):
         self.LOGGER.info('Calculating number of clusters, max {}'.format(
@@ -214,15 +220,16 @@ class KModel:
             x0 = i + 1
             y0 = wcss[i][0]
 
-            numerator = abs((y2 - y1)*x0 - (x2 + x1)*y0 + x2*y1 - y2*x1)
+            numerator = abs((y2 - y1)*x0 - (x2 - x1)*y0 + x2*y1 - y2*x1)
             distances.append(numerator/denominator)
         
-        self.k = distances.index(max(distances)) + 2
+        finalStart = 1 if start < 2 else start + 1 
+        self.k = distances.index(max(distances)) + finalStart
         return None
     
     def cluster(self, k, score=False):
         self.currentK = k
-        self.LOGGER.debug('Generating cluster for k={}'.format(k))
+        self.LOGGER.info('Generating cluster for k={}'.format(k))
         pipeline = self.createPipeline()
         if score is True:
             self.LOGGER.debug('Returning score for n_clusters estimation')
@@ -239,7 +246,7 @@ class KModel:
             yearEds = defaultdict(list)
             self.LOGGER.info('Parsing cluster {}'.format(clust))
             for ed in self.clusters[clust]:
-                self.LOGGER.debug('Adding instance to {} edition'.format(
+                self.LOGGER.info('Adding instance to {} edition'.format(
                     ed.iloc[0]['pubDate']
                 ))
                 yearEds[ed.iloc[0]['pubDate']].append({
