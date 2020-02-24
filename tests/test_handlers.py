@@ -4,8 +4,10 @@ import json
 from sfrCore import SessionManager
 from unittest.mock import patch, DEFAULT, MagicMock
 import os
+from sqlalchemy.exc import OperationalError, IntegrityError
 
 from helpers.errorHelpers import NoRecordsReceived, DBError, DataError
+from lib.outputManager import OutputManager
 
 # This method is invoked outside of the main handler method as this allows
 # us to re-use db connections across Lambda invocations, but it requires a
@@ -132,6 +134,54 @@ class TestHandler(unittest.TestCase):
         mockManager.importRecord.side_effect = DataError('test err')
         res = self.parseRecord({'kinesis': {'data': testRec}}, mockManager)
         self.assertNotEqual(res, True)
+
+    @patch.dict('os.environ', {'INGEST_STREAM': 'test-stream'})
+    @patch('service.DBManager')
+    @patch('service.MANAGER')
+    @patch.object(OutputManager, 'putKinesis')
+    def test_record_parse_operational_err(self, mockKinesis, mockManager, mockSession):
+        testRec = base64.b64encode(json.dumps({
+            'status': 200,
+            'data': 'data'
+        }).encode('utf-8'))
+        mockOrig = MagicMock()
+        mockOrig.pgcode = '00000'
+        mockManager.importRecord.side_effect = OperationalError('', '', mockOrig)
+        res = self.parseRecord({'kinesis': {'data': testRec}}, mockManager)
+        self.assertNotEqual(res, True)
+        mockKinesis.assert_called_once()
+
+    @patch.dict('os.environ', {'INGEST_STREAM': 'test-stream'})
+    @patch('service.DBManager')
+    @patch('service.MANAGER')
+    @patch.object(OutputManager, 'putKinesis')
+    def test_record_parse_operational_err_no_retry(self, mockKinesis, mockManager, mockSession):
+        testRec = base64.b64encode(json.dumps({
+            'status': 200,
+            'data': 'data'
+        }).encode('utf-8'))
+        mockOrig = MagicMock()
+        mockOrig.pgcode = '54000'
+        mockManager.importRecord.side_effect = OperationalError('', '', mockOrig)
+        res = self.parseRecord({'kinesis': {'data': testRec}}, mockManager)
+        self.assertNotEqual(res, True)
+        mockKinesis.assert_not_called()
+
+    @patch.dict('os.environ', {'INGEST_STREAM': 'test-stream'})
+    @patch('service.DBManager')
+    @patch('service.MANAGER')
+    @patch.object(OutputManager, 'putKinesis')
+    def test_record_parse_integrity_err(self, mockKinesis, mockManager, mockSession):
+        testRec = base64.b64encode(json.dumps({
+            'status': 200,
+            'data': 'data'
+        }).encode('utf-8'))
+        mockOrig = MagicMock()
+        mockOrig.pgcode = '00000'
+        mockManager.importRecord.side_effect = IntegrityError('', '', mockOrig)
+        res = self.parseRecord({'kinesis': {'data': testRec}}, mockManager)
+        self.assertNotEqual(res, True)
+        mockKinesis.assert_called_once()
 
 
 if __name__ == '__main__':

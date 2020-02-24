@@ -48,12 +48,13 @@ class TestItemImporter(unittest.TestCase):
     @patch.object(Instance, 'addItemRecord')
     def test_insertRecord(self, mockAddItem, mockCreate):
         mockSession = MagicMock()
+        mockItem = MagicMock()
         testImporter = ItemImporter({'data': {}}, mockSession, {}, {})
-        mockCreate.return_value = 'testItem'
+        mockCreate.return_value = mockItem
         testImporter.insertRecord()
-        self.assertEqual(testImporter.item, 'testItem')
-        mockAddItem.assert_called_once_with(mockSession, None, 'testItem')
-        mockSession.add.assert_called_once_with('testItem')
+        self.assertEqual(testImporter.item, mockItem)
+        mockAddItem.assert_called_once_with(mockSession, None, mockItem)
+        mockSession.add.assert_called_once_with(mockItem)
 
     @patch('lib.importers.itemImporter.datetime')
     def test_setInsertTime(self, mockUTC):
