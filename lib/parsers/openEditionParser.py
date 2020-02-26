@@ -81,7 +81,7 @@ class OpenEditionParser:
                     '{}/{}/{}'.format(self.OE_URL_ROOT, self.publisher, typeMatch.group(1)),
                     formatAttrs['flags'],
                     formatAttrs['media_type'],
-                    None
+                    '{}_{}.epub'.format(self.publisher, self.identifier)
                 ))
     
     def getBestLink(self, options):
