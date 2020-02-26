@@ -98,6 +98,7 @@ class TestOpenEditionParser(unittest.TestCase):
     def test_parseBookLink_foundMatch(self):
         testSpring = OpenEditionParser('uri', 'type')
         testSpring.publisher = 'test'
+        testSpring.identifier = '123'
 
         testOptions = []
         mockLink = MagicMock()
@@ -107,6 +108,7 @@ class TestOpenEditionParser(unittest.TestCase):
 
         self.assertEqual(len(testOptions), 1)
         self.assertEqual(testOptions[0][3], 'application/epub+zip')
+        self.assertEqual(testOptions[0][4], 'test_123.epub')
 
     def test_parseBookLink_noMatch(self):
         testSpring = OpenEditionParser('uri', 'type')
