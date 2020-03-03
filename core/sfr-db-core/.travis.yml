@@ -1,0 +1,24 @@
+language: python
+dist: xenial
+python:
+  - '3.6'
+
+services:
+  - docker
+
+install:
+  - pip install --upgrade pip
+  - pip install -r requirements.txt
+script: pytest
+
+#after_success:
+#  - docker build -t sfr_core_layer --build-arg accesskey=$AWS_ACCESS_KEY_ID --build-arg secretkey="$AWS_SECRET_ACCESS_KEY" --build-arg region=us-east-1 sfrCore
+#deploy:
+#  - provider: script
+#    skip_cleanup: true
+#    script: "docker run -e GIT_URL=git+https://github.com/NYPL/sfr-db-core.git@development#egg=sfrCore -e LAYER_NAME=sfr-db-core-python-36-37 sfrcore"
+#    on:
+#      branch: development
+#env:
+#  global:
+#    - secure: DKDVg+d8uKIhh6xQjYOSsWkdNYnyhvDOnzmreDeLqNNy03PgQHVwstbcQ9fbLi6EhcqVKlRa+cwLaq/U6zx2fudMNqfqrBrexHwZFt/qcRpDDskDNgHhRv5t/4CCoZJL13HaE0bjMU/z1hxUw3fSNNx/jPpCEwrUfaaK3bg6oHDUf4Dxegjqi28d9k2MF+UY7ZPoK2qsiXSCjWLc3BbBoMrDMgO5c/WwPLluIV6PRIobU/bUkeOHscEyqh2Y++cGsrBaPSRHMzDSQm8sVUUjI1lhHWcqdYlovmaGHFV40bGGF58YrEL/9ogAmrMtmwSbSpdxwngGNiJAsTl4g5XUia+ZRjG96QLNRQTMTQar4cpkKYxAV99B6xHisUJmPcrnW8NBHFQBwweRPnTn7PL0wIno31tU9A9RYWwFaLBOAOB4mOkJ9R8vq9I+zh+8xXp/7ZCbm6Y6bT6jU+hiD1FZlmAdgj/EuF9wRcobWcJ1kyD+Gl0jglv5E2JYfhCvCNYKq2zStH2wph5B1r737h1R17lFKca1WAzZ1F8H97HdjAhV2GIwE+WvAqLZdtV9Mh2UkAlFGaEj950/PdxK7FebY0MszGUL2/yC71n042YDHeopnjfGbNKGq7Z5kEaueTT5iY4HKP3bZ/Gj84GgvZteRaXUovFFEq1/dnyDSsxWBk4=
