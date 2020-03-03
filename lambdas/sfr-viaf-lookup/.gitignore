@@ -1,0 +1,8 @@
+.DS_Store
+dist/
+htmlcov/
+__pycache__/
+.vscode/
+*.pyc
+.coverage
+setup.cfg
