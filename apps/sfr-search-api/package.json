@@ -1,0 +1,72 @@
+{
+  "name": "sfr-search-api",
+  "description": "Simple search API to query the SFR Elasticsearch index.",
+  "author": "NYPL Digital",
+  "license": "MIT",
+  "version": "0.3.0",
+  "dependencies": {
+    "@nypl/nypl-data-api-client": "^1.0.0",
+    "body-parser": "^1.19.0",
+    "bodybuilder": "^2.2.20",
+    "config": "2.0.1",
+    "dotenv": "6.1.0",
+    "elasticsearch": "15.1.1",
+    "express": "4.16.4",
+    "knex": "^0.19.5",
+    "mock-knex": "^0.4.7",
+    "pg": "^7.17.0",
+    "request": "2.88.0",
+    "swagger-client": "^3.9.6",
+    "swagger-parser": "^6.0.2",
+    "swagger-ui-express": "^4.1.2",
+    "winston": "3.1.0"
+  },
+  "devDependencies": {
+    "chai": "4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "coveralls": "^3.0.9",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-plugin-import": "^2.19.1",
+    "mocha": "5.2.0",
+    "nock": "^11.7.1",
+    "nodemon": "^1.19.4",
+    "nyc": "^14.1.1",
+    "sinon": "7.1.0",
+    "sinon-chai": "^3.4.0",
+    "sinon-express-mock": "^2.2.1",
+    "standard": "12.0.1",
+    "supertest": "^3.4.2"
+  },
+  "scripts": {
+    "test": "npm run lint && NODE_ENV=test ./node_modules/.bin/nyc --require mocha npm run run-test",
+    "run-test": "./node_modules/.bin/mocha test --exit",
+    "start": "node app.js",
+    "start-dev": "nodemon ./app.js localhost 3000",
+    "deploy-development": "",
+    "deploy-qa": "",
+    "deploy-production": "",
+    "lint": "./node_modules/.bin/eslint ./",
+    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov",
+    "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report",
+    "coverage:open-report": "open -a 'Google Chrome' ./coverage/index.html"
+  },
+  "nyc": {
+    "exclude": [
+      "lib/errors.js",
+      "lib/logger.js",
+      "test/*"
+    ]
+  },
+  "standard": {
+    "env": {
+      "mocha": true
+    },
+    "ignore": [
+      "/sample/",
+      "/build/",
+      "config",
+      "/data/"
+    ]
+  }
+}
