@@ -1,0 +1,7 @@
+beautifulsoup4
+boto3
+lxml
+marcalyx
+pycountry
+pyyaml
+requests
