@@ -1,0 +1,23 @@
+language: node_js
+node_js:
+- '10.16'
+before_install:
+- "./awsCredentials.sh"
+install: npm install
+script: npm test
+cache:
+  directories:
+  - node_modules
+after_success:
+- ENVIRONMENT_NAME=$TRAVIS_BRANCH
+- if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
+deploy:
+- provider: script
+  skip_cleanup: true
+  script: npm run deploy-dev
+  on:
+    branch: development
+env:
+  global:
+  - secure: VbZmFlcl8bR1olYy0aOp5Ay0mXid9PBfqL/gBd/WDw5lX5oGMhYgvQjCt1Q90Pj1PwDkkCT6kcGbPlrrWURHRsT1FdnJt9MgDjsSi9/ZdBu8mvIsqq8wpVLNmslc6OWryWKI+B37LcLNrb3dE8d05k0+IPs7alkHHx6v1rDNJ1R2AhaDI/tCymDtcq+gx4AXtp2D9soYRj9UnLFYzsEGz76S9uIO/oIYXRIv6yvLbvaObevzK0QGH1CDLMxgXk59PztiEmHs4yLW7TvFVFIztwlXcGrlNR3TteWC8rWuM2LFPjuvdQH85z6aiNuKw8gx6ITs90n/kvINLNf0K0E4rxxAE5yI0fOxOW2oZg85zVdqo2LnnCDlzf6rCIWIHFxSZXcv2YGzlPwXK2U9HiPRnpRDeEWvtG72SkHaz8Uknzvq7mpajv04ph8l7AHIfOlTihXd8Qsm0DsjBxgjO27wr5yWTvt5B08u+VnGQb3qz5DFtleVoFb++v9AtpiTA68uH8UAdqGFk2fAbn4dgI8aSEOeof14hw1Rr20iab8wqt7Ax+9ruwge9zUD6ASI/9g8pBYFindTHY5UHJ0wAm6ZBwzn6ea+IAWtESSV8SvxaMegwA2tAjYlmYRU+PzYqqUdroYCdn6NlSSy4x1K88RGllqkuN6StpJ4TVxoNONmnfA=
+  - secure: qEj6ObdGfkk64s+QN3IZl5764r4hUjhI7iHZyGq6cPLcnJUTE1PaLGEMOjGoexwcrf+rt53slWm0HpU4T37RDivkLsCgmoDxEKuNo0oraZzDJ5AHKNY3vU2SZHckY33nXu+4D5rxn2NSYBMIV4sjD3hG6YxY8VxlqbtewVfcFPgvhk3OtTFcLG7yJuXWkT7chcNjaRcAaTcIETZA2eMoYeCwIOxP6c4x06ErcyKR8Lw2T43gxk3CH926ioD/eBp9/xSO7mlkyFjzFx1PcCiKD6Adyc5GTJYf1IuQtayxZKDcq/nBSknZANZvpKu2WzfwWyv/5TcuHz502oPG5T3SJHePI9C+kh/PXpBYCAllCMGbzjrJA5p/eKBb3BwyrDwsvjQBOnO/aVk5kQT/DvnVyDqvumkn0J5vtOmxqoV1QGIPmbk5vePWIlzuaI/mwhdyK7azPLXge/ljp4rYZ3wnKKudUaMGQZTT7z6waTd2LmZPRDvduBWWg6ZHiIlqlTknt7Es8PbGyEW8XZgLSeO375pJKYu6ZD3ggXChE+0p7eKtusPhEvu7OKuCzxkwD2W3ReqjDNxOqchGPPr5eIudXKMX+D6eP012bbc8+vBf0A6INZVbPKadiO2OS1i+85y+MVcqaKIsvgwMgIMZR1OLGxEvjtkfl+TIydAjn8GE4vY=

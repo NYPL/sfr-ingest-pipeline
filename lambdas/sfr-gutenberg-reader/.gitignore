@@ -1,0 +1,4 @@
+.DS_Store
+deploy.env
+dist/
+node_modules/
