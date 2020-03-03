@@ -1,0 +1,19 @@
+# Uncomment the below/add additional env variables to add them to the lambda
+# === ENVIRONMENT_VARIABLES ===
+environment_variables:
+
+    LOG_LEVEL: debug
+    PYTHONPATH: /opt/python
+
+    DB_HOST: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQHIxSdZOKKEHMdanvJnraEoAAAApzCBpAYJKoZIhvcNAQcGoIGWMIGTAgEAMIGNBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDLDzeaR9//xXKLrePQIBEIBgZ40eR3DAPZXph8QblEeIRPZsMOH4zuSoHuzehZbD7wVfCid9uAewThmA4AS5GrmYQMIm1Wuwd7EW5zySVnLxBfOMRvMt1pOmiMuBvpK/Pd/2RGO2fEP4k93k9K4uMKfO
+    DB_PORT: '5432'
+    DB_NAME: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQEsGcFaFHfBID/lvX54PdthAAAAYTBfBgkqhkiG9w0BBwagUjBQAgEAMEsGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM9PIYBfOtU9UqzRWzAgEQgB7ayhjXDxQ8WnyQe14C9hQIZBlSbjm2hy2sVAFLi1g=
+    DB_USER: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQEsGcFaFHfBID/lvX54PdthAAAAYTBfBgkqhkiG9w0BBwagUjBQAgEAMEsGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM9PIYBfOtU9UqzRWzAgEQgB7ayhjXDxQ8WnyQe14C9hQIZBlSbjm2hy2sVAFLi1g=
+    DB_PSWD: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQG20kv1JHIJDXtRxP7FgT57AAAAbzBtBgkqhkiG9w0BBwagYDBeAgEAMFkGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMLPwiGJsb9zzwFk/fAgEQgCwc3sOUT2PvW6JWd8b0FnC5TdkWJFSkljwaoy+zcEmHEgcX5VcOdKUlN3alCw==
+
+    EPUB_STREAM: sfr-epub-ingest-development
+    UPDATE_STREAM: sfr-db-update-development
+
+    VIAF_API: https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName=
+
+    REDIS_HOST: sfr-filter-query.rtovuw.0001.use1.cache.amazonaws.com
