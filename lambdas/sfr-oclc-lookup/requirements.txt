@@ -1,0 +1,7 @@
+boto3
+lxml
+marcalyx
+python-lambda
+python-levenshtein
+pyyaml
+requests
