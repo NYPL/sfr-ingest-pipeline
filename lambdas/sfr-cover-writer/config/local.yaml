@@ -1,0 +1,9 @@
+# Uncomment the below/add additional env variables to add them to the lambda
+# === ENVIRONMENT_VARIABLES ===
+environment_variables:
+    LOG_LEVEL: debug
+    COVER_BUCKET: test-sfr-covers
+    DB_UPDATE_STREAM: sfr-db-update-development
+
+    HATHI_CLIENT_KEY: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQGwYN77sI4oH+WMEDZte7hYAAAAaDBmBgkqhkiG9w0BBwagWTBXAgEAMFIGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMNZc+N5Z6TqMyT3kSAgEQgCXC3pxlsCSKcJUtqktpAqzHIdNzf8+B6mgrbzvym3W3WCpVgPrZ
+    HATHI_CLIENT_SECRET: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQHMQ3Ajd42GBULQYn4FoboVAAAAejB4BgkqhkiG9w0BBwagazBpAgEAMGQGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM0Skj1vWUpsnUdYVbAgEQgDda6vUh/HtHHGFvWzYQjqXI9KTVN3iPN7o0oVsHjlyFVk1Z3NRtonSi7s4TgGK+TjA3xXtu8idt
