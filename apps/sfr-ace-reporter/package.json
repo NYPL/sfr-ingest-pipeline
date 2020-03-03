@@ -1,0 +1,72 @@
+{
+  "name": "sfr-ace-report-api",
+  "version": "0.0.2",
+  "description": "An API that will process an ePub file and generate an accessibility report through the Daisy Ace tool",
+  "main": "index.js",
+  "scripts": {
+    "clean": "./node_modules/.bin/rimraf dist",
+    "test": "NODE_ENV=test ./node_modules/.bin/nyc --reporter=lcov --reporter=text ./node_modules/mocha/bin/mocha",
+    "lint": "./node_modules/.bin/standard",
+    "build": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src",
+    "run-dev-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=development node dist/index.js",
+    "run-app": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src && NODE_ENV=production node dist/index.js",
+    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
+    "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report",
+    "coverage:open-report": "open -a 'Google Chrome' ./coverage/index.html"
+  },
+  "keywords": [
+    "sfr"
+  ],
+  "author": "Michael Benowitz",
+  "license": "ISC",
+  "dependencies": {
+    "@daisy/ace": "^1.0.2",
+    "aws-sdk": "^2.437.0",
+    "dotenv": "^7.0.0",
+    "fs-extra": "^7.0.1",
+    "sqs-consumer": "^5.2.0"
+  },
+  "devDependencies": {
+    "aws-sdk-mock": "^4.4.0",
+    "babel-cli": "^6.26.0",
+    "babel-plugin-istanbul": "^5.1.0",
+    "babel-plugin-transform-runtime": "^6.23.0",
+    "babel-preset-env": "^1.7.0",
+    "babel-register": "^6.26.0",
+    "babel-runtime": "^6.26.0",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "coveralls": "^3.0.2",
+    "mocha": "^5.2.0",
+    "nyc": "^13.3.0",
+    "rimraf": "^2.6.2",
+    "sinon": "^7.1.1",
+    "sinon-chai": "^3.2.0",
+    "standard": "^12.0.1",
+    "winston": "^3.1.0"
+  },
+  "nyc": {
+    "require": [
+      "babel-register"
+    ],
+    "sourceMap": false,
+    "instrument": false,
+    "exclude": [
+      "**/*.spec.js",
+      "**/**/*.spec.js",
+      "dist/*",
+      "src/helpers/ErrorHelper.js"
+    ]
+  },
+  "standard": {
+    "env": {
+      "mocha": true
+    },
+    "ignore": [
+      "/sample/",
+      "/build/",
+      "config",
+      "/data/"
+    ]
+  }
+}
