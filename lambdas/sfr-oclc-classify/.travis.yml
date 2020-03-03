@@ -1,0 +1,22 @@
+language: python
+dist: xenial
+python:
+- 3.6
+- 3.7
+install:
+- pip install --upgrade pip
+- pip install -r dev-requirements.txt
+- pip install -r requirements.txt
+script: make test
+# after_success:
+# - ENVIRONMENT_NAME=$TRAVIS_BRANCH
+# - if [ "$TRAVIS_BRANCH" == "master" ]; then ENVIRONMENT_NAME=production; fi
+# deploy:
+# - provider: script
+#  skip_cleanup: true
+#  script: make deploy ENV=$ENVIRONMENT_NAME
+#  on:
+#    branch: development
+# env:
+#  global:
+#  - secure: CL3PzVw6hIKOqaPMG4g2oLPPzm3J0gIjAnzp1+t4qzL6rf5NrdfwwesC//qdWauX5jgCeYl7ImPjW6lPu4zMqA0vBd/V+cOPCOXCV6oI7n5utMSYd5n8e6JXpA7mEaawNUJjdzDT8Bv7scC96UGwByKsilm691I/tF55jN1DKsjakSbDcVtLxTBtpNZfpabZQENDlia/wplKOmfozz+/PgyVO+78uSY3KztRstSdV1B7XCc3w4i5aGWuvzbDFkQL2iDPknq6X7gkT/t5qmOkpmscNpNGEdQOyRzBiCS51MHM9KRnmD8ry1WyCBcZm13vB0pkaNjW/q9aZZU4Y4mxkJSukY0k3iYchtqW9/TObXmiDR4to30qKe4h+mQqdhscFHMT25w2a63gfJRpWws337WMl8Lka0/7gNLvv/a0PmqrLTquivne2DvNha3d6uTE6Jo88IXnKNFXF/YGV4ZSigchgpig7C8RiwByy21ZUxm8Wowo6Z0rlvwpIt/aFn0x/NqifSv4rejJksm+v1vXS8+aegeRST/UYEI0PUq0ubNkoIXZER6pWK7UWf7h0PVhmwH7cl7K4CGBVUKr9xaY/mtlObbK9UwTpBUzcJwNugm2lta83s6GFRjxfMWSKp6HrLw4X1rqMxWLI0NdeKgAlNIPh3nubV3eDNQedgVkao0=

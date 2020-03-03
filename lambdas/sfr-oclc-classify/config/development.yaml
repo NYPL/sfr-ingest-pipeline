@@ -1,0 +1,9 @@
+# Uncomment the below/add additional env variables to add them to the lambda
+# === ENVIRONMENT_VARIABLES ===
+environment_variables:
+    LOG_LEVEL: debug
+    OUTPUT_STAGE: complete
+    OUTPUT_REGION: us-east-1
+    OUTPUT_KINESIS: sfr-db-update-development
+    OUTPUT_SQS: https://sqs.us-east-1.amazonaws.com/224280085904/sfr-oclc-lookup-development
+    CLASSIFY_QUEUE: https://sqs.us-east-1.amazonaws.com/224280085904/sfr-oclc-classify-development

@@ -1,0 +1,6 @@
+boto3
+lxml
+python-levenshtein
+pyyaml
+redis
+requests
