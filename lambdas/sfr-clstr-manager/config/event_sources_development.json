@@ -1,0 +1,9 @@
+{
+  "EventSourceMappings": [
+    {
+      "EventSourceArn": "arn:aws:sqs:us-east-1:224280085904:sfr-clustering-works",
+      "BatchSize": 1,
+      "Enabled": true
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+# Uncomment the below/add additional env variables to add them to the lambda
+# === ENVIRONMENT_VARIABLES ===
+environment_variables:
+    LOG_LEVEL: debug
+    PYTHONPATH: /opt/python:/opt/python/lib/python3.7/site-packages:$PYTHONPATH
+
+    DB_HOST: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQFS0Isq8hTqldHZQzUgP2ESAAAAoTCBngYJKoZIhvcNAQcGoIGQMIGNAgEAMIGHBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDHzShifJFRgWwJNUxQIBEIBaw6esXHPhPo72yKfXMhjQBiRRgzMwxDENRL5/7/qbiBCS6SYeeCEzOZBLwmyrQgCsZzRu2AMWThnEAv20EYWbQ2AWN7cFXQFNQknXb9lHihFfm0rXsjES7qMe
+    DB_PORT: '5432'
+    DB_NAME: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQH7AvfDTw5Pu0IgG0/KnOf9AAAAZTBjBgkqhkiG9w0BBwagVjBUAgEAME8GCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMzNrTcjRPWZYYGVu7AgEQgCKq5qEs/w008VON8/IFLe5vtRfplBxHMzNjkmCM1KUyQUP+
+    DB_USER: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQEkoQNYODSk+m8cJJethF9fAAAAYTBfBgkqhkiG9w0BBwagUjBQAgEAMEsGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMRn26MsM9MH+2cXAyAgEQgB7gWCou8rWbTzfnj2dpcXupJEiP4FcYNo9x0b5Au44=
+    DB_PSWD: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQF9q6qZdlshh6jj9SCwRnrxAAAAaTBnBgkqhkiG9w0BBwagWjBYAgEAMFMGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQM3VcD1csTm05LRnTxAgEQgCaaffMztl8n0z5ic66yft0nGxzX8141R/Y987kqXEeQYemN4DJ2zg==
+
+    ES_HOST: vpc-search-sfr-development-3vgqce5wzyy3i3ywvsnz6xedum.us-east-1.es.amazonaws.com
+    ES_PORT: '80'
+    ES_TIMEOUT: '10'
+    ES_INDEX: sfr_v3
