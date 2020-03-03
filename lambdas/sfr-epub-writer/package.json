@@ -1,0 +1,84 @@
+{
+  "name": "sfr-lambda-epub-to-s3",
+  "version": "0.1.0",
+  "description": "A lambda for the SFR project that reads a Kinesis stream and stores ePub files in s3",
+  "main": "index.js",
+  "scripts": {
+    "clean": "./node_modules/.bin/rimraf dist",
+    "test": "NODE_ENV=test ./node_modules/.bin/nyc --reporter=lcov --reporter=text ./node_modules/mocha/bin/mocha",
+    "build": "npm run clean && babel index.js --out-dir dist && babel src --out-dir dist/src",
+    "local-run": "npm run build && ./node_modules/.bin/node-lambda run -j ./event.json -f ./config/local.env --handler dist/index.handler",
+    "deploy-development": "npm run build && ./node_modules/.bin/node-lambda deploy -e development -f ./config/dev.env -S config/event_sources_dev.json --handler dist/index.handler -P nypl-sandbox",
+    "deploy-qa": "npm run build && ./node_modules/.bin/node-lambda deploy -e qa -f ./config/qa.env -S config/event_sources_qa.json --handler dist/index.handler",
+    "deploy-production": "npm run build && ./node_modules/.bin/node-lambda deploy -e production -f ./config/prod.env -S config/event_sources_prod.json --handler dist/index.handler -P nypl-digital-dev",
+    "package": "./node_modules/.bin/node-lambda package",
+    "lint": "./node_modules/.bin/standard",
+    "lint-fix": "./node_modules/.bin/standard --fix",
+    "coverage": "./node_modules/.bin/nyc report --reporter=text-lcov | ./node_modules/.bin/coveralls",
+    "coverage:report": "./node_modules/.bin/nyc report --reporter=html && npm run coverage:open-report",
+    "coverage:open-report": "open -a 'Google Chrome' ./coverage/index.html"
+  },
+  "author": "Michael Benowitz",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/NYPL/sfr-lambda-epub-s3.git"
+  },
+  "dependencies": {
+    "aws-sdk": "^2.577.0",
+    "axios": "^0.19.0",
+    "lambda-env-vars": "^0.4.0",
+    "moment": "^2.24.0",
+    "npm": "^6.13.1",
+    "unzip-stream": "^0.3.0",
+    "winston": "^3.2.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.7.0",
+    "@babel/core": "^7.7.2",
+    "@babel/plugin-transform-runtime": "^7.6.2",
+    "@babel/preset-env": "^7.7.1",
+    "@babel/register": "^7.7.0",
+    "@babel/runtime": "^7.7.2",
+    "@babel/traverse": "^7.7.2",
+    "babel-plugin-istanbul": "^5.1.4",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "coveralls": "^3.0.8",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-plugin-import": "^2.18.2",
+    "mocha": "^5.2.0",
+    "nock": "^10.0.6",
+    "node-lambda": "^0.14.0",
+    "nyc": "^13.3.0",
+    "rimraf": "^2.7.1",
+    "sinon": "^7.5.0",
+    "sinon-chai": "^3.3.0",
+    "standard": "^12.0.1"
+  },
+  "nyc": {
+    "require": [
+      "@babel/register"
+    ],
+    "sourceMap": false,
+    "instrument": false,
+    "exclude": [
+      "**/*.spec.js",
+      "**/**/*.spec.js",
+      "dist/*",
+      "src/helpers/ErrorHelper.js"
+    ]
+  },
+  "standard": {
+    "env": {
+      "mocha": true
+    },
+    "ignore": [
+      "/sample/",
+      "/build/",
+      "config",
+      "/data/"
+    ]
+  }
+}

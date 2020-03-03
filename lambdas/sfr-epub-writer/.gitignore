@@ -1,0 +1,9 @@
+.DS_Store
+event.json
+.lambda
+node_modules/
+dist/
+build/
+tmp/
+package-lock.json
+event_sources.json
