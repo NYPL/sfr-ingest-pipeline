@@ -3,7 +3,7 @@ import chaiAsPromised from 'chai-as-promised'
 import sinonChai from 'sinon-chai'
 import AWS from 'aws-sdk-mock'
 
-import { setEnv } from '../src/env_config.js'
+import { loadEnv } from '../src/env_config.js'
 import { resultHandler } from '../src/kinesis_out.js'
 
 chai.should()
@@ -11,7 +11,7 @@ chai.use(sinonChai)
 chai.use(chaiAsPromised)
 const expect = chai.expect
 
-setEnv()
+loadEnv()
 
 describe('Kinesis Output [kinesis_out.js]', () => {
   describe('resultHandler(reportData, metaBlock, status)', () => {

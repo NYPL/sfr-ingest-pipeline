@@ -1,4 +1,5 @@
-import ace from '@daisy/ace-core'
+import ace from '@daisy/ace'
+import axeRunner from '@daisy/ace-axe-runner-puppeteer'
 import fs from 'fs'
 import AWS from 'aws-sdk'
 import logger from './helpers/logger'
@@ -36,7 +37,7 @@ exports.runAccessibilityReport = async (fileKey) => {
     }
     logger.info('Generating ACE Report')
     try {
-      report = await ace(tmpFile.path, aceOpts)
+      report = await ace(tmpFile.path, aceOpts, axeRunner)
     } catch (e) {
       logger.error(e)
       reject(e)

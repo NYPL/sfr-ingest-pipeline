@@ -20,25 +20,26 @@
   "author": "Michael Benowitz",
   "license": "ISC",
   "dependencies": {
-    "@daisy/ace": "^1.0.2",
+    "@babel/cli": "^7.8.4",
+    "@babel/core": "^7.8.7",
+    "@daisy/ace": "^1.1.1",
     "aws-sdk": "^2.437.0",
     "dotenv": "^7.0.0",
     "fs-extra": "^7.0.1",
     "sqs-consumer": "^5.2.0"
   },
   "devDependencies": {
+    "@babel/plugin-transform-runtime": "^7.8.3",
+    "@babel/preset-env": "^7.8.7",
+    "@babel/register": "^7.8.6",
+    "@babel/runtime": "^7.8.7",
     "aws-sdk-mock": "^4.4.0",
-    "babel-cli": "^6.26.0",
     "babel-plugin-istanbul": "^5.1.0",
-    "babel-plugin-transform-runtime": "^6.23.0",
-    "babel-preset-env": "^1.7.0",
-    "babel-register": "^6.26.0",
-    "babel-runtime": "^6.26.0",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coveralls": "^3.0.2",
     "mocha": "^5.2.0",
-    "nyc": "^13.3.0",
+    "nyc": "^15.0.0",
     "rimraf": "^2.6.2",
     "sinon": "^7.1.1",
     "sinon-chai": "^3.2.0",
@@ -47,7 +48,7 @@
   },
   "nyc": {
     "require": [
-      "babel-register"
+      "@babel/register"
     ],
     "sourceMap": false,
     "instrument": false,
