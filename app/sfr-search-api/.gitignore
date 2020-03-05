@@ -3,6 +3,8 @@ config/local.json
 package-lock.json
 node_modules
 dist
+.nyc_output
+coverage
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
