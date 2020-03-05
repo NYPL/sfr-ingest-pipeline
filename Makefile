@@ -4,4 +4,7 @@ help:
 	@echo "make help"
 
 test: 
-	./runCommand.sh $(FUNCTION)
+	./runCommand.sh test $(FUNCTION)
+
+run:
+	./runCommand.sh run $(FUNCTION)

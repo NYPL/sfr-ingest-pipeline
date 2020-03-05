@@ -1,10 +1,18 @@
 #!/bin/bash
 
-QUERY="SELECT name, type, test_script FROM components"
-if [ "${1}" != "" ];
+QUERY="SELECT name, type, ${1}_script FROM components"
+
+if [ "${2}" != "" ];
 then
-    QUERY="${QUERY} WHERE name = '${1}'"
+    QUERY="${QUERY} WHERE name = '${2}'"
 fi
+
+if [ "${2}" = "" -a "${1}" = "run" ];
+then
+    echo "Can only run one funtion at a time, please provied a function name"
+    return 0
+fi
+
 VALUE=$(sqlite3 components.sql "${QUERY}") 
 
 echo "${VALUE}" | while read line
