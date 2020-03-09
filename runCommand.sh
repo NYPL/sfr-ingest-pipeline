@@ -27,7 +27,9 @@ do
     FUNC="$(cut -d'|' -f1 <<<$line)"
     DIR="$(cut -d'|' -f2 <<<$line)"
     METHOD="$(cut -d'|' -f3 <<<$line)"
-    cd "${DIR}/${FUNC}" && ${METHOD} && cd ../../
+    cd "${DIR}/${FUNC}"
+    ${METHOD}
+    cd ../../
 done
 
 if [ "${VALUE}" = "" ];
