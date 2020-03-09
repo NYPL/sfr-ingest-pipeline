@@ -35,3 +35,5 @@ if [ "${VALUE}" = "" ];
 then
     echo "No matching functions found"
 fi
+
+exit 0
