@@ -1,5 +1,4 @@
 #!/bin/bash
-
 QUERY="SELECT name, type, ${1}_script FROM components"
 FUNCTION="$(cut -d'=' -f2 <<<$2)"
 LANGUAGE="$(cut -d'=' -f2 <<<$3)"
@@ -28,7 +27,7 @@ do
     DIR="$(cut -d'|' -f2 <<<$line)"
     METHOD="$(cut -d'|' -f3 <<<$line)"
     cd "${DIR}/${FUNC}"
-    ${METHOD} || exit 2
+    ${METHOD} || exit 1
     cd ../../
 done
 

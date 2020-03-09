@@ -22,7 +22,8 @@ class TestHandler:
             createSession=DEFAULT,
             closeConnection=DEFAULT,
             startSession=DEFAULT,
-            commitChanges=DEFAULT
+            commitChanges=DEFAULT,
+            decryptEnvVar=DEFAULT
         )
         from service import handler, indexRecords, MANAGER
         MANAGER.session = MagicMock()
