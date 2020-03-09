@@ -5,14 +5,6 @@ from unittest.mock import MagicMock, DEFAULT
 from sfrCore import SessionManager
 
 
-os.environ['DB_HOST'] = 'test'
-os.environ['DB_PORT'] = '1'
-os.environ['DB_NAME'] = 'test'
-os.environ['DB_USER'] = 'test'
-os.environ['DB_PSWD'] = 'test'
-os.environ['DB_OL_NAME'] = 'olTest'
-
-
 class TestHandler:
     @pytest.fixture
     def mockHandler(self, mocker):
@@ -21,7 +13,8 @@ class TestHandler:
             createSession=DEFAULT,
             closeConnection=DEFAULT,
             startSession=DEFAULT,
-            commitChanges=DEFAULT
+            commitChanges=DEFAULT, 
+            decryptEnvVar=DEFAULT
         )
         from service import handler, MANAGER, OL_MANAGER
         MANAGER.session = MagicMock()
