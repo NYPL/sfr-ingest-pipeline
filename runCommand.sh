@@ -1,10 +1,17 @@
 #!/bin/bash
 
 QUERY="SELECT name, type, ${1}_script FROM components"
+FUNCTION="$(cut -d'=' -f2 <<<$2)"
+LANGUAGE="$(cut -d'=' -f2 <<<$3)"
 
-if [ "${2}" != "" ];
+if [ "${FUNCTION}" != "" ];
 then
-    QUERY="${QUERY} WHERE name = '${2}'"
+    QUERY="${QUERY} WHERE name = '${FUNCTION}'"
+fi
+
+if [ "${LANGUAGE}" = "python" -o "${LANGUAGE}" = "node.js" ];
+then
+    QUERY="${QUERY} WHERE language = '${LANGUAGE}'"
 fi
 
 if [ "${2}" = "" -a "${1}" = "run" ];

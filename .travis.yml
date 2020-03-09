@@ -1,0 +1,17 @@
+dist: xenial
+language: python
+python:
+- '3.7'
+
+jobs:
+    include:
+        - language: python
+          python: 3.7
+          install: make init LANG=python
+          script:
+            - make test LANG=python
+        - language: node_js
+          node_js: 10
+          install: make init LANG=node.js
+          script:
+            - make test LANG=node.js
