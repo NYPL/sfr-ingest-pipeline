@@ -1,6 +1,7 @@
 import unittest
 from unittest.mock import patch, mock_open, call
 import logging
+import pytest
 from yaml import YAMLError
 import json
 import sys
@@ -12,8 +13,7 @@ from helpers.errorHelpers import InvalidExecutionType
 logging.disable(logging.CRITICAL)
 
 
-class TestScripts(unittest.TestCase):
-
+class TestScripts:
     @patch.object(sys, 'argv', ['make', 'development'])
     @patch('scripts.lambdaRun.setEnvVars')
     @patch('scripts.lambdaRun.createEventMapping')
@@ -48,19 +48,13 @@ class TestScripts(unittest.TestCase):
 
     @patch.object(sys, 'argv', ['make', 'bad-command'])
     def test_run_invalid(self):
-        try:
+        with pytest.raises(InvalidExecutionType):
             main()
-        except InvalidExecutionType:
-            pass
-        self.assertRaises(InvalidExecutionType)
 
     @patch.object(sys, 'argv', ['make', 'hello', 'jerry'])
     def test_run_surplus_argv(self):
-        try:
+        with pytest.raises(SystemExit):
             main()
-        except SystemExit:
-            pass
-        self.assertRaises(SystemExit)
 
     mockReturns = [
         ({
@@ -126,44 +120,35 @@ class TestScripts(unittest.TestCase):
     @patch('scripts.lambdaRun.loadEnvFile', side_effect=mockReturns)
     @patch('builtins.open', side_effect=IOError())
     def test_envVar_permissions(self, mock_file, mock_env):
-        try:
+        with pytest.raises(IOError):
             setEnvVars('development')
-        except IOError:
-            pass
-        self.assertRaises(IOError)
 
     @patch('yaml.load', return_value={'testing': True})
     def test_load_env_success(self, mock_yaml):
         resDict, resLines = loadEnvFile('development', None)
-        self.assertTrue(resDict['testing'])
+        assert resDict['testing'] is True
 
     @patch('yaml.load', return_value={'testing': True})
     def test_load_env_config_success(self, mock_yaml):
         with patch('builtins.open', mock_open(), create=True):
             resDict, resLines = loadEnvFile('development', 'config/{}.yaml')
-            self.assertTrue(resDict['testing'])
+            assert resDict['testing'] is True
 
     @patch('yaml.load', side_effect={'testing': True})
     def test_load_env_failure(self, mock_yaml):
-        try:
+        with pytest.raises(FileNotFoundError):
             resDict, resLines = loadEnvFile('development', 'missing/{}.yaml')
-        except FileNotFoundError:
-            pass
-        self.assertRaises(FileNotFoundError)
 
     @patch('yaml.load', return_value=None)
     def test_load_empty_env(self, mock_yaml):
         resDict, resLines = loadEnvFile('development', None)
-        self.assertEqual(resDict, {})
+        assert resDict == {}
 
     @patch('yaml.load', side_effect=YAMLError)
     def test_read_env_failure(self, mock_yaml):
         with patch('builtins.open', mock_open(), create=True):
-            try:
+            with pytest.raises(YAMLError):
                 resDict, resLines = loadEnvFile('development', 'config/{}.yaml')
-            except YAMLError:
-                pass
-            self.assertRaises(YAMLError)
 
     mockReturns = [
         ({
@@ -232,28 +217,17 @@ class TestScripts(unittest.TestCase):
                  '"StartingPosition": "test"}}')
 
         with patch('builtins.open', mock_open(read_data=jsonD), create=True):
-            try:
+            with pytest.raises(json.decoder.JSONDecodeError):
                 createEventMapping('development')
-            except json.decoder.JSONDecodeError:
-                pass
-
-        self.assertRaises(json.decoder.JSONDecodeError)
 
     @patch('builtins.open', side_effect=IOError)
     def test_event_permissions_err(self, mock_file):
-        try:
+        with pytest.raises(IOError):
             createEventMapping('development')
-        except IOError:
-            pass
-        self.assertRaises(IOError)
 
     @patch('builtins.open', side_effect=FileNotFoundError)
     def test_event_missing_err(self, mock_file):
-        try:
-            createEventMapping('development')
-        except FileNotFoundError:
-            pass
-        self.assertRaises(FileNotFoundError)
+        assert createEventMapping('development') is None
 
     @patch('scripts.lambdaRun.loadEnvFile')
     def test_empty_mapping_json_err(self, mock_env):
@@ -270,7 +244,7 @@ class TestScripts(unittest.TestCase):
             'region': 'test'
         })
         mock_boto.assert_called_once_with('lambda', region_name='test')
-        self.assertTrue(result)
+        assert result is True
 
     @patch('boto3.client', return_value=True)
     def test_create_with_access(self, mock_boto):
@@ -285,8 +259,4 @@ class TestScripts(unittest.TestCase):
             aws_access_key_id=1,
             aws_secret_access_key='secret'
         )
-        self.assertTrue(result)
-
-
-if __name__ == '__main__':
-    unittest.main()
+        assert result is True

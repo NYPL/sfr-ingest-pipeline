@@ -1,10 +1,16 @@
 #!/bin/bash
-
 QUERY="SELECT name, type, ${1}_script FROM components"
+FUNCTION="$(cut -d'=' -f2 <<<$2)"
+LANGUAGE="$(cut -d'=' -f2 <<<$3)"
 
-if [ "${2}" != "" ];
+if [ "${FUNCTION}" != "" ];
 then
-    QUERY="${QUERY} WHERE name = '${2}'"
+    QUERY="${QUERY} WHERE name = '${FUNCTION}'"
+fi
+
+if [ "${LANGUAGE}" = "python" -o "${LANGUAGE}" = "node.js" ];
+then
+    QUERY="${QUERY} WHERE language = '${LANGUAGE}'"
 fi
 
 if [ "${2}" = "" -a "${1}" = "run" ];
@@ -20,10 +26,14 @@ do
     FUNC="$(cut -d'|' -f1 <<<$line)"
     DIR="$(cut -d'|' -f2 <<<$line)"
     METHOD="$(cut -d'|' -f3 <<<$line)"
-    cd "${DIR}/${FUNC}" && ${METHOD} && cd ../../
+    cd "${DIR}/${FUNC}"
+    ${METHOD} || exit 1
+    cd ../../
 done
 
 if [ "${VALUE}" = "" ];
 then
     echo "No matching functions found"
 fi
+
+exit 0

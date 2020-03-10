@@ -29,7 +29,7 @@ build:
 	python3 -m scripts.lambdaRun build-$(ENV)
 
 test:
-	coverage run -m unittest
+	coverage run -m pytest || exit 1
 
 coverage-report:
 	coverage report -m

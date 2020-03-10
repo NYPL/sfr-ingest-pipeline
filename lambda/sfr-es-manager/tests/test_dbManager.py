@@ -13,8 +13,7 @@ os.environ['DB_NAME'] = 'test'
 from lib.dbManager import retrieveRecords
 
 
-class TestDBManager(unittest.TestCase):
-
+class TestDBManager:
     @patch.dict(os.environ, {'INDEX_PERIOD': '5', 'ES_INDEX': 'test'})
     def test_get_records(self):
         mockSession = MagicMock()
@@ -23,4 +22,4 @@ class TestDBManager(unittest.TestCase):
             'work2'
         ]
         res = list(retrieveRecords(mockSession))
-        self.assertEqual(res, ['work1', 'work2'])
+        assert res == ['work1', 'work2']
