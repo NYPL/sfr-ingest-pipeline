@@ -1,6 +1,9 @@
 import os
+from polyglot.detect import Detector
+from polyglot.detect.base import UnknownLanguage
+from requests_aws4auth import AWS4Auth
 
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, RequestsHttpConnection
 from elasticsearch.exceptions import (
     ConnectionError,
     TransportError,
@@ -8,6 +11,8 @@ from elasticsearch.exceptions import (
 )
 from elasticsearch_dsl import connections
 from elasticsearch_dsl.wrappers import Range
+
+from sfrCore import SessionManager
 
 from sqlalchemy.orm import configure_mappers
 
@@ -18,7 +23,8 @@ from model.elasticModel import (
     Identifier,
     Agent,
     Language,
-    Rights
+    Rights,
+    MultiLanguage
 )
 from helpers.logHelpers import createLog
 from helpers.errorHelpers import ESError
@@ -39,13 +45,22 @@ class ESConnection():
 
     def createElasticConnection(self):
         host = os.environ['ES_HOST']
-        port = os.environ['ES_PORT']
+        port = int(os.environ['ES_PORT'])
         timeout = int(os.environ['ES_TIMEOUT'])
         logger.info('Creating connection to ElasticSearch')
+        awsauth = AWS4Auth(
+            SessionManager.decryptEnvVar(os.environ['AWS_ACCESS']),
+            SessionManager.decryptEnvVar(os.environ['AWS_SECRET']),
+            'us-east-1',
+            'es'
+        )
         try:
             self.client = Elasticsearch(
                 hosts=[{'host': host, 'port': port}],
-                timeout=timeout
+                http_auth=awsauth,
+                use_ssl=True,
+                verify_certs=True,
+                connection_class=RequestsHttpConnection
             )
         except ConnectionError:
             raise ESError('Failed to connect to ElasticSearch instance')
@@ -78,6 +93,9 @@ class ElasticManager():
             for field in Work.getFields()
         }
 
+        for langField in Work.getLangFields():
+            workData[langField] = self.setMultiLangField(getattr(self.dbWork, langField, None))
+
         esWork = Work.get(self.dbWork.uuid, ignore=404)
         if esWork is None:
             logger.debug('Creating new es doc for {}'.format(self.dbWork))
@@ -107,7 +125,7 @@ class ElasticManager():
         self.work.created_date = ElasticManager._loadDates(self.dbWork, ['created'])[0]
 
         self.work.alt_titles = [
-            altTitle.title
+            MultiLanguage(default=altTitle.title)
             for altTitle in self.dbWork.alt_titles
         ]
 
@@ -115,7 +133,7 @@ class ElasticManager():
             Subject(
                 authority=subject.authority,
                 uri=subject.uri,
-                subject=subject.subject
+                subject=self.setMultiLangField(subject.subject)
             )
             for subject in self.dbWork.subjects
         ]
@@ -212,6 +230,10 @@ class ElasticManager():
             field: getattr(instance, field, None)
             for field in Instance.getFields()
         }
+
+        for langField in Instance.getLangFields():
+            instData[langField] = self.setMultiLangField(getattr(instance, langField, None))
+
         instData['instance_id'] = instData.pop('id')
         newInst = Instance(**instData)
 
@@ -223,7 +245,7 @@ class ElasticManager():
                 newInst.pub_date_sort_desc = newInst.pub_date.lte
         
         newInst.alt_titles = [
-            altTitle.title
+            MultiLanguage(default=altTitle.title)
             for altTitle in instance.alt_titles
         ]
 
@@ -300,4 +322,21 @@ class ElasticManager():
     def setSortTitle(self):
         if self.dbWork.sort_title is None:
             self.dbWork.setSortTitle()
-
+    
+    def setMultiLangField(self, text):
+        if text is None:
+            return None
+        mlDoc = MultiLanguage(default=text)
+        try:
+            pgText = Detector(text)
+            setattr(mlDoc, pgText.language.code, text)
+        except UnknownLanguage:
+            pass
+        except AttributeError:
+            logger.warning('Cannot analyze this language {}'.format(pgText.language.code))
+            pass
+        except Exception as err:
+            logger.error('Caught unexpected error in language detection')
+            logger.debug(err)
+            
+        return mlDoc

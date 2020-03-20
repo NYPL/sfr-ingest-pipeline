@@ -4,6 +4,7 @@ from elasticsearch_dsl import (
     Document,
     InnerDoc,
     Nested,
+    Object,
     Keyword,
     Text,
     Integer,
@@ -17,11 +18,6 @@ from elasticsearch_dsl import (
     analyzer
 )
 
-plain_ascii = analyzer(
-    'plain_ascii',
-    tokenizer='standard',
-    filter=['standard', 'lowercase', 'stop', 'asciifolding']
-)
 
 class BaseDoc(Document):
     date_created = Date()
@@ -43,6 +39,52 @@ class BaseInner(InnerDoc):
             if isinstance(getattr(self, rel), set):
                 setattr(self, rel, list(getattr(self, rel)))
         return super().save(**kwargs)
+
+
+class MultiLanguage(InnerDoc):
+    default = Text(
+        analyzer='default',
+        fields={'icu': Text(analyzer='icu_analyzer'), 'keyword': Keyword()}
+    )
+    ar = Text(analyzer='arabic')
+    bg = Text(analyzer='bulgarian')
+    bn = Text(analyzer='bengali')
+    ca = Text(analyzer='catalan')
+    cs = Text(analyzer='czech')
+    da = Text(analyzer='danish')
+    de = Text(analyzer='german')
+    en = Text(analyzer='english')
+    el = Text(analyzer='greek')
+    es = Text(analyzer='spanish')
+    eu = Text(analyzer='basque')
+    fa = Text(analyzer='persian')
+    fi = Text(analyzer='finnish')
+    fr = Text(analyzer='french')
+    gl = Text(analyzer='galician')
+    hi = Text(analyzer='hindi')
+    hu = Text(analyzer='hungarian')
+    hy = Text(analyzer='armenian')
+    id = Text(analyzer='indonesian')
+    ir = Text(analyzer='irish')
+    it = Text(analyzer='italian')
+    ja = Text(analyzer='kuromoji') # japanese
+    ko = Text(analyzer=analyzer(
+        "korean",
+        tokenizer='seunjeon_tokenizer'
+    ))
+    ku = Text(analyzer='sorani') # kurdish
+    lt = Text(analyzer='lithuanian')
+    lv = Text(analyzer='latvian')
+    nl = Text(analyzer='dutch')
+    no = Text(analyzer='norwegian')
+    pl = Text(analyzer='polish')
+    pt = Text(analyzer='portuguese')
+    ro = Text(analyzer='romanian')
+    ru = Text(analyzer='russian')
+    sv = Text(analyzer='swedish')
+    th = Text(analyzer='thai')
+    tr = Text(analyzer='turkish')
+    zh = Text(analyzer='smartcn') # chinese
 
 
 class Date(BaseInner):
@@ -75,16 +117,27 @@ class Rights(BaseInner):
 class Subject(BaseInner):
     authority = Keyword()
     uri = Keyword()
-    subject = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
+    subject = Object(MultiLanguage)
     weight = HalfFloat()
 
     @classmethod
     def getFields(cls):
-        return ['uri', 'authority', 'subject']
+        return ['uri', 'authority']
+    
+    @classmethod
+    def getLangFields(cls):
+        return ['subject']
 
 
 class Agent(BaseInner):
-    name = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
+    name = Text(
+        analyzer=analyzer(
+            'plain_ascii',
+            tokenizer='standard',
+            filter=['standard', 'phonetic', 'lowercase', 'stop', 'asciifolding']
+        ),
+        fields={'keyword': Keyword()}
+    )
     sort_name = Keyword(index=False)
     aliases = Text(fields={'keyword': Keyword()})
     lcnaf = Keyword()
@@ -146,21 +199,21 @@ class Language(BaseInner):
 
 
 class Instance(BaseInner):
-    title = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
-    sub_title = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
-    alt_titles = Text(fields={'keyword': Keyword()})
+    title = Object(MultiLanguage)
+    sub_title = Object(MultiLanguage)
     pub_place = Text(fields={'keyword': Keyword()})
     pub_date = DateRange(format='date_optional_time')
     edition = Text(fields={'keyword': Keyword()})
-    edition_statement = Text(fields={'keyword': Keyword()})
-    table_of_contents = Text()
-    volume = Text(fields={'keyword': Keyword()})
+    edition_statement = Object(MultiLanguage)
+    table_of_contents = Object(MultiLanguage)
+    volume = Object(MultiLanguage)
     extent = Text()
-    summary = Text() 
+    summary =  Object(MultiLanguage)
     formats = Keyword()
     instance_id = Integer()
     edition_id = Integer()
 
+    alt_titles = Nested(MultiLanguage)
     agents = Nested(Agent)
     identifiers = Nested(Identifier)
     rights = Nested(Rights)
@@ -168,9 +221,13 @@ class Instance(BaseInner):
 
     @classmethod
     def getFields(cls):
+        return ['id', 'edition_id', 'pub_place', 'edition', 'extent']
+
+    @classmethod
+    def getLangFields(cls):
         return [
-            'id', 'edition_id', 'title', 'sub_title', 'pub_place', 'edition',
-            'edition_statement', 'table_of_contents', 'extent', 'summary'
+            'title', 'sub_title', 'edition_statement', 'table_of_contents',
+            'volume', 'summary'
         ]
 
     def __dir__(self):
@@ -183,16 +240,16 @@ class Instance(BaseInner):
 
 
 class Work(BaseDoc):
-    title = Text(analyzer=plain_ascii, fields={'keyword': Keyword()})
+    title = Object(MultiLanguage)
     sort_title = Keyword(index=False)
     uuid = Keyword(store=True)
     medium = Text(fields={'keyword': Keyword()})
-    series = Text(fields={'keyword': Keyword()})
+    series = Object(MultiLanguage)
     series_position = Keyword()
-    alt_titles = Text(fields={'keyword': Keyword()})
     issued_date = DateRange(format='date_optional_time')
     created_date = DateRange(format='date_optional_time')
 
+    alt_titles = Nested(MultiLanguage)
     instances = Nested(Instance)
     identifiers = Nested(Identifier)
     subjects = Nested(Subject)
@@ -205,12 +262,16 @@ class Work(BaseDoc):
             'uuid', 'title', 'sort_title', 'sub_title', 'medium',
             'series', 'series_position', 'date_modified', 'date_updated'
         ]
-    
+
+    @classmethod
+    def getLangFields(cls):
+        return ['title', 'series']
+
     def __dir__(self):
         return ['identifiers', 'subjects', 'agents', 'languages']
     
     def __repr__(self):
-        return '<ESWork(title={}, uuid={})>'.format(self.title, self.uuid)
+        return '<ESWork(title={}, uuid={})>'.format(self.title.default, self.uuid)
 
     class Index:
         name = os.environ.get('ES_INDEX', None)

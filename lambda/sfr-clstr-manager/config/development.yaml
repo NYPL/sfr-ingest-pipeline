@@ -13,4 +13,7 @@ environment_variables:
     ES_HOST: vpc-search-sfr-development-3vgqce5wzyy3i3ywvsnz6xedum.us-east-1.es.amazonaws.com
     ES_PORT: '80'
     ES_TIMEOUT: '10'
-    ES_INDEX: sfr_v3
+    ES_INDEX: sfr_new_v3
+
+    AWS_ACCESS: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQHsAPHjPmfV3eEAPqacsj2SAAAAcjBwBgkqhkiG9w0BBwagYzBhAgEAMFwGCSqGSIb3DQEHATAeBglghkgBZQMEAS4wEQQMjajwK4x31RyLnYegAgEQgC82UIN2+fHFgU6qjgZVOIii7lEn7YoFTNvIR2xGbAdJFJx390vuA/ENXdpOKQg4UQ==
+    AWS_SECRET: AQICAHg44Tmwi+nLR/0IeFODcEqu2nSlqdDZMsDWalEb1O+LSQFspsWizMxpI0RdXupbyd5UAAAAhzCBhAYJKoZIhvcNAQcGoHcwdQIBADBwBgkqhkiG9w0BBwEwHgYJYIZIAWUDBAEuMBEEDLycdi5xre6HJKHldAIBEIBDSuDXKfYXOHQmzfHYZZQfDwolREnDDBF6WbcFTCxgpVrkkjkLueoQaz9foyFuJSi861we0D58fuo1zgFT3ObAGqWEsA==
