@@ -534,10 +534,18 @@ class V3Search {
             })))
         break
       case 'subject':
-        this.query.query('nested', { path: 'subjects', query: { query_string: { query: queryTerm, default_operator: 'and' } } })
+        this.query.query('nested', {
+          path: 'subjects',
+          query: {
+            query_string: { query: queryTerm, default_operator: 'and', fields: ['subjects.subject.*'] },
+          },
+        })
         break
       case 'title':
-        this.query.query('query_string', { fields: ['title', 'alt_titles'], query: queryTerm, default_operator: 'and' })
+        this.query.query('bool', b => b
+          .query('bool', c => c
+            .orQuery('query_string', { query: queryTerm, fields: ['title.*'] })
+            .orQuery('nested', { path: 'alt_titles', query: { query_string: { query: queryTerm, fields: ['alt_titles.*'] } } })))
         break
       case 'keyword':
       default:
@@ -545,7 +553,17 @@ class V3Search {
           .query('bool', c => c
             .orQuery('query_string', 'query', queryTerm, {
               default_operator: 'and',
-              fields: ['title', 'alt_titles', 'series'],
+              fields: ['title.*', 'series'],
+            })
+            .orQuery('nested', {
+              path: 'alt_titles',
+              query: {
+                query_string: {
+                  query: queryTerm,
+                  default_operator: 'and',
+                  fields: ['alt_titles.*'],
+                },
+              },
             })
             .orQuery('nested', {
               path: 'subjects',
@@ -553,7 +571,7 @@ class V3Search {
                 query_string: {
                   query: queryTerm,
                   default_operator: 'and',
-                  fields: ['subjects.subject'],
+                  fields: ['subjects.subject.*'],
                 },
               },
             })
@@ -573,8 +591,8 @@ class V3Search {
                 query_string: {
                   query: queryTerm,
                   default_operator: 'and',
-                  fields: ['instances.title', 'instances.sub_title', 'instances.alt_titles',
-                    'instances.table_of_contents', 'instances.summary', 'instances.volume'],
+                  fields: ['instances.title.*', 'instances.sub_title.*', 'instances.alt_titles',
+                    'instances.table_of_contents.*', 'instances.summary.*', 'instances.volume.*'],
                 },
               },
             })
@@ -588,6 +606,7 @@ class V3Search {
                 },
               },
             })))
+        console.log(this.query.build().query.bool.should)
         break
     }
   }
