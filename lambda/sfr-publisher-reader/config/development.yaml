@@ -1,0 +1,11 @@
+# Uncomment the below/add additional env variables to add them to the lambda
+runtime: python3.7
+
+# === ENVIRONMENT_VARIABLES ===
+environment_variables:
+    LOG_LEVEL: debug
+    UPDATE_PERIOD: '1200'
+    
+    KINESIS_INGEST_STREAM: sfr-db-ingest-development
+
+    ACTIVE_READERS: metReader
