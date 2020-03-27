@@ -82,7 +82,7 @@ class TestMETItem:
 
     def test_parseIdentifiers(self, testItem):
         testItem.work['identifier.test'] = 1
-        testItem.instance['identifier.test'] = 2
+        testItem.instance['identifier.generic'] = 2
         testItem.item['identifier.test'] = 3
 
         testItem.parseIdentifiers()
@@ -91,6 +91,7 @@ class TestMETItem:
         assert len(testItem.item.identifiers) == 1
         assert testItem.work.primary_identifier.identifier == 1
         assert testItem.work.primary_identifier.type == 'test' 
+        assert testItem.instance.identifiers[0].identifier == 'met.2'
     
     def test_parseSubjects(self, testItem):
         testItem.work.subjects = 'testSubj1 ; testSubj2 ; testSubj3'

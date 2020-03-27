@@ -122,12 +122,13 @@ class MetItem(object):
             for iden in ids:
                 # Extracts spedific identifier type
                 idType = iden.split('.')[1]
+                identifier = rec[iden] if idType != 'generic' else 'met.{}'.format(rec[iden])
 
                 logger.debug('Adding identifier {}({}) to {}'.format(
-                    rec[iden], idType, rec
+                    identifier, idType, rec
                 ))
                 rec.identifiers.append(
-                    Identifier(type=idType, identifier=rec[iden], weight=1)
+                    Identifier(type=idType, identifier=identifier, weight=1)
                 )
                 del rec[iden]
 
