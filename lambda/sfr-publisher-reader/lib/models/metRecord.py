@@ -54,6 +54,7 @@ class MetItem(object):
             {'level': 'instance', 'field': 'identifier.oclc'},
             {'level': 'item', 'field': 'identifier.oclc'}
         ],
+        'link': [{'level': 'item', 'field': 'links'}]
     }
 
     VIAF_ROOT = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName={}'
@@ -84,7 +85,10 @@ class MetItem(object):
         
         # Links to various associated resources are stored as relative paths
         # These will be used later
-        self.downloadURI = self.data['downloadUri']
+        try:
+            self.downloadURI = self.data['downloadParentUri'].replace('/digital', '')
+        except KeyError:
+            self.downloadURI = self.data['downloadUri']
         self.coverURI = self.data['imageUri']
         self.viewURI = self.ITEM_UI.format(self.itemID)
     
@@ -136,7 +140,11 @@ class MetItem(object):
                     identifier, idType, rec
                 ))
                 rec.identifiers.append(
-                    Identifier(type=idType, identifier=identifier, weight=1)
+                    Identifier(
+                        type=idType if idType != 'generic' else None,
+                        identifier=identifier,
+                        weight=1
+                    )
                 )
                 del rec[iden]
 
@@ -292,7 +300,7 @@ class MetItem(object):
 
         # Adding View Online Link
         readLink = Link(
-            url=self.viewURI,
+            url=self.item.links,
             mediaType='text/html',
             flags={
                 'local': False,
@@ -313,8 +321,7 @@ class MetItem(object):
                 'images': True
             }
         )
-
-        self.item.links.extend([readLink, downloadLink])
+        self.item.links = [readLink, downloadLink]
 
     def addCover(self):
         """Adds cover link, which was previously extracted in the same manner

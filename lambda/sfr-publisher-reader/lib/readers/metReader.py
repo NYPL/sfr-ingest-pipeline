@@ -24,10 +24,10 @@ class MetReader(AbsSourceReader):
             logger.debug('Fetching page {}'.format(page))
             indexResp = requests.get(self.INDEX_URL.format(page))
             indexData = indexResp.json()
-            print(indexData)
             for item in indexData['items']:
-                logger.debug('Found record with ID {}'.format(item['itemId']))
-                self.itemIDs.append(item['itemId'])
+                itemID = item['itemId']
+                logger.debug('Found record with ID {}'.format(itemID))
+                self.itemIDs.append(itemID)
     
     def scrapeResourcePages(self):
         for itemID in self.itemIDs:
@@ -41,6 +41,10 @@ class MetReader(AbsSourceReader):
         logger.debug('Extracting data from record')
 
         # Create local MET record to hold intermediate data
+        try:
+            itemID = pageData['parentId']
+        except KeyError:
+            pass
         newItem = MetItem(itemID, pageData)
 
         # Extract data from MET API format
