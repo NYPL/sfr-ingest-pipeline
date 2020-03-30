@@ -1,5 +1,7 @@
 from datetime import datetime
 import pycountry
+import requests
+from urllib.parse import quote_plus
 
 from ..dataModel import (
     WorkRecord, InstanceRecord, Format, Identifier, Language, Agent, Subject,
@@ -53,6 +55,12 @@ class MetItem(object):
             {'level': 'item', 'field': 'identifier.oclc'}
         ],
     }
+
+    VIAF_ROOT = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName={}'
+    CORPORATE_ROLES = [
+        'publisher', 'manufacturer', 'repository', 'digitizer',
+        'responsible_organization'
+    ]
     def __init__(self, itemID, itemData):
         self.itemID = itemID
         self.data = itemData
@@ -154,9 +162,33 @@ class MetItem(object):
         for role in ['author']:
             self.parseAgent('work', role)
         for role in ['publisher']:
-            self.parseAgent('instance', role)
+            self.splitPublisherField()
         for role in ['repository', 'provider']:
             self.parseAgent('item', role)
+
+    def splitPublisherField(self):
+        """The 'publis' field in the MET record corresponds to a MARC 260 field,
+        specifically subfields $a and $b, so must be split to extract the
+        relevant fields.
+        """
+        pubField = self.instance.publisher
+        publishers = pubField.split(';')
+
+        for pub in publishers:
+            pubData = pub.split(':')
+            if self.instance.pub_place is None: # Take first place only
+                pubPlace = pubData[0].strip()
+                logger.info('Adding {} as publication place'.format(pubPlace))
+                self.instance.pub_place = pubPlace
+
+            if len(pubData) > 1:
+                publisher = pubData[1].strip()
+                self.instance.publisher = publisher
+                self.parseAgent('instance', 'publisher')
+            else:
+                # If no publisher exists we must still remove this field from
+                # the record
+                del self.instance['publisher']
 
     def parseAgent(self, rec, role):
         """Parse individual agent record, skipping if none is found
@@ -170,7 +202,14 @@ class MetItem(object):
             logger.debug('Adding {} {} to {}'.format(
                 role, inst[role], inst 
             ))
-            inst.agents.append(Agent(name=inst[role], role=role))
+
+            newAgent = Agent(name=inst[role], role=role)
+
+            # Fetch VIAF/LCNAF identifiers for agent
+            corporate = True if role != 'author' else False
+            self.getVIAF(newAgent, corporate=corporate)
+
+            inst.agents.append(newAgent)
             del inst[role]
         except KeyError:
             logger.warning('No agent with role {} found for record'.format(role))
@@ -290,3 +329,27 @@ class MetItem(object):
                 flags={'cover': True, 'temporary': True}
             )
         )
+    
+    def getVIAF(self, agent, corporate=False):
+        logger.info('Querying VIAF for {}'.format(agent.name))
+        reqStr = self.VIAF_ROOT.format(quote_plus(agent.name))
+
+        if corporate is True:
+            reqStr = '{}&queryType=corporate'.format(reqStr)
+
+        viafResp = requests.get(reqStr)
+        responseJSON = viafResp.json()
+        logger.debug(responseJSON)
+
+        if 'viaf' in responseJSON:
+            logger.debug('Found VIAF {} for agent'.format(
+                responseJSON.get('viaf', None)
+            ))
+
+            if responseJSON['name'] != agent.name:
+                if agent.name not in agent.aliases:
+                    agent.aliases.append(agent.name)
+                agent.name = responseJSON.get('name', '')
+
+            agent.viaf = responseJSON.get('viaf', None)
+            agent.lcnaf = responseJSON.get('lcnaf', None)

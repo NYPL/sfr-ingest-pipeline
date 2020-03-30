@@ -100,19 +100,28 @@ class TestMETItem:
         assert testItem.work.subjects[2].subject == 'testSubj3'
 
     def test_parseAgents(self, testItem):
-        with patch.object(MetItem, 'parseAgent') as mockParse:
+        with patch.multiple(MetItem, parseAgent=DEFAULT, splitPublisherField=DEFAULT) as parseMocks:
             testItem.parseAgents()
-            mockParse.assert_has_calls([
+            parseMocks['parseAgent'].assert_has_calls([
                 call('work', 'author'),
-                call('instance', 'publisher'),
                 call('item', 'repository'),
                 call('item', 'provider')
             ])
+            parseMocks['splitPublisherField'].assert_called_once()
         
     def test_parseAgent_success(self, testItem):
-        testItem.work.author = 'Tester, Test'
-        testItem.parseAgent('work', 'author')
-        assert testItem.work.agents[0].name == 'Tester, Test'
+        with patch.object(MetItem, 'getVIAF') as mockVIAF:
+            testItem.work.author = 'Tester, Test'
+            testItem.parseAgent('work', 'author')
+            assert testItem.work.agents[0].name == 'Tester, Test'
+            mockVIAF.assert_called_once()
+
+    def test_parseAgent_success_corporate(self, testItem):
+        with patch.object(MetItem, 'getVIAF') as mockVIAF:
+            testItem.instance.publisher = 'Tester, Test'
+            testItem.parseAgent('instance', 'publisher')
+            assert testItem.instance.agents[0].name == 'Tester, Test'
+            mockVIAF.assert_called_once()
 
     def test_parseAgent_missing(self, testItem):
         testItem.parseAgent('work', 'author')
@@ -179,3 +188,44 @@ class TestMETItem:
         assert testItem.instance.links[0].media_type == 'image/jpeg'
         assert testItem.instance.links[0].url == '{}/cover/1'.format(testItem.ROOT_URL)
         assert testItem.instance.links[0].flags['cover'] == True
+
+    def test_splitPublisherField_all_fields(self, testItem):
+        testItem.instance.publisher = 'Place : Publisher ; Place2 : Publisher'
+        with patch.object(MetItem, 'parseAgent') as mockParse:
+            testItem.splitPublisherField()
+            assert testItem.instance.pub_place == 'Place'
+            mockParse.assert_has_calls([
+                call('instance', 'publisher'),
+                call('instance', 'publisher')
+            ])
+
+    def test_splitPublisherField_missing_publisher(self, testItem):
+        testItem.instance.publisher = 'Place'
+        with patch.object(MetItem, 'parseAgent') as mockParse:
+            testItem.splitPublisherField()
+            assert testItem.instance.pub_place == 'Place'
+            mockParse.assert_not_called()
+
+    def test_getVIAF(self, testItem):
+        mockAgent = MagicMock()
+        mockAgent.name = 'name'
+        mockAgent.aliases = []
+        with patch('lib.models.metRecord.requests') as mockReq:
+            mockGet = MagicMock()
+            mockReq.get.return_value = mockGet
+            mockGet.json.return_value = {
+                'viaf': '000000000',
+                'lcnaf': 'n000000000',
+                'name': 'Full Name'
+            }
+            testItem.getVIAF(mockAgent, corporate=True)
+            mockReq.get.assert_called_once()
+            mockGet.json.assert_called_once()
+            assert mockAgent.name == 'Full Name'
+            assert mockAgent.aliases[0] == 'name'
+            assert mockAgent.viaf == '000000000'
+            assert mockAgent.lcnaf == 'n000000000'
+            
+
+
+
