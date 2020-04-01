@@ -3,6 +3,7 @@ import requests
 
 
 class FrontierParser:
+    ORDER = 3
     REGEX = '(?:www|journal)\.frontiersin\.org\/research-topics\/([0-9]+)\/([a-zA-Z0-9\-]+)'
     LINK_STRINGS = {
         'https://www.frontiersin.org/research-topics/{}/epub': {
