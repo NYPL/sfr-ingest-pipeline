@@ -133,7 +133,11 @@ class MetItem(object):
                 self.itemID, 'generic', rec
             ))
             rec.identifiers.append(
-                type=None, identifier='met.{}'.format(self.itemID), weight=1
+                Identifier(
+                    type=None,
+                    identifier='met.{}'.format(self.itemID),
+                    weight=1
+                )
             )
             # Extracts identifier fields by prefix
             ids = list(filter(lambda x: x[:11] == 'identifier.', rec.keys()))

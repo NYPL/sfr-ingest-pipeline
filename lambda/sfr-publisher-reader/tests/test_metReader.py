@@ -41,7 +41,7 @@ class TestMETReader:
     @patch.object(MetReader, 'transformMetadata', return_value='testWork')
     @patch.object(MetItem, 'extractRelevantData')
     def test_scrapeRecordMetadata(self, mockTransform, mockExtract, testReader):
-        newItem = testReader.scrapeRecordMetadata(1, {})
+        newItem = testReader.scrapeRecordMetadata(1, {'parentId': 1})
         mockExtract.assert_called_once()
         mockTransform.assert_called_once()
         assert newItem == 'testWork'
