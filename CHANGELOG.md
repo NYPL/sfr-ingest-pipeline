@@ -2,6 +2,8 @@
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
 ## [Unreleased]
+
+## [0.0.3] - 2020-04-01
 ### Added
 - Publisher data reader to fetch metadata records from smaller projects. Initially this only includes the MET Exhibition Catalogs project.
 - Parser for de Gruyter links for the `sfr-doab-reader`

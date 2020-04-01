@@ -1,5 +1,7 @@
 # ResearchNow Data Ingest Pipeline
 
+[![Build Status](https://travis-ci.com/NYPL/sfr-ingest-pipeline.svg?branch=development)](https://travis-ci.com/NYPL/sfr-ingest-pipeline) [![GitHub version](https://badge.fury.io/gh/nypl%2Fsfr-ingest-pipeline.svg)](https://badge.fury.io/gh/nypl%2Fsfr-ingest-pipeline)
+
 ## Summary/Purpose
 
 This repository represents the ETL pipeline that produces the data discoverable on [researchnow-beta.nypl.org](researchnow-beta.nypl.org). This pipeline extracts metadata records representing distinct instances of bibliographic records and transforms them into a simplified FRBR model to improve their discoverability and expose connection between separate book digitization projects.
