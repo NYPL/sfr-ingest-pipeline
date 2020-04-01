@@ -3,6 +3,7 @@ import requests
 
 
 class SpringerParser:
+    ORDER = 1
     REGEX = 'link.springer.com\/book\/(10\.[0-9]+)(?:\/|\%2F)([0-9\-]+)'
     REDIRECT_REGEX = '((?:https?:\/\/)?link\.springer\.com\/.+)$'
     LINK_STRINGS = {

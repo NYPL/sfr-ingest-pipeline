@@ -3,7 +3,8 @@ import requests
 
 
 class DeGruyterParser:
-    REGEX = 'www\.degruyter\.com\/view\/books\/[0-9]+\/[0-9]+\/[0-9]+\.xml'
+    ORDER = 5
+    REGEX = 'www\.degruyter\.com\/.+\/[0-9]+'
     LINK_STRINGS = {
         'https://www.degruyter.com/downloadepub/title/{}': {
             'flags': {

@@ -1,26 +1,19 @@
+import inspect
+
 from lib.dataModel import Link, Identifier
-from .parsers import (
-    DefaultParser, FrontierParser, MDPIParser,
-    OpenEditionParser, SpringerParser, DeGruyterParser
-)
+import lib.parsers as parsers
 
 
 class LinkParser:
-    PARSERS = [
-        FrontierParser,
-        SpringerParser,
-        OpenEditionParser,
-        MDPIParser,
-        DeGruyterParser,
-        DefaultParser
-    ]
     def __init__(self, item, uri, media_type):
         self.item = item
         self.uri = uri
         self.media_type = media_type
+        self.parsers = inspect.getmembers(parsers, inspect.isclass)
     
     def selectParser(self):
-        for model in self.PARSERS:
+        sortedParsers = self.sortParsers()
+        for model in sortedParsers:
             parser = model(self.uri, self.media_type)
             if parser.validateURI() is True:
                 self.parser = parser
@@ -42,5 +35,11 @@ class LinkParser:
                     'weight': 1
                 })
 
-
+    def sortParsers(self):
+        parserList = []
+        for parser in self.parsers:
+            _, parserClass = parser
+            parserList.append(parserClass)
+        return sorted(parserList, key=lambda x: x.ORDER)
+        
 
