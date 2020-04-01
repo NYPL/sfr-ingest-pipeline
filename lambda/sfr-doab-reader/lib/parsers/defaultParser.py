@@ -1,4 +1,5 @@
 class DefaultParser:
+    ORDER = 6
     def __init__(self, uri, media_type):
         self.uri = uri
         self.media_type = media_type

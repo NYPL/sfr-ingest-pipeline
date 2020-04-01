@@ -1,10 +1,24 @@
 import unittest
 from unittest.mock import MagicMock, patch, call
 
-from lib.linkParser import (
-    LinkParser, DefaultParser, FrontierParser, SpringerParser, MDPIParser,
-    OpenEditionParser, Link, Identifier
-)
+from lib.linkParser import LinkParser, Link, Identifier
+from lib.parsers import SpringerParser, DefaultParser
+
+
+class FakeParserTrue:
+    def __init__(self, *args):
+        pass
+
+    def validateURI(self):
+        return True
+
+
+class FakeParserFalse:
+    def __init__(self, *args):
+        pass
+
+    def validateURI(self):
+        return False
 
 
 class TestLinkParser(unittest.TestCase):
@@ -13,47 +27,23 @@ class TestLinkParser(unittest.TestCase):
         self.assertEqual(testParser.item, 'mockItem')
         self.assertEqual(testParser.uri, 'mockURI')
         self.assertEqual(testParser.media_type, 'mockType')
+        self.assertEqual(len(testParser.parsers), 6)
     
-    @patch.object(OpenEditionParser, 'validateURI')
-    @patch.object(DefaultParser, 'validateURI')
-    @patch.object(MDPIParser, 'validateURI')
-    @patch.object(FrontierParser, 'validateURI')
-    @patch.object(SpringerParser, 'validateURI')
-    def test_selectParser_first(
-        self, springValidate, frontValidate, mdpiValidate, defaultValidate,
-        openEdValidate
-    ):
-        frontValidate.return_value = True
+    @patch.object(LinkParser, 'sortParsers')
+    def test_selectParser_first(self, mockParserSort):
+        mockParserSort.return_value = [FakeParserTrue] * 6
+
         testParser = LinkParser('mockItem', 'mockURI', 'mockType')
         testParser.selectParser()
 
-        frontValidate.assert_called_once()
-        springValidate.assert_not_called()
-        openEdValidate.assert_not_called()
-        mdpiValidate.assert_not_called()
-        defaultValidate.assert_not_called()
-        self.assertIsInstance(testParser.parser, FrontierParser)
+    @patch.object(LinkParser, 'sortParsers')
+    def test_selectParser_last(self, mockParserSort):
+        mockParser = MagicMock()
+        mockParser.validateURI.return_value = [FakeParserFalse] * 5 + [FakeParserTrue]
+        mockParserSort.return_value = [mockParser] * 6
 
-    @patch.object(OpenEditionParser, 'validateURI')
-    @patch.object(DefaultParser, 'validateURI')
-    @patch.object(MDPIParser, 'validateURI')
-    @patch.object(FrontierParser, 'validateURI')
-    @patch.object(SpringerParser, 'validateURI')
-    def test_selectParser_last(
-        self, springValidate, frontValidate, mdpiValidate, defaultValidate,
-        openEdValidate
-    ):
-        frontValidate.return_value = False
-        springValidate.return_value = False
-        openEdValidate.return_value = False
-        mdpiValidate.return_value = False
-        defaultValidate.return_value = True
         testParser = LinkParser('mockItem', 'mockURI', 'mockType')
         testParser.selectParser()
-
-        frontValidate.assert_called_once()
-        defaultValidate.assert_called_once()
-        self.assertIsInstance(testParser.parser, DefaultParser)
 
     def test_createLinks(self):
         mockItem = MagicMock()
@@ -79,3 +69,10 @@ class TestLinkParser(unittest.TestCase):
                 'links', Link, url='url2', media_type='type2', flags='flags2'
             )
         ])
+
+    def test_sortParsers(self):
+        testParser = LinkParser('mockItem', 'mockURI', 'mockType')
+        sortedParsers = testParser.sortParsers()
+
+        self.assertEqual(sortedParsers[0], SpringerParser)
+        self.assertEqual(sortedParsers[5], DefaultParser)

@@ -2,6 +2,7 @@ import re
 
 
 class MDPIParser:
+    ORDER = 4
     REGEX = 'mdpi.com/books/pdfview/book/([0-9]+)$'
 
     def __init__(self, uri, media_type):
