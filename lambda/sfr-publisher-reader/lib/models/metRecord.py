@@ -87,7 +87,7 @@ class MetItem(object):
         # These will be used later
         try:
             self.downloadURI = self.data['downloadParentUri'].replace('/digital', '')
-        except KeyError:
+        except (KeyError, AttributeError):
             self.downloadURI = self.data['downloadUri']
         self.coverURI = self.data['imageUri']
         self.viewURI = self.ITEM_UI.format(self.itemID)
@@ -128,6 +128,13 @@ class MetItem(object):
         """
         logger.info('Extracting identifiers')
         for rec in [self.work, self.instance, self.item]:
+            # Append main id from API response
+            logger.debug('Adding identifier {}({}) to {}'.format(
+                self.itemID, 'generic', rec
+            ))
+            rec.identifiers.append(
+                type=None, identifier='met.{}'.format(self.itemID), weight=1
+            )
             # Extracts identifier fields by prefix
             ids = list(filter(lambda x: x[:11] == 'identifier.', rec.keys()))
 
