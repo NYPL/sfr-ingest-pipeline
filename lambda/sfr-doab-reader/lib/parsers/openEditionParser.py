@@ -5,6 +5,7 @@ from bs4 import BeautifulSoup
 
 
 class OpenEditionParser:
+    ORDER = 2
     OE_URL_ROOT = 'books.openedition.org'
     REGEX = r'books.openedition.org/([a-z0-9]+)/([0-9]+)$'
     OPTION_REGEXES = [
