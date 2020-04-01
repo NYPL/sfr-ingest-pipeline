@@ -1,0 +1,39 @@
+region: us-east-1
+
+function_name: sfr-publisher-reader
+handler: service.handler
+description: A generic reader for ingesting books from individual publishers and other smaller sources
+runtime: python3.7
+role: lambda_basic_execution
+
+# if access key and secret are left blank, boto will use the credentials
+# defined in the [default] section of ~/.aws/credentials.
+aws_access_key_id:
+aws_secret_access_key:
+
+# dist_directory: dist
+timeout: 900
+memory_size: 256
+
+# If tags are used they will overwrite all existing tags at deployment time
+#tags:
+# example: tag
+
+# Build options
+build:
+  source_directories: lib, helpers, assets
+
+subnet_ids: ['subnet-12aa8a65']
+security_group_ids: ['sg-5521ef32']
+
+# Environment Variables
+# Any variables set here will be carried across all environments, unless
+# specifically overridden elsewhere. To set specific variables (for dev/qa/prod)
+# modify the individual .yaml files in the config directory
+# NOTE: The surrounding === comments enable the replacing and must be kept in
+# the file
+# === START_ENV_VARIABLES ===
+environment_variables:
+  ENV: development
+  LOG_LEVEL: info
+# === END_ENV_VARIABLES ===

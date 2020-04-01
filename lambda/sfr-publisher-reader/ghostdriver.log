@@ -1,0 +1,60 @@
+[INFO  - 2020-03-20T19:59:37.588Z] GhostDriver - Main - running on port 59407
+[INFO  - 2020-03-20T19:59:38.381Z] Session [545e9080-6ae5-11ea-8fb4-61e6da013ee7] - page.settings - {"XSSAuditingEnabled":false,"javascriptCanCloseWindows":true,"javascriptCanOpenWindows":true,"javascriptEnabled":true,"loadImages":true,"localToRemoteUrlAccessEnabled":false,"userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/538.1 (KHTML, like Gecko) PhantomJS/2.1.1 Safari/538.1","webSecurityEnabled":true}
+[INFO  - 2020-03-20T19:59:38.382Z] Session [545e9080-6ae5-11ea-8fb4-61e6da013ee7] - page.customHeaders:  - {}
+[INFO  - 2020-03-20T19:59:38.382Z] Session [545e9080-6ae5-11ea-8fb4-61e6da013ee7] - Session.negotiatedCapabilities - {"browserName":"phantomjs","version":"2.1.1","driverName":"ghostdriver","driverVersion":"1.2.0","platform":"mac-unknown-64bit","javascriptEnabled":true,"takesScreenshot":true,"handlesAlerts":false,"databaseEnabled":false,"locationContextEnabled":false,"applicationCacheEnabled":false,"browserConnectionEnabled":false,"cssSelectorsEnabled":true,"webStorageEnabled":false,"rotatable":false,"acceptSslCerts":false,"nativeEvents":true,"proxy":{"proxyType":"direct"}}
+[INFO  - 2020-03-20T19:59:38.382Z] SessionManagerReqHand - _postNewSessionCommand - New Session Created: 545e9080-6ae5-11ea-8fb4-61e6da013ee7
+[ERROR - 2020-03-20T19:59:40.824Z] Session [545e9080-6ae5-11ea-8fb4-61e6da013ee7] - page.onError - msg: TypeError: Attempting to configurable attribute of unconfigurable property.
+
+  phantomjs://platform/console++.js:263 in error
+[ERROR - 2020-03-20T19:59:40.824Z] Session [545e9080-6ae5-11ea-8fb4-61e6da013ee7] - page.onError - stack:
+  defineProperty (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:17)
+  jt (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:17)
+  t (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  s (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  p (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  h (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  m (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+
+  phantomjs://platform/console++.js:263 in error
+[ERROR - 2020-03-20T19:59:41.220Z] Session [545e9080-6ae5-11ea-8fb4-61e6da013ee7] - page.onError - msg: TypeError: Attempting to configurable attribute of unconfigurable property.
+
+  phantomjs://platform/console++.js:263 in error
+[ERROR - 2020-03-20T19:59:41.220Z] Session [545e9080-6ae5-11ea-8fb4-61e6da013ee7] - page.onError - stack:
+  defineProperty (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:17)
+  jt (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:17)
+  t (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  s (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:12)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:14)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:13)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:16)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:54)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:55)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:54)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:11)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:29)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:10)
+  e (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  webpackJsonp (https://libmma.contentdm.oclc.org/digital/e076289/vendor.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:10)
+  (anonymous function) (https://libmma.contentdm.oclc.org/digital/e076289/app.js:10)
+
+  phantomjs://platform/console++.js:263 in error

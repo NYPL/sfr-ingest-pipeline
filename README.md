@@ -130,3 +130,4 @@ The pipeline is made of the following components
   - `sfr-oclc-lookup` Fetches individual catalog records for matches found through the classification step. These MARC records are parsed, with the relevant metadata eventually being persisted in the database.
   - `sfr-unglueit-lookup` Searches for and returns any matching work summaries for standard numbers.
   - `sfr-viaf-lookup` Queries the VIAF service for personal and corporate names and returns the VIAF number for found matches, used to normalize names and name searches in the ResearchNow application.
+  - `sfr-publisher-reader` A reader for parsing records from various smaller open access/public domain projects. Includes a plugin structure to allow for easier addition of new sources to the project.
