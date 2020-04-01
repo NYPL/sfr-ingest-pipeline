@@ -173,7 +173,7 @@ class TestMETItem:
         assert getattr(testItem.instance, 'publication_date', None) == None
 
     def test_parseLinks(self, testItem):
-        testItem.viewURI = 'testView'
+        testItem.item.links = 'testView'
         testItem.downloadURI = '/testDownload'
         testItem.parseLinks()
 
