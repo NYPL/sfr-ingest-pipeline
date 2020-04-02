@@ -31,20 +31,19 @@ class MetReader(AbsSourceReader):
     
     def scrapeResourcePages(self):
         for itemID in self.itemIDs:
-            logger.info('Fetching metadata for record'.format(itemID))
+            logger.info('Fetching metadata for record {}'.format(itemID))
             pageResp = requests.get(self.ITEM_API.format(itemID))
             pageData = pageResp.json()
 
             self.works.append(self.scrapeRecordMetadata(itemID, pageData))
 
     def scrapeRecordMetadata(self, itemID, pageData):
-        logger.debug('Extracting data from record')
+        logger.debug('Extracting data from record {}'.format(itemID))
 
         # Create local MET record to hold intermediate data
-        try:
-            itemID = pageData['parentId']
-        except KeyError:
-            pass
+        parentID = pageData['parentId']
+        if parentID != -1:
+            itemID = parentID
         newItem = MetItem(itemID, pageData)
 
         # Extract data from MET API format

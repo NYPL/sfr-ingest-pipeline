@@ -2,6 +2,8 @@
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
 ## [Unreleased]
+### Fixed
+- Improved identifier parsing for MET catalog
 
 ## [0.0.3] - 2020-04-01
 ### Added
