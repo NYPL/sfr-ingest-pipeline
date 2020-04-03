@@ -2,6 +2,8 @@
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
 ## [Unreleased]
+### Added
+- travisCI deployment for search API
 ### Fixed
 - Improved identifier parsing for MET catalog
 
