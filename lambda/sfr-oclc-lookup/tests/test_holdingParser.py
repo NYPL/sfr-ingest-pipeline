@@ -13,7 +13,7 @@ class TestHoldingParse(unittest.TestCase):
         self.assertEqual(testInst.instance, 'mockInstance')
         self.assertEqual(testInst.source, 'unknown')
     
-    @patch.object(HoldingParser, 'loadURIid', return_value='testID')
+    @patch.object(HoldingParser, 'loadURIid')
     def test_parseField_success(self, mockURILoad):
         mockField = MagicMock()
         mockField.ind1 = '4'
@@ -27,7 +27,6 @@ class TestHoldingParse(unittest.TestCase):
 
         testInst.parseField()
         self.assertEqual(testInst.uri, 'testURI')
-        self.assertEqual(testInst.identifier, 'testID')
         mockURILoad.assert_called_once()
     
     def test_parseField_wrong_ind1(self):
