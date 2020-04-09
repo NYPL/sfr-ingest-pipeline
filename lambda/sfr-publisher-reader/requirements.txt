@@ -1,4 +1,5 @@
 boto3
+internetarchive
 pycountry
 python-lambda
 pyyaml
