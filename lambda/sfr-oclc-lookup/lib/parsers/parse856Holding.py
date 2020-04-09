@@ -78,7 +78,7 @@ class HoldingParser:
                         return None
                     linkID = Identifier(
                         identifier='ia.{}'.format(self.identifier),
-                        source='generic'
+                        source=None
                     )
                 elif source == 'hathitrust':
                     self.parseHathiLink()
