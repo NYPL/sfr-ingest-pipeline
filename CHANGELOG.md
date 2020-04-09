@@ -4,6 +4,7 @@ This file documents all updates and releases to the ResearchNow Data Ingest pipe
 ## [Unreleased]
 ### Fixed
 - Improved identifier parsing for MET catalog
+- Fix bug in OCLC Catalog lookup to ensure that proper identifiers are fetched from records in the MARC 856 field
 
 ## [0.0.3] - 2020-04-01
 ### Added
