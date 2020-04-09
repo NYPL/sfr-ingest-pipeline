@@ -11,7 +11,8 @@ logger = createLog('metReader')
 class MetReader(AbsSourceReader):
     INDEX_URL = 'https://libmma.contentdm.oclc.org/digital/api/search/collection/p15324coll10/order/title/ad/asc/page/{}/maxRecords/50'
     ITEM_API = 'https://libmma.contentdm.oclc.org/digital/api/collections/p15324coll10/items/{}/false'
-    def __init__(self):
+    def __init__(self, updateSince):
+        self.updateSince = updateSince
         self.startPage = 1
         self.stopPage = 48
         self.source = 'Metropolitan Museum of Art'
