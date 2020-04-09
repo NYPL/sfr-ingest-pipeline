@@ -223,7 +223,8 @@ class IAItem(object):
                 self.getVIAF(newAgent, corporate=corporate)
 
                 inst.agents.append(newAgent)
-                del inst[role]
+
+        del inst[role]
 
     def parseRights(self):
         """Create rights statement for Instance and Item records

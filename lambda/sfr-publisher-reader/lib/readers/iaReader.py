@@ -23,6 +23,8 @@ class IAReader(AbsSourceReader):
     def createSession(self):
         iaKey = decryptEnvVar('IA_ACCESS_KEY')
         iaSecret = decryptEnvVar('IA_SECRET_KEY')
+        print(iaKey)
+        print(iaSecret)
         return get_session(config={'s3': {'access': iaKey, 'secret': iaSecret}})
 
     def collectResourceURLs(self):
@@ -36,11 +38,17 @@ class IAReader(AbsSourceReader):
             ])
     
     def scrapeResourcePages(self):
-        for itemID in self.itemIDs:
+        i = 0
+        for i, itemID in enumerate(self.itemIDs):
             logger.info('Fetching metadata for record {}'.format(itemID))
             item = self.iaSession.get_item(itemID)
 
             self.scrapeRecordMetadata(itemID, item)
+            
+            if i > 2:
+                break
+
+            i += 1
 
     def scrapeRecordMetadata(self, itemID, item):
         dateUpdated = datetime.strptime(
