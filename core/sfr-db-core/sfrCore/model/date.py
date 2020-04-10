@@ -1,7 +1,6 @@
 import re
 from dateutil.parser import parse
 from datetime import date
-import calendar
 from calendar import monthrange, IllegalMonthError
 from sqlalchemy import (
     Table,
