@@ -2,6 +2,8 @@
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
 ## [Unreleased]
+### Added
+- New Reader for Internet Archive collections in the sfr-publisher-reader function
 ### Fixed
 - Improved identifier parsing for MET catalog
 
