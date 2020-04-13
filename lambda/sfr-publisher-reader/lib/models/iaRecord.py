@@ -165,11 +165,13 @@ class IAItem(object):
             self.parseAgent('item', role)
 
     def splitPublisherField(self):
-        """The 'publis' field in the MET record corresponds to a MARC 260 field,
+        """The 'publisher' field in the IA record corresponds to a MARC 260 field,
         specifically subfields $a and $b, so must be split to extract the
         relevant fields.
         """
-        pubField = self.instance.publisher
+        pubField = getattr(self.instance, 'publisher', None)
+        if pubField is None:
+            return None
         publishers = pubField.split(';')
 
         for pub in publishers:
@@ -239,7 +241,10 @@ class IAItem(object):
             )
             rec.rights.append(rights)
 
-            del rec['rights_reason']
+            try:
+                del rec['rights_reason']
+            except KeyError:
+                pass
 
     def parseLanguages(self):
         """Extract language and determine standard ISO codes
