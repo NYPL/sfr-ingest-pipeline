@@ -107,6 +107,8 @@ class CoverParse:
             urlID = '{}.jpg'.format(urlMatch.group(1))
         elif 'contentcafe2' in self.remoteURL:
             urlID = '{}.jpg'.format(self.sourceID)
+        elif 'archive.org' in self.remoteURL:
+            urlID = '{}.jpg'.format(self.sourceID)
         else:
             urlMatch = re.search(self.URL_ID_REGEX, self.remoteURL)
             urlID = urlMatch.group(1)
