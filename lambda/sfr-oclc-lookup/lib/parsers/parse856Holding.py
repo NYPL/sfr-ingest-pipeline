@@ -42,7 +42,7 @@ class HoldingParser:
         except IndexError:
             raise HoldingError('856 Field is missing u subfield for URI')
         
-        self.identifier = self.loadURIid()
+        self.loadURIid()
     
     def loadURIid(self):
         """Regex to extract identifier from an URI. \/((?:(?!\/)[^.])+ matches
@@ -71,12 +71,23 @@ class HoldingParser:
         for source, regex in self.EBOOK_REGEX.items():
             self.source = source
             if re.search(regex, self.uri):
+
+                # Check if link is accessible (e.g. public domain/open source)
                 if source == 'internetarchive':
                     if self.checkIAStatus() is True:
                         return None
+                    linkID = Identifier(
+                        identifier='ia.{}'.format(self.identifier),
+                        source=None
+                    )
                 elif source == 'hathitrust':
                     self.parseHathiLink()
                     return None
+                else:
+                    linkID = Identifier(
+                        identifier=self.identifier,
+                        source='gutenberg'
+                    )
 
                 self.instance.addFormat(**{
                     'source': source,
@@ -87,7 +98,7 @@ class HoldingParser:
                             local=False, download=False, images=False, ebook=True
                         )
                     ],
-                    'identifiers': [Identifier(identifier=self.identifier, source='hathi')]
+                    'identifiers': [linkID]
                 })
                 return True
     

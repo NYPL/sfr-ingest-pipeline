@@ -162,6 +162,11 @@ class TestDates(unittest.TestCase):
         testDate.setDateRange('2018-02')
         self.assertEqual(testDate.date_range, '[2018-02-01, 2018-02-28)')
 
+    def test_parse_false_month(self):
+        testDate = DateField()
+        testDate.setDateRange('1916-18')
+        self.assertEqual(testDate.date_range, '[1916-01-01, 1918-12-31)')
+
     def test_parse_bad_date(self):
         testDate = DateField()
         testDate.setDateRange('Modnay, Dec 01, 87')
