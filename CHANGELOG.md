@@ -2,6 +2,9 @@
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
 ## [Unreleased]
+### Added
+- New Reader for Internet Archive collections in the sfr-publisher-reader function
+- Additional condition for Internet Archive covers in the s3 cover writer function
 ### Fixed
 - Improved identifier parsing for MET catalog
 - Fix bug in OCLC Catalog lookup to ensure that proper identifiers are fetched from records in the MARC 856 field

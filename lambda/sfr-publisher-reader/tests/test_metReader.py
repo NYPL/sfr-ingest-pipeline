@@ -8,9 +8,10 @@ from lib.models.metRecord import MetItem
 class TestMETReader:
     @pytest.fixture
     def testReader(self):
-        return MetReader()
+        return MetReader(100)
 
     def test_init(self, testReader):
+        assert testReader.updateSince == 100
         assert testReader.source == 'Metropolitan Museum of Art'
         assert testReader.startPage == 1
         assert testReader.stopPage == 48
