@@ -166,8 +166,11 @@ class MetItem(object):
         attached to the work record
         """
         logger.info('Extracting subjects')
-        subjStr = self.work.subjects
-        subjs = subjStr.split(';')
+        try:
+            subjs = self.work.subjects.split(';')
+        except AttributeError:
+            subjs = self.work.subjects
+
         self.work.subjects = [
             Subject(subjectType='lcsh', value=subj.strip(), weight=1)
             for subj in subjs
@@ -190,8 +193,11 @@ class MetItem(object):
         specifically subfields $a and $b, so must be split to extract the
         relevant fields.
         """
-        pubField = self.instance.publisher
-        publishers = pubField.split(';')
+        try:
+            pubField = self.instance.publisher
+            publishers = pubField.split(';')
+        except AttributeError:
+            return None
 
         for pub in publishers:
             pubData = pub.split(':')
@@ -204,10 +210,12 @@ class MetItem(object):
                 publisher = pubData[1].strip()
                 self.instance.publisher = publisher
                 self.parseAgent('instance', 'publisher')
-            else:
-                # If no publisher exists we must still remove this field from
-                # the record
-                del self.instance['publisher']
+        
+        # If parseAgent wasn't called, we still need to be sure the field is removed
+        try:
+            del self.instance['publisher']
+        except KeyError:
+            pass
 
     def parseAgent(self, rec, role):
         """Parse individual agent record, skipping if none is found
@@ -240,7 +248,7 @@ class MetItem(object):
         logger.info('Extracting rights metadata')
         for rec in [self.instance, self.item]:
             # Transforms the license string into a uniform format
-            rightsLicense = getattr(rec, 'license', None).replace(' ', '_').lower()
+            rightsLicense = getattr(rec, 'license', 'copyrighted').replace(' ', '_').lower()
 
             # Check to see if this is "copyrighted" which is the METs term for
             # all records they do not release in the public domain. We refer
@@ -263,7 +271,10 @@ class MetItem(object):
 
             # These fields can be safely removed once the rights object exists
             for field in ['license', 'rights_statement', 'rights_reason']:
-                del rec[field]
+                try:
+                    del rec[field]
+                except KeyError:
+                    pass
 
     def parseLanguages(self):
         """Extract language and determine standard ISO codes
@@ -273,10 +284,14 @@ class MetItem(object):
             language = getattr(rec, 'language', '')
 
             # Parses language to find ISO codes
-            langObj = pycountry.languages.get(name=language.strip().title())
-            if langObj is None or langObj.alpha_3 == 'und':
-                logger.warning('Language could not be determined for {}'.format(language))
-                rec.language = []
+            
+            try:
+                langObj = pycountry.languages.get(name=language.strip().title())
+                if langObj is None or langObj.alpha_3 == 'und':
+                    logger.warning('Language could not be determined for {}'.format(language))
+                    rec.language = []
+                    raise AttributeError
+            except AttributeError:
                 continue
 
             sfrLang = Language(
