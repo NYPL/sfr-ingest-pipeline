@@ -1,7 +1,7 @@
 # Changelog
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
-## [Unreleased]
+## [0.0.4] - 2020-04-16
 ### Added
 - New Reader for Internet Archive collections in the sfr-publisher-reader function
 - Additional condition for Internet Archive covers in the s3 cover writer function
