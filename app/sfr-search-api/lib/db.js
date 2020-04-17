@@ -203,7 +203,7 @@ class DBConnection {
    *
    * @returns {object} A postgres response object that contains an array of identifiers
    */
-  async loadInstances(instanceIds, limit) {
+  async loadInstances(instanceIds, limit, joins) {
     const agentFields = {
       name: 'name',
       sort_name: 'sort_name',
@@ -274,11 +274,31 @@ class DBConnection {
     }
     const dateSub = this.createSubQuery('instances', 'instance_dates', 'dates', dateFields)
 
+    const measurementFields = {
+      quantity: 'quantity',
+      value: 'value',
+    }
+    const measureSub = this.createSubQuery('instances', 'instance_measurements', 'measurements', measurementFields)
+
+    const subQueries = [
+      { name: 'measurements', subquery: measureSub },
+      { name: 'agents', subquery: agentSub },
+      { name: 'items', subquery: itemSub },
+      { name: 'languages', subquery: langSub },
+      { name: 'covers', subquery: coverSub },
+      { name: 'dates', subquery: dateSub },
+      { name: 'rights', subquery: rightsSub },
+    ]
+
+    const selectQueries = joins
+      ? subQueries.filter(a => joins.indexOf(a.name) > -1).map(a => a.subquery)
+      : subQueries.map(a => a.subquery)
+
     const sortOrder = `array_position(ARRAY[${instanceIds.join(', ')}], id)`
 
     return this.pg('instances')
       .whereIn('id', instanceIds)
-      .select('*', agentSub, itemSub, langSub, coverSub, dateSub, rightsSub)
+      .select('*', ...selectQueries)
       .orderBy(this.pg.raw(sortOrder))
       .limit(limit)
       .then(rows => rows)
@@ -382,6 +402,15 @@ class DBConnection {
       .orderBy(this.pg.raw(sortOrder))
       .limit(limit)
       .then(rows => rows)
+  }
+
+  async getEditionInstances(editionID) {
+    const instanceIDs = await this.pg('instances')
+      .select('id')
+      .where({ 'instances.edition_id': editionID })
+      .then(rows => rows)
+
+    return this.loadInstances(instanceIDs.map(i => i.id), instanceIDs.length)
   }
 }
 

@@ -105,7 +105,7 @@ class V3Work {
    * @returns {array} Array of instance objects from the database
    */
   getInstances(instanceIds) {
-    return this.dbConn.loadInstances(instanceIds, instanceIds.length)
+    return this.dbConn.loadInstances(instanceIds, instanceIds.length, ['agents', 'items', 'languages', 'covers', 'dates', 'rights'])
   }
 
   /**
