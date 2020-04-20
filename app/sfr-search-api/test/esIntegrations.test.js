@@ -442,6 +442,69 @@ describe('Testing ElasticSearch Integration', () => {
         expect(v3Work.isDone()).to.be.true
       })
     })
+
+    describe('v3 Edition Integration', () => {
+      beforeEach(() => {
+        dbTracker.install()
+      })
+
+      afterEach(() => {
+        dbTracker.uninstall()
+      })
+      it('should return a single edition record on success', async () => {
+        dbTracker.on('query', (query, step) => {
+          [
+            () => {
+              expect(query.sql).to.contain('from "editions" where "id"')
+              query.response([{
+                id: 1,
+                summary: 'Test Summary',
+              }])
+            },
+            () => {
+              expect(query.sql).to.contain('from "instances" where "instances"."edition_id"')
+              query.response([{ id: 1 }, { id: 2 }, { id: 3 }])
+            },
+            () => {
+              expect(query.sql).to.contain('from "instances" where "id"')
+              query.response([
+                { title: 'test1', measurements: [{ value: 2 }] },
+                { title: 'test2', measurements: [{ value: 10 }] },
+                { title: 'test3', measurements: [{ value: 5 }] },
+              ])
+            },
+          ][step - 1]()
+        })
+
+        await req.post('/v3/sfr/edition')
+          .send({ editionIdentifier: 'testIdentifier' })
+          .then((resp) => {
+            expect(resp.body.status).to.equal(200)
+            expect(resp.body.data.id).to.equal(1)
+            expect(resp.body.data.summary).to.equal('Test Summary')
+            expect(resp.body.responseType).to.equal('editionRecord')
+            expect(resp.body.data.instances.length).to.equal(3)
+            expect(resp.body.data.instances[0].title).to.equal('test2')
+          })
+      })
+
+      it('should return an error if no matching edition is found', async () => {
+        dbTracker.on('query', (query, step) => {
+          [
+            () => {
+              expect(query.sql).to.contain('from "editions" where "id"')
+              query.response([])
+            },
+          ][step - 1]()
+        })
+        await req.post('/v3/sfr/edition')
+          .send({ editionIdentifier: 1 })
+          .then((resp) => {
+            expect(resp.body.status).to.equal(404)
+            expect(resp.body.name).to.equal('NotFoundError')
+          })
+      })
+    })
   })
 
   describe('Utility Endpoints', () => {
