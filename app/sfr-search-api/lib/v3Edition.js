@@ -1,6 +1,7 @@
 /* eslint-disable prefer-destructuring */
 const Helpers = require('../helpers/esSourceHelpers')
 const { DBConnection } = require('./db')
+const { NotFoundError } = require('./errors')
 
 /** Class representing an edition record. */
 class V3Edition {
@@ -28,8 +29,11 @@ class V3Edition {
    */
   async loadEdition() {
     const editions = await this.getEditions()
-
     this.edition = editions[0]
+
+    if (this.edition === undefined) {
+      throw new NotFoundError(`No edition found matching identifier ${this.editionID}`)
+    }
 
     await this.parseEdition()
 
@@ -38,20 +42,6 @@ class V3Edition {
     Helpers.parseDates(this.edition, 'instances')
 
     return this.edition
-  }
-
-  /**
-   * Handler function to retrieve identifiers for a specified row through the
-   * DBConnection class
-   *
-   * @param {string} table Name of the table to retrieve related identifiers. Should
-   * generally be either works or instances (other option is items)
-   * @param {integer} identifier Row ID in the specified table to retrieve identifiers for
-   *
-   * @returns {array} Array of identifier objects with id_type and identifier values
-   */
-  getIdentifiers(table, identifier) {
-    return this.dbConn.loadIdentifiers(table, identifier)
   }
 
   /**
@@ -110,19 +100,19 @@ class V3Edition {
     })
 
     if (this.edition.items) {
-      const editionLinks = this.edition.items.map(i => i.links.map(l => l.url))
+      const editionLinks = [].concat(...this.edition.items.map(i => i.links.map(l => l.url)))
       const featuredInst = this.edition.instances.filter((i) => {
         if (i.items) {
-          const instanceLinks = i.items.map(t => t.links.map(l => l.url))
-          if (instanceLinks.filter(l => editionLinks.indexOf(l) > -1)) {
-            return i
+          const instanceLinks = [].concat(...i.items.map(t => t.links.map(l => l.url)))
+          if (instanceLinks.filter(l => editionLinks.indexOf(l) > -1).length > 0) {
+            return true
           }
         }
-        return null
+        return false
       })
       const featuredPos = this.edition.instances.indexOf(featuredInst)
       this.edition.instances.splice(featuredPos, 1)
-      this.edition.instances = [featuredInst, ...this.edition.instances]
+      this.edition.instances = [...featuredInst, ...this.edition.instances]
     }
   }
 }
