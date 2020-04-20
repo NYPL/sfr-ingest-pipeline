@@ -1,6 +1,10 @@
 # Changelog
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
+## [0.0.5] - Unreleased
+### Added
+- Edition detail endpoint to the API to allow users to retrieve an individual edition and its component instances
+
 ## [0.0.4] - 2020-04-16
 ### Added
 - New Reader for Internet Archive collections in the sfr-publisher-reader function

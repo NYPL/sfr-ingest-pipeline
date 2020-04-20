@@ -20,12 +20,9 @@ class V3Edition {
   }
 
   /**
-   * Method to load and format an object containing work metadata from the database
+   * Method to load and format an object containing edition metadata from the database
    *
-   * @param {object} work Parsed work object containing identifiers to be retrieved
-   * @param {*} recordType Inner doc type to be included. Either instances or editions
-   *
-   * @returns {object} Constructed work record that can be sent to the end user
+   * @returns {object} Constructed edition record that can be sent to the end user
    */
   async loadEdition() {
     const editions = await this.getEditions()
@@ -35,8 +32,10 @@ class V3Edition {
       throw new NotFoundError(`No edition found matching identifier ${this.editionID}`)
     }
 
+    // Transform source metadata into output format
     await this.parseEdition()
 
+    // Transform source metadata from child records
     Helpers.parseAgents(this.edition, 'instances')
     Helpers.parseLinks(this.edition, 'instances')
     Helpers.parseDates(this.edition, 'instances')
@@ -57,10 +56,8 @@ class V3Edition {
   }
 
   /**
-   * Handler function for retrieving a set of instances specified by their internal
-   * postgres row ids through the DBConnection class
-   *
-   * @param {array} editionIds Array of Row IDs to the instances table
+   * Handler function for retrieving a set of instances related to the current
+   * edition record by the editions PostgreSQL row ID through the DBConnection class
    *
    * @returns {array} Array of instance objects from the database
    */
@@ -68,13 +65,20 @@ class V3Edition {
     return this.dbConn.getEditionInstances(this.editionID)
   }
 
+  /**
+   * Method for performing some basic transformations of source metadata for presentation
+   * to end users. This includes parsing dates, selecting the most appropriate title for
+   * the edition and sorting the component instances.
+   */
   async parseEdition() {
     this.edition.instances = await this.getInstances()
 
+    // Select the publication year from the publication date range
     if (this.edition.publication_date) {
       this.edition.publication_date = this.edition.publication_date.match(/^\[([0-9]+)/)[1]
     }
 
+    // Count all unique instance titles, sorting them into an object
     const titleCounts = this.edition.instances
       .map(i => i.title)
       .reduce((titles, title) => {
@@ -84,23 +88,37 @@ class V3Edition {
         return titles
       }, {})
 
+    // Select the most common instance title as the edition title
     this.edition.title = Object.keys(titleCounts)
       .sort((a, b) => titleCounts[b] - titleCounts[a])[0]
 
+    // Perform a custom sort on the instance array
     this.sortInstances()
+
+    // Remove items and covers from the edition; these are displayed on instances
     delete this.edition.items
     delete this.edition.covers
   }
 
+  /**
+   * Sort the component instances of this edition by the number of holdings, and
+   * treating the "featured" instance (the instance in the edition card) as a special
+   * case that should be placed first in the array
+   */
   sortInstances() {
+    // Sort instances by holdings
     this.edition.instances.sort((a, b) => {
-      const aHoldings = a.measurements.map(m => m.value)
-      const bHoldings = b.measurements.map(m => m.value)
-      return aHoldings.reduce((acc, cur) => acc + cur) < bHoldings.reduce((acc, cur) => acc + cur)
+      const aHoldingCount = a.measurements.map(m => m.value).reduce((acc, cur) => acc + cur)
+      const bHoldingCount = b.measurements.map(m => m.value).reduce((acc, cur) => acc + cur)
+      return aHoldingCount < bHoldingCount
     })
 
+    // Locate the featured instance by link URL if one is present
     if (this.edition.items) {
+      // Get the featured instance links
       const editionLinks = [].concat(...this.edition.items.map(i => i.links.map(l => l.url)))
+
+      // Filter the instance array to find the featured instance
       const featuredInst = this.edition.instances.filter((i) => {
         if (i.items) {
           const instanceLinks = [].concat(...i.items.map(t => t.links.map(l => l.url)))
@@ -109,10 +127,12 @@ class V3Edition {
           }
         }
         return false
-      })
+      })[0]
+
+      // Splice out the featured instance and set the reordered array
       const featuredPos = this.edition.instances.indexOf(featuredInst)
       this.edition.instances.splice(featuredPos, 1)
-      this.edition.instances = [...featuredInst, ...this.edition.instances]
+      this.edition.instances = [featuredInst, ...this.edition.instances]
     }
   }
 }

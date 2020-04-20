@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "v0.3.0",
+    "version": "v0.3.1",
     "title": "ResearchNow Search API",
     "description": "REST API for Elasticsearch index for the ResearchNow Project"
   },
@@ -732,6 +732,106 @@
         }
       }
     },
+    "/v0.1/research-now/v3/edition": {
+      "get": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) GET Single edition",
+        "description": "Accepts a single edition identifier, passed through a GET request and retrieves a single edition record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "editionIdentifier",
+            "in": "query",
+            "description": "Edition identifier, the must be its PostgreSQL row ID, which can be found in the edition object in other API responses.",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "An editionRecord response object",
+            "schema": {
+              "$ref": "#/definitions/v3EditionRecord"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "research-now"
+        ],
+        "summary": "(v3) POST Single Edition",
+        "description": "Accepts a single edition identifier, passed through a GET request and retrieves a single edition record. Will raise an error if no or more than one record is returned for the provided identifier",
+        "parameters": [
+          {
+            "name": "editionIdentifier",
+            "in": "body",
+            "description": "Edition identifier, the must be its PostgreSQL row ID, which can be found in the edition object in other API responses.",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SingleQuery"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A workRecord response object",
+            "schema": {
+              "$ref": "#/definitions/v3EditionRecord"
+            }
+          },
+          "404": {
+            "description": "Resource was not found error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "422": {
+            "description": "An Invalid Parameter was recieved in the Request",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          },
+          "default": {
+            "description": "Unexpected Error",
+            "schema": {
+              "$ref": "#/definitions/ErrorResponse"
+            }
+          }
+        }
+      }
+    },
     "/v0.1/research-now/v3/search-api": {
       "get": {
         "tags": [
@@ -1095,6 +1195,25 @@
         }
       }
     },
+    "v3EditionRecord": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "responseType": {
+          "type": "string"
+        },
+        "data": {
+          "$ref": "#/definitions/v3EditionDetailObject"
+        }
+      }
+    },
     "v3DataObject": {
       "type": "object",
       "properties": {
@@ -1390,6 +1509,71 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/v3ItemObject"
+          }
+        },
+        "languages": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3LanguageObject"
+          }
+        }
+      }
+    },
+    "v3EditionDetailObject": {
+      "type": "object",
+      "properties": {
+        "date_modified": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "date_created": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "id": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "publication_place": {
+          "type": "string"
+        },
+        "publication_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "edition": {
+          "type": "string"
+        },
+        "edition_statement": {
+          "type": "string"
+        },
+        "volume": {
+          "type": "string"
+        },
+        "table_of_contents": {
+          "type": "string"
+        },
+        "extent": {
+          "type": "string"
+        },
+        "summary": {
+          "type": "string"
+        },
+        "work_id": {
+          "type": "integer"
+        },
+        "agents": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3AgentObject"
+          }
+        },
+        "instances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3InstanceObject"
           }
         },
         "languages": {
