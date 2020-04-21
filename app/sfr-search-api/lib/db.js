@@ -200,6 +200,7 @@ class DBConnection {
    *
    * @param {array} instanceIds An array of instance row IDs to retrieve
    * @param {integer} limit The maximum number of instances to return
+   * @param {array} joins An array of table names to select subqueries to execute
    *
    * @returns {object} A postgres response object that contains an array of identifiers
    */
