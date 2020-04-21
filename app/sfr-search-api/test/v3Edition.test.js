@@ -130,6 +130,19 @@ describe('v3 edition retrieval tests', () => {
       expect(testEdition.edition.publication_date).to.equal('2000')
       expect(mockSort).to.be.calledOnce
     })
+
+    it('should remove instances without items if showAll is false', async () => {
+      testEdition.showAll = 'false'
+      mockGetInstances.returns([
+        { title: 'Testing', items: 'itemArray' },
+        { title: 'Not Testing', items: null },
+        { title: 'Testing', items: 'itemArray2' },
+      ])
+      await testEdition.parseEdition()
+      expect(testEdition.edition.title).to.equal('Testing')
+      expect(testEdition.edition.instances.length).to.equal(2)
+      expect(mockSort).to.be.calledOnce
+    })
   })
 
   describe('sortInstances()', () => {

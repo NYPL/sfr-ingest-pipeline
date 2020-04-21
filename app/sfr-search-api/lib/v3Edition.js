@@ -10,10 +10,13 @@ class V3Edition {
    *
    * @param {Object} app Express object, contains various components needed for search.
    * @param {Integer} editionIdentifier Row id for edition in the postgres database.
+   * @param {Boolean} showAll Control display of instances to either all(true) or only
+   * those with items (false).
    */
-  constructor(app, editionIdentifier) {
+  constructor(app, editionIdentifier, showAll) {
     this.app = app
     this.editionID = editionIdentifier
+    this.showAll = showAll
     this.edition = null
     this.logger = this.app.logger
     this.dbConn = new DBConnection(this.logger, app.dbClient)
@@ -91,6 +94,11 @@ class V3Edition {
     // Select the most common instance title as the edition title
     this.edition.title = Object.keys(titleCounts)
       .sort((a, b) => titleCounts[b] - titleCounts[a])[0]
+
+    // If showAll is false, remove instances without items
+    if (this.showAll === 'false') {
+      this.edition.instances = this.edition.instances.filter(i => i.items !== null)
+    }
 
     // Perform a custom sort on the instance array
     this.sortInstances()

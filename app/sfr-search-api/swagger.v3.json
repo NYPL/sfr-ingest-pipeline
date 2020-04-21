@@ -746,6 +746,12 @@
             "description": "Edition identifier, the must be its PostgreSQL row ID, which can be found in the edition object in other API responses.",
             "required": true,
             "type": "string"
+          }, {
+            "name": "showAll",
+            "in": "query",
+            "description": "Set to control output of instances, if false, this will return only instances with attached items. If true or not set, all instances will be returned",
+            "required": false,
+            "type": "string"
           }
         ],
         "responses": {
@@ -789,12 +795,12 @@
         "description": "Accepts a single edition identifier, passed through a GET request and retrieves a single edition record. Will raise an error if no or more than one record is returned for the provided identifier",
         "parameters": [
           {
-            "name": "editionIdentifier",
+            "name": "editionQuery",
             "in": "body",
-            "description": "Edition identifier, the must be its PostgreSQL row ID, which can be found in the edition object in other API responses.",
+            "description": "Lookup individual edition record detail",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/SingleQuery"
+              "$ref": "#/definitions/SingleEditionQuery"
             }
           }
         ],
@@ -1777,6 +1783,23 @@
           "example": "editions",
           "description": "Either editions or instances to control the type of inner document returned",
           "enum": ["editions", "instances"]
+        }
+      }
+    },
+    "SingleEditionQuery": {
+      "title": "SingleEditionQuery",
+      "type": "object",
+      "properties": {
+        "editionIdentifier": {
+          "type": "integer",
+          "example": "0000000",
+          "description": "Edition identifier, the must be its PostgreSQL row ID, which can be found in the edition object in other API responses."
+        },
+        "showAll": {
+          "type": "string",
+          "example": "false",
+          "description": "Return either all instances or only instances with item records that have readable links",
+          "enum": ["true", "false"]
         }
       }
     },

@@ -29,9 +29,13 @@ const fetchEdition = (params, app) => {
     throw new MissingParamError('Your request must include an identifier field or parameter')
   }
 
-  const { editionIdentifier } = params
+  if (params.showAll && params.showAll !== 'true' && params.showAll !== 'false') {
+    throw new MissingParamError('showAll must be set to either "true" or "false"')
+  }
 
-  const v3Edition = new V3Edition(app, editionIdentifier)
+  const { editionIdentifier, showAll } = params
+
+  const v3Edition = new V3Edition(app, editionIdentifier, showAll)
   return v3Edition.loadEdition()
 }
 
