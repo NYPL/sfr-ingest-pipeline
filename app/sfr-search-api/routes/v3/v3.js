@@ -6,6 +6,7 @@ const logger = require('../../lib/logger')
 const pjson = require('../../package.json')
 const { searchEndpoints } = require('./search')
 const { workEndpoints } = require('./work')
+const { editionEndpoints } = require('./edition')
 const { utilEndpoints } = require('./utils')
 
 // Create an instance of an Express router to handle requests to v2 of the API
@@ -97,5 +98,6 @@ const handleError = (res, error, errType, errReason) => {
 searchEndpoints(v3Router, respond, handleError)
 workEndpoints(v3Router, respond, handleError)
 utilEndpoints(v3Router, respond, handleError)
+editionEndpoints(v3Router, respond, handleError)
 
 module.exports = { v3Router, respond, handleError }

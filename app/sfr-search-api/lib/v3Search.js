@@ -188,7 +188,7 @@ class V3Search {
    * @returns {array} Array of instance objects from the database
    */
   async getInstances(instanceIds) {
-    return this.dbConn.loadInstances(instanceIds, 1)
+    return this.dbConn.loadInstances(instanceIds, 1, ['agents', 'items', 'languages', 'covers', 'dates', 'rights'])
   }
 
   /**
