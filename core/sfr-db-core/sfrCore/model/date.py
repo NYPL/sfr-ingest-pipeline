@@ -283,7 +283,7 @@ class DateField(Core, Base):
                         date(year, month, 1),
                         date(year, month, lastDay)
                     )
-                except IllegalMonthError:
+                except (IllegalMonthError, TypeError):
                     logger.debug('Year-month is actually year-2 dig year')
                     secondYear = '{}{}'.format(dateObj[:2], dateObj[5:])
                     self.display_date = '{}/{}'.format(dateObj[:4], secondYear)

@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import pytest
 from unittest.mock import patch, DEFAULT, call, MagicMock
 
@@ -7,16 +8,22 @@ from lib.readers.abstractReader import AbsSourceReader
 
 class TestManager:
     @pytest.fixture
-    def testManager(self):
-        return SourceManager()
+    def testTime(self):
+        return datetime.utcnow()
 
-    def test_init(self, testManager):
-        assert testManager.updatePeriod == 1200
+    @pytest.fixture
+    def testManager(self, testTime):
+        with patch('lib.sourceManager.datetime') as mockDT:
+            mockDT.utcnow.return_value = testTime
+            return SourceManager()
+
+    def test_init(self, testManager, testTime):
+        assert testManager.updatePeriod == testTime - timedelta(seconds=1200)
         assert testManager.works == []
         assert isinstance(testManager.output, OutputManager)
         for module in testManager.readers:
             name, reader = module
-            assert isinstance(reader(), AbsSourceReader)
+            assert isinstance(reader(100), AbsSourceReader)
 
     def test_fetchRecords(self, testManager):
         mockReader = MagicMock()
@@ -30,9 +37,24 @@ class TestManager:
         testManager.readers = [
             (module[0], mockClass) for module in testManager.readers
         ]
+        testManager.activeReaders = [r[0] for r in testManager.readers]
 
         testManager.fetchRecords()
         assert len(testManager.works) == 3 * len(testManager.readers)
+    
+    def test_fetchRecords_reader_inactive(self, testManager):
+        mockReader = MagicMock()
+        mockClass = MagicMock()
+
+        testManager.readers = [
+            (module[0], mockClass) for module in testManager.readers
+        ]
+
+        testManager.fetchRecords()
+
+        mockClass.assert_not_called()
+        assert len(testManager.works) == 0
+
 
     @patch.dict('os.environ', {'KINESIS_INGEST_STREAM': 'testStream'})
     def test_sendWorksToKinesis(self, testManager):

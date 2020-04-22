@@ -1,4 +1,5 @@
 boto3
+Pillow
 python-lambda
 pyyaml
 requests

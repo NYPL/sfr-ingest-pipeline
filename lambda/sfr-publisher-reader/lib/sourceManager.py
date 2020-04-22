@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import inspect
 import os
 
@@ -18,7 +19,10 @@ class SourceManager:
         for the various sources. Also creates an output manager instance for
         sending the results when complete.
         """
-        self.updatePeriod = os.environ.get('UPDATE_PERIOD', 1200)
+        self.updatePeriod = (
+            datetime.utcnow()
+            - timedelta(seconds=int(os.environ.get('UPDATE_PERIOD', 1200)))
+        )
         self.works = []
         self.output = OutputManager()
         self.activeReaders = os.environ.get('ACTIVE_READERS', '').split(', ')
@@ -30,11 +34,11 @@ class SourceManager:
             name, readerClass = readerModule
             if name not in self.activeReaders:
                 logger.info('Not currently importing from {}'.format(name))
-            reader = readerClass()
+                continue
+            reader = readerClass(self.updatePeriod)
             logger.info('Fetching records from publisher {}'.format(reader.source))
             reader.collectResourceURLs()
             reader.scrapeResourcePages()
-            print(reader, reader.works)
             self.works.extend(reader.works)
 
     def sendWorksToKinesis(self):

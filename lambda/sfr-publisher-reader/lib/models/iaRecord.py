@@ -9,58 +9,59 @@ from ..dataModel import (
 )
 from helpers.logHelpers import createLog
 
-logger = createLog('metItem')
+logger = createLog('iaItem')
 
 
-class MetItem(object):
-    ROOT_URL = 'https://libmma.contentdm.oclc.org/digital'
-    ITEM_UI = 'https://libmma.contentdm.oclc.org/digital/collection/p15324coll10/id/{}/rec/1'
+class IAItem(object):
+    ROOT_URL = 'https://archive.org/{}/{}/{}'
     SFR_CROSSWALK = {
         'title': [
             {'level': 'work', 'field': 'title'},
             {'level': 'instance', 'field': 'title'},
         ],
-        'creato': [{'level': 'work', 'field': 'author'}],
-        'descri': [{'level': 'instance', 'field': 'summary'}],
-        'subjec': [{'level': 'work', 'field': 'subjects'}],
-        'publis': [{'level': 'instance', 'field': 'publisher'}],
+        'creator': [{'level': 'work', 'field': 'author'}],
+        'subject': [{'level': 'work', 'field': 'subjects'}],
+        'publisher': [{'level': 'instance', 'field': 'publisher'}],
         'date': [{'level': 'instance', 'field': 'publication_date'}],
-        'format': [{'level': 'instance', 'field': 'format'}],
-        'physic': [{'level': 'item', 'field': 'repository'}],
-        'source': [{'level': 'item', 'field': 'provider'}],
-        'langua': [
+        'contributor': [{'level': 'item', 'field': 'provider'}],
+        'sponsor': [{'level': 'item', 'field': 'sponsor'}],
+        'description': [{'level': 'instance', 'field': 'summary'}],
+        'edition': [{'level': 'instance', 'field': 'edition_statement'}],
+        'language': [
             {'level': 'work', 'field': 'language'},
             {'level': 'instance', 'field': 'language'}
         ],
-        'rights': [
-            {'level': 'instance', 'field': 'license'},
-            {'level': 'item', 'field': 'license'}
-        ],
-        'copyra': [
-            {'level': 'instance', 'field': 'rights_statement'},
-            {'level': 'item', 'field': 'rights_statement'}
-        ],
-        'copyri': [
+        'possible-copyright-status': [
             {'level': 'instance', 'field': 'rights_reason'},
             {'level': 'item', 'field': 'rights_reason'}
         ],
-        'digiti': [
-            {'level': 'work', 'field': 'identifier.generic'},
-            {'level': 'instance', 'field': 'identifier.generic'},
-            {'level': 'item', 'field': 'identifier.generic'}
-        ],
-        'dmoclcno': [
+        'oclc-id': [
             {'level': 'work', 'field': 'identifier.oclc'},
             {'level': 'instance', 'field': 'identifier.oclc'},
             {'level': 'item', 'field': 'identifier.oclc'}
         ],
-        'link': [{'level': 'item', 'field': 'links'}]
+        'external-identfier': [
+            {'level': 'work', 'field': 'identifier.mixed'},
+            {'level': 'instance', 'field': 'identifier.mixed'},
+            {'level': 'item', 'field': 'identifier.mixed'}
+        ],
+        'isbn': [
+            {'level': 'work', 'field': 'identifier.isbn'},
+            {'level': 'instance', 'field': 'identifier.isbn'},
+            {'level': 'item', 'field': 'identifier.isbn'}
+        ],
+        'lccn': [
+            {'level': 'work', 'field': 'identifier.lccn'},
+            {'level': 'instance', 'field': 'identifier.lccn'},
+            {'level': 'item', 'field': 'identifier.lccn'}
+        ],
+        'identifier-access': [{'level': 'item', 'field': 'links'}]
     }
 
     VIAF_ROOT = 'https://dev-platform.nypl.org/api/v0.1/research-now/viaf-lookup?queryName={}'
     CORPORATE_ROLES = [
         'publisher', 'manufacturer', 'repository', 'digitizer',
-        'responsible_organization'
+        'responsible_organization', 'provider', 'sponsor'
     ]
     def __init__(self, itemID, itemData):
         self.itemID = itemID
@@ -68,41 +69,10 @@ class MetItem(object):
         self.work = WorkRecord()
         self.instance = InstanceRecord()
         self.item = Format(
-            source='met',
+            source='internetarchive',
             contentType='ebook',
             modified=datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         )
-
-    def extractRelevantData(self):
-        logger.debug('Extracting array of metadata fields')
-
-        # If this is a collection the parent object will contain the metadata
-        # otherwise it is found in the root object
-        if 'parent' in self.data.keys() and self.data['parent'] is not None:
-            self.fields = self.transformFields(self.data['parent']['fields'])
-        else:
-            self.fields = self.transformFields(self.data['fields'])
-        
-        # Links to various associated resources are stored as relative paths
-        # These will be used later
-        try:
-            self.downloadURI = self.data['downloadParentUri'].replace('/digital', '')
-        except (KeyError, AttributeError):
-            self.downloadURI = self.data['downloadUri']
-        self.coverURI = self.data['imageUri']
-        self.viewURI = self.ITEM_UI.format(self.itemID)
-    
-    def transformFields(self, fields):
-        """Transforms the array of metadata fields into a dict, where the 
-        key attribute of the object in the array is the dict's key
-        
-        Arguments:
-            fields {list} -- List of metadata elements
-        
-        Returns:
-            [dict] -- Object containing transposed metadata fields
-        """
-        return {f['key']: f for f in fields}
 
     def createStructure(self):
         """Takes the set of relevant fields as defined in the in the mapping
@@ -114,14 +84,14 @@ class MetItem(object):
             for field in fields:
                 # Get relevant work/instance/item record
                 rec = getattr(self, field['level'])
-                sourceValue = self.fields.get(key, None)
+                sourceValue = self.data.get(key, None)
 
                 # If value set for this field, add to the record
                 if sourceValue:
                     logger.debug('Adding {} to {} on {}'.format(
-                        sourceValue['value'], field['field'], rec
+                        sourceValue, field['field'], rec
                     ))
-                    rec[field['field']] = sourceValue['value']
+                    rec[field['field']] = sourceValue
 
     def parseIdentifiers(self):
         """Parse identifiers from assigned records into Identifier objects
@@ -135,7 +105,7 @@ class MetItem(object):
             rec.identifiers.append(
                 Identifier(
                     type=None,
-                    identifier='met.{}'.format(self.itemID),
+                    identifier='ia.{}'.format(self.itemID),
                     weight=1
                 )
             )
@@ -145,18 +115,27 @@ class MetItem(object):
             for iden in ids:
                 # Extracts spedific identifier type
                 idType = iden.split('.')[1]
-                identifier = rec[iden] if idType != 'generic' else 'met.{}'.format(rec[iden])
+                if isinstance(rec[iden], str):
+                    values = [rec[iden]]
+                else:
+                    values = rec[iden]
 
-                logger.debug('Adding identifier {}({}) to {}'.format(
-                    identifier, idType, rec
-                ))
-                rec.identifiers.append(
-                    Identifier(
-                        type=idType if idType != 'generic' else None,
-                        identifier=identifier,
-                        weight=1
+                for value in values:
+                    identifier = value if idType != 'generic' else 'ia.{}'.format(value)
+
+                    if idType == 'mixed':
+                        _, idType, _, identifier = tuple(value.split(':'))
+
+                    logger.debug('Adding identifier {}({}) to {}'.format(
+                        identifier, idType, rec
+                    ))
+                    rec.identifiers.append(
+                        Identifier(
+                            type=idType if idType != 'generic' else None,
+                            identifier=identifier,
+                            weight=1
+                        )
                     )
-                )
                 del rec[iden]
 
         self.work.primary_identifier = self.work.identifiers[0]
@@ -166,14 +145,11 @@ class MetItem(object):
         attached to the work record
         """
         logger.info('Extracting subjects')
-        try:
-            subjs = self.work.subjects.split(';')
-        except AttributeError:
-            subjs = self.work.subjects
-
+        if isinstance(self.work.subjects, str):
+            self.work.subjects = [self.work.subjects]
         self.work.subjects = [
-            Subject(subjectType='lcsh', value=subj.strip(), weight=1)
-            for subj in subjs
+            Subject(subjectType='', value=subj.strip(), weight=1)
+            for subj in self.work.subjects
         ]
     
     def parseAgents(self):
@@ -185,19 +161,18 @@ class MetItem(object):
             self.parseAgent('work', role)
         for role in ['publisher']:
             self.splitPublisherField()
-        for role in ['repository', 'provider']:
+        for role in ['sponsor', 'provider']:
             self.parseAgent('item', role)
 
     def splitPublisherField(self):
-        """The 'publis' field in the MET record corresponds to a MARC 260 field,
+        """The 'publisher' field in the IA record corresponds to a MARC 260 field,
         specifically subfields $a and $b, so must be split to extract the
         relevant fields.
         """
-        try:
-            pubField = self.instance.publisher
-            publishers = pubField.split(';')
-        except AttributeError:
+        pubField = getattr(self.instance, 'publisher', None)
+        if pubField is None:
             return None
+        publishers = pubField.split(';')
 
         for pub in publishers:
             pubData = pub.split(':')
@@ -210,12 +185,13 @@ class MetItem(object):
                 publisher = pubData[1].strip()
                 self.instance.publisher = publisher
                 self.parseAgent('instance', 'publisher')
-        
-        # If parseAgent wasn't called, we still need to be sure the field is removed
-        try:
-            del self.instance['publisher']
-        except KeyError:
-            pass
+            else:
+                # If no publisher exists we must still remove this field from
+                # the record
+                try:
+                    del self.instance['publisher']
+                except KeyError:
+                    pass
 
     def parseAgent(self, rec, role):
         """Parse individual agent record, skipping if none is found
@@ -225,56 +201,50 @@ class MetItem(object):
             role {str} -- Specific role of agent being parsed
         """
         inst = getattr(self, rec)
+
         try:
-            logger.debug('Adding {} {} to {}'.format(
-                role, inst[role], inst 
-            ))
-
-            newAgent = Agent(name=inst[role], role=role)
-
-            # Fetch VIAF/LCNAF identifiers for agent
-            corporate = True if role != 'author' else False
-            self.getVIAF(newAgent, corporate=corporate)
-
-            inst.agents.append(newAgent)
-            del inst[role]
+            if isinstance(inst[role], str):
+                inst[role] = [inst[role]]
         except KeyError:
-            logger.warning('No agent with role {} found for record'.format(role))
-            pass
+            logger.warning('No agent with role {} found for record'.format(
+                role
+            ))
+            return None
+        
+        for agentStr in inst[role]:
+            agentRecs = agentStr.split('; ')
+            for agentRec in agentRecs:
+                logger.debug('Adding {} {} to {}'.format(
+                    role, agentRec, inst 
+                ))
+
+                newAgent = Agent(name=agentRec.strip(), role=role)
+
+                # Fetch VIAF/LCNAF identifiers for agent
+                corporate = True if role != 'author' else False
+                self.getVIAF(newAgent, corporate=corporate)
+
+                inst.agents.append(newAgent)
+
+        del inst[role]
 
     def parseRights(self):
         """Create rights statement for Instance and Item records
         """
         logger.info('Extracting rights metadata')
         for rec in [self.instance, self.item]:
-            # Transforms the license string into a uniform format
-            rightsLicense = getattr(rec, 'license', 'copyrighted').replace(' ', '_').lower()
-
-            # Check to see if this is "copyrighted" which is the METs term for
-            # all records they do not release in the public domain. We refer
-            # users back to the MET for these records.
-            if rightsLicense == 'copyrighted':
-                logger.debug('Found uncertain record, adding custom rights')
-                rightsLicense = 'uncertain'
-                rightsStatement = 'Refer to Material for Copyright'
-            else:
-                logger.debug('Adding MET assigned rights statement and license')
-                rightsStatement = getattr(rec, 'rights_statement', None)
-
             rights = Rights(
-                source='met',
-                license=rightsLicense,
-                statement=rightsStatement,
+                source='internetarchive',
+                license='uncertain',
+                statement='Refer to Material for Copyright',
                 reason=getattr(rec, 'rights_reason', None)
             )
             rec.rights.append(rights)
 
-            # These fields can be safely removed once the rights object exists
-            for field in ['license', 'rights_statement', 'rights_reason']:
-                try:
-                    del rec[field]
-                except KeyError:
-                    pass
+            try:
+                del rec['rights_reason']
+            except KeyError:
+                pass
 
     def parseLanguages(self):
         """Extract language and determine standard ISO codes
@@ -282,24 +252,30 @@ class MetItem(object):
         logger.info('Extracting language metadata')
         for rec in [self.work, self.instance]:
             language = getattr(rec, 'language', '')
+            if isinstance(language, str):
+                language = [language]
 
-            # Parses language to find ISO codes
-            
-            try:
-                langObj = pycountry.languages.get(name=language.strip().title())
+            parsedLangs = []
+            for lang in language:
+                # Parses language to find ISO codes
+                langObj = pycountry.languages.get(alpha_3=lang.lower())
                 if langObj is None or langObj.alpha_3 == 'und':
-                    logger.warning('Language could not be determined for {}'.format(language))
+                    logger.warning(
+                        'Language could not be determined for {}'.format(
+                            language
+                        )
+                    )
                     rec.language = []
-                    raise AttributeError
-            except AttributeError:
-                continue
+                    continue
 
-            sfrLang = Language(
-                language=language,
-                iso_2=langObj.alpha_2,
-                iso_3=langObj.alpha_3
-            )
-            rec.language = [sfrLang]
+                sfrLang = Language(
+                    language=langObj.name,
+                    iso_2=langObj.alpha_2,
+                    iso_3=langObj.alpha_3
+                )
+                parsedLangs.append(sfrLang)
+
+            rec.language = parsedLangs
     
     def parseDates(self):
         """Parses any date fields. Currently only assigns publication date for
@@ -317,6 +293,10 @@ class MetItem(object):
             )
             self.instance.dates.append(newDate)
             del self.instance.publication_date
+
+    def parseSummary(self):
+        if isinstance(self.instance.summary, list):
+            self.instance.summary = '; '.join(self.instance.summary)
 
     def parseLinks(self):
         """Takes previously extracted link formats and assigns them to the Item
@@ -336,9 +316,13 @@ class MetItem(object):
             }
         )
         
-        # Adding Download Link
+        # Adding Download PDF Link
         downloadLink = Link(
-            url='{}{}'.format(self.ROOT_URL, self.downloadURI),
+            url=self.ROOT_URL.format(
+                'download',
+                self.itemID,
+                '{}.pdf'.format(self.itemID)
+            ),
             mediaType='application/pdf',
             flags={
                 'local': False,
@@ -357,7 +341,7 @@ class MetItem(object):
         logger.info('Extracting cover metadata')
         self.instance.links.append(
             Link(
-                url='{}{}'.format(self.ROOT_URL, self.coverURI),
+                url=self.ROOT_URL.format('services', 'img', self.itemID),
                 mediaType='image/jpeg',
                 flags={'cover': True, 'temporary': True}
             )

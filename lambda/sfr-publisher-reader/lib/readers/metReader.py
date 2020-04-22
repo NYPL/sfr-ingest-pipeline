@@ -1,3 +1,4 @@
+from json.decoder import JSONDecodeError
 import os
 import requests
 
@@ -11,7 +12,8 @@ logger = createLog('metReader')
 class MetReader(AbsSourceReader):
     INDEX_URL = 'https://libmma.contentdm.oclc.org/digital/api/search/collection/p15324coll10/order/title/ad/asc/page/{}/maxRecords/50'
     ITEM_API = 'https://libmma.contentdm.oclc.org/digital/api/collections/p15324coll10/items/{}/false'
-    def __init__(self):
+    def __init__(self, updateSince):
+        self.updateSince = updateSince
         self.startPage = 1
         self.stopPage = 48
         self.source = 'Metropolitan Museum of Art'
@@ -33,9 +35,11 @@ class MetReader(AbsSourceReader):
         for itemID in self.itemIDs:
             logger.info('Fetching metadata for record {}'.format(itemID))
             pageResp = requests.get(self.ITEM_API.format(itemID))
-            pageData = pageResp.json()
-
-            self.works.append(self.scrapeRecordMetadata(itemID, pageData))
+            try:
+                pageData = pageResp.json()
+                self.works.append(self.scrapeRecordMetadata(itemID, pageData))
+            except JSONDecodeError:
+                logger.warning('Unable to fetch metada for record'.format(itemID))
 
     def scrapeRecordMetadata(self, itemID, pageData):
         logger.debug('Extracting data from record {}'.format(itemID))

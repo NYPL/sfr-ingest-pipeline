@@ -135,3 +135,10 @@ class TestCoverParse:
         testParser = CoverParse(testRecord)
         testKey = testParser.createKey()
         assert testKey == 'testing/xxxxxx_test.123456.jpg'
+    
+    def test_createKey_internetarchive(self, testRecord):
+        testRecord['url'] = 'archive.org/services/img/test00test'
+        testRecord['identifier'] = 'ia.test00test'
+        testParser = CoverParse(testRecord)
+        testKey = testParser.createKey()
+        assert testKey == 'testing/ia.test00test_ia.test00test.jpg'

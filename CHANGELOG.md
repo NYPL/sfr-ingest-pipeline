@@ -1,11 +1,19 @@
 # Changelog
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
-## [Unreleased]
+## [0.0.5] - Unreleased
 ### Added
+- Edition detail endpoint to the API to allow users to retrieve an individual edition and its component instances
 - travisCI deployment for search API
+
+## [0.0.4] - 2020-04-16
+### Added
+- New Reader for Internet Archive collections in the sfr-publisher-reader function
+- Additional condition for Internet Archive covers in the s3 cover writer function
 ### Fixed
 - Improved identifier parsing for MET catalog
+- Fix bug in OCLC Catalog lookup to ensure that proper identifiers are fetched from records in the MARC 856 field
+- Bug fix for error catching from the calendar module when parsing YYYY-MM or YYYY-YY date ranges
 
 ## [0.0.3] - 2020-04-01
 ### Added

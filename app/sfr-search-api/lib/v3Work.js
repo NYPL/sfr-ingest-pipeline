@@ -1,4 +1,5 @@
 const Helpers = require('../helpers/esSourceHelpers')
+const { workTableJoins, instanceTableJoins } = require('../helpers/apiConstants')
 const { DBConnection } = require('./db')
 
 /** Class representing a search object. */
@@ -25,7 +26,7 @@ class V3Work {
     let { recordType } = params
     if (!recordType) { recordType = 'editions' }
     const fetchObj = V3Work.getInstanceOrEditions(work)
-    const dbWork = this.loadWork(fetchObj, recordType)
+    const dbWork = this.loadWork(fetchObj, recordType, workTableJoins)
 
     return dbWork
   }
@@ -35,11 +36,12 @@ class V3Work {
    *
    * @param {object} work Parsed work object containing identifiers to be retrieved
    * @param {*} recordType Inner doc type to be included. Either instances or editions
+   * @param {array} joins Array of strings identifying tables to be joined to this query
    *
    * @returns {object} Constructed work record that can be sent to the end user
    */
-  async loadWork(work, recordType) {
-    const dbWork = await this.getWork(work.uuid, ['measurements', 'subjects', 'agents', 'languages', 'alt_titles'])
+  async loadWork(work, recordType, joins) {
+    const dbWork = await this.getWork(work.uuid, joins)
     const identifiers = await this.getIdentifiers('work', dbWork.id)
     dbWork.identifiers = identifiers
     dbWork.instances = null
@@ -105,7 +107,8 @@ class V3Work {
    * @returns {array} Array of instance objects from the database
    */
   getInstances(instanceIds) {
-    return this.dbConn.loadInstances(instanceIds, instanceIds.length)
+    // instanceTableJoins is loaded from the helpers/apiConstants file
+    return this.dbConn.loadInstances(instanceIds, instanceIds.length, instanceTableJoins)
   }
 
   /**
