@@ -17,7 +17,7 @@ describe('v3 work retrieval tests', () => {
     let mockLoad
     beforeEach(() => {
       testWork = new V3Work(sinon.mock(), {})
-      mockGet = sinon.stub(V3Work, 'getInstanceOrEditions')
+      mockGet = sinon.stub(V3Work.prototype, 'getInstanceOrEditions')
       mockLoad = sinon.stub(V3Work.prototype, 'loadWork')
     })
 
@@ -124,7 +124,38 @@ describe('v3 work retrieval tests', () => {
 
   describe('getInstanceOrEditions()', () => {
     let mockFormatRange
+    let testInst
+    const testResp = {
+      _index: 'sfr_test',
+      _type: 'test',
+      _id: 1,
+      _score: 1,
+      _source: {
+        instances: [
+          {
+            id: 2,
+            pub_place: 'Testtown',
+            instance_id: 102,
+            edition_id: 103,
+          },
+          {
+            id: 1,
+            pub_date: '2000',
+            instance_id: 10,
+            edition_id: 11,
+          },
+          { id: 4 },
+          {
+            id: 3,
+            formats: ['test1'],
+            instance_id: 41,
+            edition_id: 42,
+          },
+        ],
+      },
+    }
     beforeEach(() => {
+      testInst = new V3Work(sinon.mock(), {})
       mockFormatRange = sinon.stub(Helpers, 'formatSingleResponseEditionRange')
     })
 
@@ -133,42 +164,18 @@ describe('v3 work retrieval tests', () => {
     })
 
     it('should filter inner records if inner_hits is present', (done) => {
-      const testResp = {
-        _index: 'sfr_test',
-        _type: 'test',
-        _id: 1,
-        _score: 1,
-        _source: {
-          instances: [
-            {
-              id: 1,
-              pub_date: { gte: '2000-01-01', lte: '2001-01-01' },
-              instance_id: 10,
-              edition_id: 11,
-            },
-            { id: 2, pub_place: 'Testtown' },
-            {
-              id: 3,
-              formats: ['test1'],
-              instance_id: 41,
-              edition_id: 42,
-            },
-            { id: 4 },
-          ],
-        },
-        inner_hits: {
-          testing: {
-            hits: {
-              hits: [
-                { _nested: { offset: 0 } },
-                { _nested: { offset: 2 } },
-              ],
-            },
+      testResp.inner_hits = {
+        testing: {
+          hits: {
+            hits: [
+              { _nested: { offset: 1 } },
+              { _nested: { offset: 3 } },
+            ],
           },
         },
       }
 
-      const fetchObjects = V3Work.getInstanceOrEditions(testResp)
+      const fetchObjects = testInst.getInstanceOrEditions(testResp)
       // eslint-disable-next-line no-unused-expressions
       expect(mockFormatRange).to.be.calledOnce
       expect(fetchObjects.uuid).to.equal(1)
@@ -178,43 +185,28 @@ describe('v3 work retrieval tests', () => {
     })
 
     it('should remove any empty instance records', (done) => {
-      const testResp = {
-        _index: 'sfr_test',
-        _type: 'test',
-        _id: 1,
-        _score: 1,
-        _source: {
-          instances: [
-            {
-              id: 2,
-              pub_place: 'Testtown',
-              instance_id: 102,
-              edition_id: 103,
-            },
-            {
-              id: 1,
-              pub_date: '2000',
-              instance_id: 10,
-              edition_id: 11,
-            },
-            { id: 4 },
-            {
-              id: 3,
-              formats: ['test1'],
-              instance_id: 41,
-              edition_id: 42,
-            },
-          ],
-        },
-      }
+      testResp.inner_hits = null
+      const fetchObjects = testInst.getInstanceOrEditions(testResp)
 
-      const fetchObjects = V3Work.getInstanceOrEditions(testResp)
       // eslint-disable-next-line no-unused-expressions
       expect(mockFormatRange).to.be.calledOnce
       expect(fetchObjects.uuid).to.equal(1)
       expect(fetchObjects.instanceIds.length).to.equal(3)
       expect(fetchObjects.instanceIds[0].instance_id).to.equal(10)
       expect(fetchObjects.instanceIds[1].edition_id).to.equal(42)
+      done()
+    })
+
+    it('should remove instances without formats if showAll is false', (done) => {
+      testResp.inner_hits = null
+      testInst.params.showAll = 'false'
+
+      const fetchObjects = testInst.getInstanceOrEditions(testResp)
+      // eslint-disable-next-line no-unused-expressions
+      expect(mockFormatRange).to.be.calledOnce
+      expect(fetchObjects.uuid).to.equal(1)
+      expect(fetchObjects.instanceIds.length).to.equal(1)
+      expect(fetchObjects.instanceIds[0].instance_id).to.equal(41)
       done()
     })
   })
