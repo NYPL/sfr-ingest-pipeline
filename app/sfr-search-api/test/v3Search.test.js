@@ -149,6 +149,29 @@ describe('v3 simple search tests', () => {
       expect(testQuery.query.bool.should[1].nested.query.query_string.query).to.equal('testing')
       done()
     })
+
+    it('should add a nested query for general standardNumber across isbn/issn/lccn/oclc', (done) => {
+      testSearch.buildQuery('standardNumber', 'XXXXXXXXX')
+
+      const testQuery = testSearch.query.build()
+      const boolQuery = testQuery.query.bool
+      expect(boolQuery.should[0].nested.query.bool.must[0].term['identifiers.identifier']).to.equal('XXXXXXXXX')
+      expect(boolQuery.should[0].nested.query.bool.must[1].terms['identifiers.id_type'].length).to.equal(4)
+      expect(boolQuery.should[1].nested.query.bool.must[0].term['instances.identifiers.identifier']).to.equal('XXXXXXXXX')
+      expect(boolQuery.should[1].nested.query.bool.must[1].terms['instances.identifiers.id_type'].length).to.equal(4)
+      done()
+    })
+    it('should add a nested query for a specific standardNumber from isbn/issn/lccn/oclc', (done) => {
+      testSearch.buildQuery('isbn', 'XXXXXXXXX')
+
+      const testQuery = testSearch.query.build()
+      const boolQuery = testQuery.query.bool
+      expect(boolQuery.should[0].nested.query.bool.must[0].term['identifiers.identifier']).to.equal('XXXXXXXXX')
+      expect(boolQuery.should[0].nested.query.bool.must[1].terms['identifiers.id_type'][0]).to.equal('isbn')
+      expect(boolQuery.should[1].nested.query.bool.must[0].term['instances.identifiers.identifier']).to.equal('XXXXXXXXX')
+      expect(boolQuery.should[1].nested.query.bool.must[1].terms['instances.identifiers.id_type'][0]).to.equal('isbn')
+      done()
+    })
   })
 
   it('should query for a simple search field/query pair', async () => {

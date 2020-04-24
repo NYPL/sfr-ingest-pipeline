@@ -849,10 +849,10 @@
           {
             "name": "field",
             "in": "query",
-            "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
+            "description": "Field to query. Currently supports: Keyword, Title, Author, StandardNumber(ISBN, ISSN, LCCN and OCLC) and Subject. Defaults to Keyword",
             "required": true,
             "type": "string",
-            "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
+            "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf", "standardNumber", "isbn", "issn", "lccn", "oclc"]
           },{
             "name": "query",
             "in": "query",
@@ -1808,10 +1808,10 @@
       "type": "object",
       "properties": {
         "field": {
-          "description": "Field to query. Currently supports: Keyword, Title, Author and Subject. Defaults to Keyword",
+          "description": "Field to query. Currently supports: Keyword, Title, Author, StandardNumber(ISBN, ISSN, LCCN and OCLC) and Subject. Defaults to Keyword",
           "type": "string",
           "example": "keyword",
-          "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf"]
+          "enum": ["keyword", "title", "author", "subject", "viaf", "lcnaf", "standardNumber", "isbn", "issn", "lccn", "oclc"]
         },
         "query": {
           "description": "Query term to search. This is a free-text field and which understands standard boolean search terms as well as quoted strings for exact matching.",
