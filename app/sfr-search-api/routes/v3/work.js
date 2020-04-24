@@ -5,7 +5,6 @@ const { V3Work } = require('../../lib/v3Work')
 const workEndpoints = (app, respond, handleError) => {
   app.get('/sfr/work', async (req, res) => {
     const params = req.query
-
     try {
       const workRes = await fetchWork(params, app)
       respond(res, workRes, params, 'workRecord')
@@ -28,6 +27,10 @@ const workEndpoints = (app, respond, handleError) => {
 const fetchWork = (params, app) => {
   if (!('identifier' in params)) {
     throw new MissingParamError('Your request must include an identifier field or parameter')
+  }
+
+  if (params.showAll && params.showAll !== 'true' && params.showAll !== 'false') {
+    throw new MissingParamError('showAll must be set to either "true" or "false"')
   }
 
   // TODO: Implement type-specific identifier matching

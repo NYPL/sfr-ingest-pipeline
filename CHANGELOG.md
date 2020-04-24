@@ -5,6 +5,7 @@ This file documents all updates and releases to the ResearchNow Data Ingest pipe
 ### Added
 - Edition detail endpoint to the API to allow users to retrieve an individual edition and its component instances
 - travisCI deployment for search API
+- Add `showAll` parameter to Work Detail endpoint to restrict return of editions/instances to only those with read online/download options
 
 ## [0.0.4] - 2020-04-16
 ### Added

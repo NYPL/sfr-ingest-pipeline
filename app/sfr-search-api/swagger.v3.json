@@ -634,6 +634,12 @@
             "required": false,
             "type": "string",
             "enum": ["instances", "editions"]
+          },{
+            "name": "showAll",
+            "in": "query",
+            "description": "Set to control output of instances/editions, if false, this will return only instances or editions with attached items. If true or not set, all instances/editions will be returned",
+            "type": "string",
+            "enum": ["true", "false"]
           }
         ],
         "responses": {
@@ -1783,6 +1789,12 @@
           "example": "editions",
           "description": "Either editions or instances to control the type of inner document returned",
           "enum": ["editions", "instances"]
+        },
+        "showAll": {
+            "type": "string",
+            "example": "true",
+            "description": "Set to control output of instances/editions, if false, this will return only instances or editions with attached items. If true or not set, all instances/editions will be returned",
+            "enum": ["true", "false"]
         }
       }
     },
