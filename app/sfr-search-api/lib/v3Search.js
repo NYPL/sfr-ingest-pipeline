@@ -524,14 +524,8 @@ class V3Search {
       case 'viaf':
         this.query.query('bool', b => b
           .query('bool', c => c
-            // eslint-disable-next-line arrow-body-style
-            .orQuery('nested', { path: 'agents' }, (q) => {
-              return q.query('term', `agents.${field}`, queryTerm)
-            })
-            // eslint-disable-next-line arrow-body-style
-            .orQuery('nested', { path: 'instances.agents' }, (q) => {
-              return q.query('term', `instances.agents.${field}`, queryTerm)
-            })))
+            .orQuery('nested', { path: 'agents' }, q => q.query('term', `agents.${field}`, queryTerm))
+            .orQuery('nested', { path: 'instances.agents' }, q => q.query('term', `instances.agents.${field}`, queryTerm))))
         break
       case 'subject':
         this.query.query('nested', { path: 'subjects', query: { query_string: { query: queryTerm, default_operator: 'and' } } })
