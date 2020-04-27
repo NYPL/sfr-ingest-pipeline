@@ -441,6 +441,16 @@ describe('Testing ElasticSearch Integration', () => {
         // eslint-disable-next-line no-unused-expressions
         expect(v3Work.isDone()).to.be.true
       })
+
+      it('should return an error if showAll contains an invalid value (not true/false)', async () => {
+        await req.post('/v3/sfr/work')
+          .send({ identifier: 'errTest', showAll: 'random' })
+          .then((resp) => {
+            expect(resp.body.status).to.equal(500)
+            expect(resp.body.name).to.equal('MissingParamError')
+            expect(resp.body.error).to.equal('showAll must be set to either "true" or "false"')
+          })
+      })
     })
 
     describe('v3 Edition Integration', () => {

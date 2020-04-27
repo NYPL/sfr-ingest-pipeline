@@ -25,7 +25,7 @@ class V3Work {
   parseWork(work, params) {
     let { recordType } = params
     if (!recordType) { recordType = 'editions' }
-    const fetchObj = V3Work.getInstanceOrEditions(work)
+    const fetchObj = this.getInstanceOrEditions(work)
     const dbWork = this.loadWork(fetchObj, recordType, workTableJoins)
 
     return dbWork
@@ -122,14 +122,16 @@ class V3Work {
    * @returns {object} A formatted object containing identifiers for retrieval from
    * the database
    */
-  static getInstanceOrEditions(work) {
+  getInstanceOrEditions(work) {
     /* eslint-disable no-underscore-dangle */
     const dbRec = {
       uuid: work._id,
       edition_range: Helpers.formatSingleResponseEditionRange(work),
       instanceIds: [],
     }
+
     const instances = []
+
     if (work.inner_hits) {
       Object.values(work.inner_hits).forEach((match) => {
         match.hits.hits.forEach((inner) => {
@@ -148,11 +150,15 @@ class V3Work {
       return 1
     })
 
+    const { showAll } = this.params
+
     instances.forEach((inst) => {
-      if ((inst.formats && inst.formats.length > 0)
-      || inst.pub_date
-      || (inst.agents && inst.agents.length > 0)
-      || inst.pub_place) {
+      const itemPresent = inst.formats && inst.formats.length > 0
+      const metadataPresent = inst.pub_date
+        || (inst.agents && inst.agents.length > 0)
+        || inst.pub_place
+
+      if ((showAll === 'false' && itemPresent) || (showAll !== 'false' && (itemPresent || metadataPresent))) {
         dbRec.instanceIds.push({
           instance_id: inst.instance_id,
           edition_id: inst.edition_id,
