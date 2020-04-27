@@ -524,20 +524,29 @@ class V3Search {
       case 'viaf':
         this.query.query('bool', b => b
           .query('bool', c => c
-            // eslint-disable-next-line arrow-body-style
-            .orQuery('nested', { path: 'agents' }, (q) => {
-              return q.query('term', `agents.${field}`, queryTerm)
-            })
-            // eslint-disable-next-line arrow-body-style
-            .orQuery('nested', { path: 'instances.agents' }, (q) => {
-              return q.query('term', `instances.agents.${field}`, queryTerm)
-            })))
+            .orQuery('nested', { path: 'agents' }, q => q.query('term', `agents.${field}`, queryTerm))
+            .orQuery('nested', { path: 'instances.agents' }, q => q.query('term', `instances.agents.${field}`, queryTerm))))
         break
       case 'subject':
         this.query.query('nested', { path: 'subjects', query: { query_string: { query: queryTerm, default_operator: 'and' } } })
         break
       case 'title':
         this.query.query('query_string', { fields: ['title', 'alt_titles'], query: queryTerm, default_operator: 'and' })
+        break
+      case 'isbn':
+      case 'issn':
+      case 'lccn':
+      case 'oclc':
+      case 'standardNumber':
+        // eslint-disable-next-line no-case-declarations
+        const queryFields = (field === 'standardNumber') ? ['isbn', 'issn', 'lccn', 'oclc'] : [field]
+        this.query.query('bool', b => b
+          .orQuery('nested', { path: 'identifiers' }, q => q.query('bool', c => c
+            .andQuery('term', 'identifiers.identifier', queryTerm)
+            .andQuery('terms', 'identifiers.id_type', queryFields)))
+          .orQuery('nested', { path: 'instances.identifiers' }, q => q.query('bool', d => d
+            .andQuery('term', 'instances.identifiers.identifier', queryTerm)
+            .andQuery('terms', 'instances.identifiers.id_type', queryFields))))
         break
       case 'keyword':
       default:
