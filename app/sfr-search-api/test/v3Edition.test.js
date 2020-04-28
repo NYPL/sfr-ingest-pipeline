@@ -109,10 +109,15 @@ describe('v3 edition retrieval tests', () => {
     })
 
     it('should return an array of identifiers', (done) => {
-      mockLoad.returns(['id1', 'id2', 'id3'])
+      mockLoad.returns([
+        { identifier: 'id1', id_type: 'test' },
+        { identifier: 'id2', id_type: 'other_test' },
+        { identifier: 'id3', id_type: 'test' },
+      ])
       const outIdentifiers = testEdition.getIdentifiers('instances', 1)
       expect(mockLoad).to.be.calledOnceWith('instances', 1)
-      expect(outIdentifiers[1]).to.equal('id2')
+      expect(outIdentifiers[1].identifier).to.equal('id2')
+      expect(outIdentifiers[1].id_type).to.equal('other_test')
       done()
     })
   })

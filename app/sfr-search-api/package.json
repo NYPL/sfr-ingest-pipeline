@@ -3,7 +3,7 @@
   "description": "Simple search API to query the SFR Elasticsearch index.",
   "author": "NYPL Digital",
   "license": "MIT",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "dependencies": {
     "@nypl/nypl-data-api-client": "^1.0.0",
     "body-parser": "^1.19.0",

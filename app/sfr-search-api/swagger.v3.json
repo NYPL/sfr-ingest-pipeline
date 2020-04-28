@@ -1,7 +1,7 @@
 {
   "swagger": "2.0",
   "info": {
-    "version": "v0.3.2",
+    "version": "v0.3.3",
     "title": "ResearchNow Search API",
     "description": "REST API for Elasticsearch index for the ResearchNow Project"
   },
@@ -1666,6 +1666,12 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/v3LanguageObject"
+          }
+        },
+        "identifiers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/v3IdentifierObject"
           }
         }
       }
