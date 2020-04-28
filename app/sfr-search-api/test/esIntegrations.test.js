@@ -478,10 +478,34 @@ describe('Testing ElasticSearch Integration', () => {
             () => {
               expect(query.sql).to.contain('from "instances" where "id"')
               query.response([
-                { title: 'test1', measurements: [{ value: 2 }] },
-                { title: 'test2', measurements: [{ value: 10 }] },
-                { title: 'test3', measurements: [{ value: 5 }] },
+                { id: 1, title: 'test1', measurements: [{ value: 2 }] },
+                { id: 2, title: 'test2', measurements: [{ value: 10 }] },
+                { id: 3, title: 'test3', measurements: [{ value: 5 }] },
               ])
+            },
+            () => {
+              expect(query.sql).to.contain('instance_identifiers')
+              query.response([{ ids: [1, 2], type: 'test' }])
+            },
+            () => {
+              expect(query.sql).to.contain('instance_identifiers')
+              query.response([{ ids: [3, 4], type: 'test' }])
+            },
+            () => {
+              expect(query.sql).to.contain('instance_identifiers')
+              query.response([{ ids: [5, 6], type: 'test' }])
+            },
+            () => {
+              expect(query.sql).to.contain('test')
+              query.response([{ value: 'id1' }, { value: 'id2' }])
+            },
+            () => {
+              expect(query.sql).to.contain('test')
+              query.response([{ value: 'id3' }, { value: 'id4' }])
+            },
+            () => {
+              expect(query.sql).to.contain('test')
+              query.response([{ value: 'id5' }, { value: 'id5' }])
             },
           ][step - 1]()
         })

@@ -97,20 +97,43 @@ describe('v3 edition retrieval tests', () => {
     })
   })
 
+  describe('getIdentifiers()', () => {
+    let testEdition
+    let mockLoad
+    beforeEach(() => {
+      testEdition = new V3Edition(sinon.mock(), 1)
+      testEdition.dbConn = sinon.mock()
+
+      mockLoad = sinon.mock()
+      testEdition.dbConn.loadIdentifiers = mockLoad
+    })
+
+    it('should return an array of identifiers', (done) => {
+      mockLoad.returns(['id1', 'id2', 'id3'])
+      const outIdentifiers = testEdition.getIdentifiers('instances', 1)
+      expect(mockLoad).to.be.calledOnceWith('instances', 1)
+      expect(outIdentifiers[1]).to.equal('id2')
+      done()
+    })
+  })
+
   describe('parseEdition()', () => {
     let testEdition
     let mockSort
     let mockGetInstances
+    let mockGetIdentifiers
     beforeEach(() => {
       testEdition = new V3Edition(sinon.mock(), 1)
       testEdition.edition = {}
       mockSort = sinon.stub(V3Edition.prototype, 'sortInstances')
       mockGetInstances = sinon.stub(V3Edition.prototype, 'getInstances')
+      mockGetIdentifiers = sinon.stub(V3Edition.prototype, 'getIdentifiers')
     })
 
     afterEach(() => {
       mockSort.restore()
       mockGetInstances.restore()
+      mockGetIdentifiers.restore()
     })
 
     it('should select best title by most common among the instances', async () => {
@@ -120,6 +143,7 @@ describe('v3 edition retrieval tests', () => {
       await testEdition.parseEdition()
       expect(testEdition.edition.title).to.equal('Testing')
       expect(mockSort).to.be.calledOnce
+      expect(mockGetIdentifiers).callCount(3)
     })
 
     it('should parse a single year from the publication date range', async () => {
@@ -129,6 +153,7 @@ describe('v3 edition retrieval tests', () => {
       expect(testEdition.edition.title).to.equal('Testing')
       expect(testEdition.edition.publication_date).to.equal('2000')
       expect(mockSort).to.be.calledOnce
+      expect(mockGetIdentifiers).to.be.calledOnce
     })
 
     it('should remove instances without items if showAll is false', async () => {
@@ -142,6 +167,7 @@ describe('v3 edition retrieval tests', () => {
       expect(testEdition.edition.title).to.equal('Testing')
       expect(testEdition.edition.instances.length).to.equal(2)
       expect(mockSort).to.be.calledOnce
+      expect(mockGetIdentifiers).callCount(2)
     })
   })
 
