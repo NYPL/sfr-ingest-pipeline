@@ -466,6 +466,7 @@ describe('Testing ElasticSearch Integration', () => {
           [
             () => {
               expect(query.sql).to.contain('from "editions" where "id"')
+              expect(query.sql).to.contain('work_uuid')
               query.response([{
                 id: 1,
                 summary: 'Test Summary',

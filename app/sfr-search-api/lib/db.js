@@ -397,9 +397,14 @@ class DBConnection {
 
     const sortOrder = `array_position(ARRAY[${editionIds.join(', ')}], id)`
 
+    const workSub = this.pg('works')
+      .where('works.id', this.pg.ref('editions.work_id'))
+      .select('uuid')
+      .as('work_uuid')
+
     return this.pg('editions')
       .whereIn('id', editionIds)
-      .select('*', langSub, agentSub, itemSub, coverSub)
+      .select('*', langSub, agentSub, itemSub, coverSub, workSub)
       .orderBy(this.pg.raw(sortOrder))
       .limit(limit)
       .then(rows => rows)

@@ -123,6 +123,12 @@ class V3Edition {
       inst.identifiers = await this.getIdentifiers('instance', inst.id)
     }))
 
+    // Rename pub_place field in instances for consistency
+    this.edition.instances.forEach((inst) => {
+      // eslint-disable-next-line no-param-reassign
+      inst.publication_place = inst.pub_place; delete inst.pub_place
+    })
+
     // Remove items and covers from the edition; these are displayed on instances
     delete this.edition.items
     delete this.edition.covers
