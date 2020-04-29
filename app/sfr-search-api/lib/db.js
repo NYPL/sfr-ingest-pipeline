@@ -170,7 +170,7 @@ class DBConnection {
       .groupBy('type')
       .then(async (rows) => {
         const recIds = []
-        rows.forEach(async (row) => {
+        await Promise.all(rows.map(async (row) => {
           const realType = row.type || 'generic'
           const rowIds = await this.pg(realType)
             .whereIn('identifier_id', row.ids)
@@ -186,7 +186,7 @@ class DBConnection {
               return typeIds
             })
           recIds.push(...rowIds)
-        })
+        }))
         return recIds
       })
   }

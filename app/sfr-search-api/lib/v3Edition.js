@@ -69,6 +69,20 @@ class V3Edition {
   }
 
   /**
+   * Handler function to retrieve identifiers for a specified row through the
+   * DBConnection class
+   *
+   * @param {string} table Name of the table to retrieve related identifiers. Should
+   * generally be either works or instances (other option is items)
+   * @param {integer} identifier Row ID in the specified table to retrieve identifiers for
+   *
+   * @returns {array} Array of identifier objects with id_type and identifier values
+   */
+  getIdentifiers(table, identifier) {
+    return this.dbConn.loadIdentifiers(table, identifier)
+  }
+
+  /**
    * Method for performing some basic transformations of source metadata for presentation
    * to end users. This includes parsing dates, selecting the most appropriate title for
    * the edition and sorting the component instances.
@@ -102,6 +116,12 @@ class V3Edition {
 
     // Perform a custom sort on the instance array
     this.sortInstances()
+
+    // Fetch Identifiers for instances
+    await Promise.all(this.edition.instances.map(async (inst) => {
+      // eslint-disable-next-line no-param-reassign
+      inst.identifiers = await this.getIdentifiers('instance', inst.id)
+    }))
 
     // Remove items and covers from the edition; these are displayed on instances
     delete this.edition.items
