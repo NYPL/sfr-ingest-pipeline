@@ -174,6 +174,13 @@ describe('v3 edition retrieval tests', () => {
       expect(mockSort).to.be.calledOnce
       expect(mockGetIdentifiers).callCount(2)
     })
+
+    it('should replace pub_place with publication_place in instances', async () => {
+      mockGetInstances.returns([{ title: 'Testing', items: null, pub_place: 'Test Place' }])
+      await testEdition.parseEdition()
+      expect(testEdition.edition.instances[0].publication_place).to.equal('Test Place')
+      expect(testEdition.edition.instances[0].pub_place).to.be.undefined
+    })
   })
 
   describe('sortInstances()', () => {
