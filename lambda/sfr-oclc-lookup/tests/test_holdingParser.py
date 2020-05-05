@@ -98,31 +98,31 @@ class TestHoldingParse(unittest.TestCase):
         self.assertEqual(testInst.instance.links[0], 'testLink')
 
     @patch.multiple(
-        HoldingParser, checkIAStatus=DEFAULT, parseHathiLink=DEFAULT
+        HoldingParser, checkIAReadability=DEFAULT, parseHathiLink=DEFAULT
     )
-    def test_matchEbook_generic(self, checkIAStatus, parseHathiLink):
+    def test_matchEbook_generic(self, checkIAReadability, parseHathiLink):
         mockInstance = MagicMock()
         testInst = HoldingParser('856Field', mockInstance)
         testInst.uri = 'www.test.org/test123.epub'
         testInst.matchEbook()
-        checkIAStatus.assert_not_called()
+        checkIAReadability.assert_not_called()
         parseHathiLink.assert_not_called()
         mockInstance.addFormat.assert_not_called()
 
     @patch.multiple(
-        HoldingParser, checkIAStatus=DEFAULT, parseHathiLink=DEFAULT
+        HoldingParser, checkIAReadability=DEFAULT, parseHathiLink=DEFAULT
     )
-    def test_matchEbook_gutenberg(self, checkIAStatus, parseHathiLink):
+    def test_matchEbook_gutenberg(self, checkIAReadability, parseHathiLink):
         mockInstance = MagicMock()
         testInst = HoldingParser('856Field', mockInstance)
         testInst.uri = 'gutenberg.org/ebooks/123.epub.images'
         testInst.identifier = 1
         testInst.matchEbook()
-        checkIAStatus.assert_not_called()
+        checkIAReadability.assert_not_called()
         parseHathiLink.assert_not_called()
         mockInstance.addFormat.assert_called_once()
     
-    @patch.object(HoldingParser, 'checkIAStatus')
+    @patch.object(HoldingParser, 'checkIAReadability')
     def test_matchEBook_ia_success(self, mockIACheck):
         mockIACheck.return_value = True
         testInst = HoldingParser('856Field', 'mockInstance')
@@ -148,7 +148,7 @@ class TestHoldingParse(unittest.TestCase):
         )
 
     @patch('lib.parsers.parse856Holding.requests')
-    def test_checkIAStatus_not_restricted(self, mockReq):
+    def test_checkIAReadability_not_restricted(self, mockReq):
         testInst = HoldingParser('mock856', 'mockInstance')
         testInst.uri = 'archive.org/detail/testwork00'
 
@@ -156,14 +156,14 @@ class TestHoldingParse(unittest.TestCase):
         mockResp.status_code = 200
         mockResp.json.return_value = {
             'metadata': {
-                'access-restricted-item': False
+                'access-restricted-item': 'false'
             }
         }
         mockReq.get.return_value = mockResp
-        self.assertFalse(testInst.checkIAStatus())
+        self.assertFalse(testInst.checkIAReadability())
 
     @patch('lib.parsers.parse856Holding.requests')
-    def test_checkIAStatus_restricted(self, mockReq):
+    def test_checkIAReadability_restricted(self, mockReq):
         testInst = HoldingParser('mock856', 'mockInstance')
         testInst.uri = 'archive.org/detail/testwork00'
 
@@ -171,11 +171,11 @@ class TestHoldingParse(unittest.TestCase):
         mockResp.status_code = 200
         mockResp.json.return_value = {
             'metadata': {
-                'access-restricted-item': True
+                'access-restricted-item': 'true'
             }
         }
         mockReq.get.return_value = mockResp
-        self.assertTrue(testInst.checkIAStatus())
+        self.assertTrue(testInst.checkIAReadability())
 
     @patch.object(HoldingParser, 'loadCatalogLinks')
     def test_parseHathiLink(self, mockLoad):
