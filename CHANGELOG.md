@@ -11,6 +11,7 @@ This file documents all updates and releases to the ResearchNow Data Ingest pipe
 ### Fixed
 - Conform edition detail fields to other endpoints
 - Add work UUID to edition detail response
+- `856` field parser for OCLC Catalog lookup to properly assess readability of IA links
 
 ## [0.0.4] - 2020-04-16
 ### Added

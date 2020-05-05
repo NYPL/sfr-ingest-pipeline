@@ -74,7 +74,7 @@ class HoldingParser:
 
                 # Check if link is accessible (e.g. public domain/open source)
                 if source == 'internetarchive':
-                    if self.checkIAStatus() is True:
+                    if self.checkIAReadability() is True:
                         return None
                     linkID = Identifier(
                         identifier='ia.{}'.format(self.identifier),
@@ -113,13 +113,14 @@ class HoldingParser:
                 })
                 return True
 
-    def checkIAStatus(self):
+    def checkIAReadability(self):
         metadataURI = self.uri.replace('details', 'metadata')
         metadataResp = requests.get(metadataURI)
         if metadataResp.status_code == 200:
             iaData = metadataResp.json()
-            iaMeta = iaData['metadata']
-            if iaMeta.get('access-restricted-item', False) is False:
+            iaAccessStatus = iaData['metadata'].get('access-restricted-item', False)
+            iaAccessBool = False if iaAccessStatus == 'false' else True
+            if iaAccessBool is False:
                 return False
         
         return True
