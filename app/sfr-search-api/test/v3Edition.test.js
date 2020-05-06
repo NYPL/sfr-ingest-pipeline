@@ -149,6 +149,7 @@ describe('v3 edition retrieval tests', () => {
       ])
       await testEdition.parseEdition()
       expect(testEdition.edition.title).to.equal('Testing')
+      expect(testEdition.edition.sub_title).to.equal('Testing Sub')
       expect(mockSort).to.be.calledOnce
       expect(mockGetIdentifiers).callCount(3)
     })
