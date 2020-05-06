@@ -1548,6 +1548,9 @@
         "title": {
           "type": "string"
         },
+        "sub_title": {
+          "type": "string"
+        }
         "publication_place": {
           "type": "string"
         },

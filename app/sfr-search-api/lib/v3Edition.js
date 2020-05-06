@@ -99,15 +99,19 @@ class V3Edition {
     const titleCounts = this.edition.instances
       .map(i => i.title)
       .reduce((titles, title) => {
-        const count = titles[title] || 0
         // eslint-disable-next-line no-param-reassign
-        titles[title] = count + 1
+        titles[title] = (titles[title] || 0) + 1
         return titles
       }, {})
 
     // Select the most common instance title as the edition title
     this.edition.title = Object.keys(titleCounts)
       .sort((a, b) => titleCounts[b] - titleCounts[a])[0]
+
+    // Assign sub_title from instance that title was drawn from
+    const titleInsts = this.edition.instances
+      .filter(i => i.title === this.edition.title && i.sub_title)
+    this.edition.sub_title = titleInsts.length > 0 ? titleInsts[0].sub_title : null
 
     // If showAll is false, remove instances without items
     if (this.showAll === 'false') {

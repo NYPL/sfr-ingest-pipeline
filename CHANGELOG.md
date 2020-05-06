@@ -11,6 +11,7 @@ This file documents all updates and releases to the ResearchNow Data Ingest pipe
 ### Fixed
 - Conform edition detail fields to other endpoints
 - Add work UUID to edition detail response
+- Add `sub_title` to edition detail response block
 
 ## [0.0.4] - 2020-04-16
 ### Added
