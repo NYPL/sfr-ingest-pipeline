@@ -143,10 +143,13 @@ describe('v3 edition retrieval tests', () => {
 
     it('should select best title by most common among the instances', async () => {
       mockGetInstances.returns([
-        { title: 'Testing' }, { title: 'Not Testing' }, { title: 'Testing' },
+        { title: 'Testing', sub_title: 'Testing Sub' },
+        { title: 'Not Testing', sub_title: 'Other Sub' },
+        { title: 'Testing', sub_title: '' },
       ])
       await testEdition.parseEdition()
       expect(testEdition.edition.title).to.equal('Testing')
+      expect(testEdition.edition.sub_title).to.equal('Testing Sub')
       expect(mockSort).to.be.calledOnce
       expect(mockGetIdentifiers).callCount(3)
     })
