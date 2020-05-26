@@ -1950,7 +1950,7 @@
       "properties": {
         "field": {
           "type": "string",
-          "enum": ["language", "years", "show_all", "format"],
+          "enum": ["language", "years", "show_all", "format", "government_document"],
           "description": "Field on which to match results by (effectively exact-match search)"
         },
         "value": {

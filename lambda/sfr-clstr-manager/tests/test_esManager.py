@@ -99,10 +99,12 @@ class TestElasticManager(object):
             addIdentifier=DEFAULT,
             addLanguage=DEFAULT,
             addInstances=DEFAULT,
+            addGovDocStatus=DEFAULT,
             _loadDates=mockDateLoader
         ) as esMocks:
             testManager.enhanceWork()
             esMocks['addInstances'].assert_called_once()
+            esMocks['addGovDocStatus'].assert_called_once()
         
         assert testManager.work.issued_date == '1999'
         assert testManager.work.created_date == '2000'
@@ -233,3 +235,26 @@ class TestElasticManager(object):
             assert newInstance.title == 'Test Instance'
             assert newInstance.instance_id == 1
             assert newInstance.pub_date_sort == '2000-01-01'
+    
+    def test_addGovDocStatus_true(self, testManager):
+        testManager.dbWork.measurements = [
+            MagicMock(quantity='count', value=10),
+            MagicMock(quantity='government_document', value=1),
+            MagicMock(quantity='holdings', value=0)
+        ]
+        assert ElasticManager.addGovDocStatus(testManager.dbWork.measurements) == True
+    
+    def test_addGovDocStatus_false(self, testManager):
+        testManager.dbWork.measurements = [
+            MagicMock(quantity='count', value=10),
+            MagicMock(quantity='government_document', value=0),
+            MagicMock(quantity='holdings', value=0)
+        ]
+        assert ElasticManager.addGovDocStatus(testManager.dbWork.measurements) == False
+    
+    def test_addGovDocStatus_not_present(self, testManager):
+        testManager.dbWork.measurements = [
+            MagicMock(quantity='count', value=10),
+            MagicMock(quantity='holdings', value=0)
+        ]
+        assert ElasticManager.addGovDocStatus(testManager.dbWork.measurements) == False

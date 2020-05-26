@@ -259,9 +259,13 @@ describe('v3 simple search tests', () => {
   })
 
   describe('addFilters()', () => {
-    it('should add gte/lte date filter on publication dates', (done) => {
-      const testApp = sinon.mock()
+    let testApp
+    beforeEach(() => {
+      testApp = sinon.mock()
       testApp.logger = logger
+    })
+
+    it('should add gte/lte date filter on publication dates', (done) => {
       const testParams = { filters: [{ field: 'years', value: { start: 1900, end: 2000 } }] }
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
@@ -274,8 +278,6 @@ describe('v3 simple search tests', () => {
     })
 
     it('should add gte date filter on publication dates if only start is provided', (done) => {
-      const testApp = sinon.mock()
-      testApp.logger = logger
       const testParams = { filters: [{ field: 'years', value: { start: 1900 } }] }
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
@@ -289,8 +291,6 @@ describe('v3 simple search tests', () => {
     })
 
     it('should add multiple language filters in a bool query block', (done) => {
-      const testApp = sinon.mock()
-      testApp.logger = logger
       const testParams = { filters: [{ field: 'language', value: 'Testing' }, { field: 'language', value: 'Hello' }] }
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
@@ -303,8 +303,6 @@ describe('v3 simple search tests', () => {
     })
 
     it('should add the show_all filter unless specific disabled', (done) => {
-      const testApp = sinon.mock()
-      testApp.logger = logger
       const testParams = {}
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
@@ -316,8 +314,6 @@ describe('v3 simple search tests', () => {
     })
 
     it('should not include the show_all filter if disabled', (done) => {
-      const testApp = sinon.mock()
-      testApp.logger = logger
       const testParams = { filters: [{ field: 'show_all', value: true }] }
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
@@ -328,8 +324,6 @@ describe('v3 simple search tests', () => {
     })
 
     it('should create an array of format filter options', (done) => {
-      const testApp = sinon.mock()
-      testApp.logger = logger
       const testParams = { filters: [{ field: 'format', value: 'pdf' }, { field: 'format', value: 'epub' }] }
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
@@ -340,9 +334,17 @@ describe('v3 simple search tests', () => {
       done()
     })
 
+    it('should add the government_document filter if provided', (done) => {
+      const testParams = { filters: [{ field: 'government_document', value: true }] }
+      const testSearch = new V3Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      testSearch.addFilters()
+      testBody = testSearch.query.build()
+      expect(testBody.query.bool.must[0].term.is_government_document).to.equal(true)
+      done()
+    })
+
     it('should throw an InvalidFilterError if format is not recognized', (done) => {
-      const testApp = sinon.mock()
-      testApp.logger = logger
       const testParams = { filters: [{ field: 'format', value: 'pbf' }, { field: 'format', value: 'epub' }] }
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
