@@ -136,6 +136,10 @@ class ElasticManager():
             ElasticManager.addLanguage(lang)
             for lang in self.dbWork.language
         }
+        
+        self.work.is_government_document = ElasticManager.addGovDocStatus(
+            self.dbWork.measurements
+        )
 
         self.work.instances = []
         self.addInstances()
@@ -202,6 +206,17 @@ class ElasticManager():
             logger.debug('Adding new agent {}'.format(agent))
             return esAgent
     
+    @staticmethod
+    def addGovDocStatus(measurements):
+        govDocMeasurement = list(filter(
+            lambda x: x.quantity == 'government_document', measurements
+        ))
+        if len(govDocMeasurement) > 0:
+            if int(govDocMeasurement[0].value) == 1:
+                return True
+        
+        return False
+
     def addInstances(self):
         for instance in self.dbWork.instances:
             self.work.instances.append(self.addInstance(instance))

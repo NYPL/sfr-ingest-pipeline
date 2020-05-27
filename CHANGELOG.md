@@ -8,6 +8,7 @@ This file documents all updates and releases to the ResearchNow Data Ingest pipe
 - travisCI deployment for search API
 - Add standardNumber option to search endpoint to query ISBN, ISSN, LCCN and OCLC; either individually or all together. Conforms to other search options
 - Add `showAll` parameter to Work Detail endpoint to restrict return of editions/instances to only those with read online/download options
+- `government_document` filter to select only documents that have the government document tag
 ### Fixed
 - Conform edition detail fields to other endpoints
 - Add work UUID to edition detail response

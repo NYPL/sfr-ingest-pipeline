@@ -735,6 +735,10 @@ class V3Search {
             }
             this.formats.push(formatFilterTrans[value])
             break
+          case 'government_document':
+            this.logger.debug(`Filtering works for goverment document status ${value}`)
+            this.query.query('term', 'is_government_document', value)
+            break
           default:
             this.logger.error('API Not configured to handle this filter')
             throw new InvalidFilterError(`${field} is not a valid filter option`)

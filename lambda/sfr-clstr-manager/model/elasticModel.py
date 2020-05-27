@@ -192,6 +192,7 @@ class Work(BaseDoc):
     alt_titles = Text(fields={'keyword': Keyword()})
     issued_date = DateRange(format='date_optional_time')
     created_date = DateRange(format='date_optional_time')
+    is_government_document = Boolean(multi=False)
 
     instances = Nested(Instance)
     identifiers = Nested(Identifier)
