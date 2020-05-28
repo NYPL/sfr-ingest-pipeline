@@ -694,7 +694,7 @@ class V3Search {
               } else if (yearCheck === 0) {
                 delete value[key]
               } else {
-                value[key] = yearCheck
+                value[key] = `0000${yearCheck}`.slice(-4) // Zero pad for less than 4 digit years
               }
             })
 
@@ -708,7 +708,7 @@ class V3Search {
             // eslint-disable-next-line no-case-declarations
             const dateRange = {}
             if (value.start) { dateRange.gte = new Date(`${value.start}-01-01T00:00:00.000+00:00`) }
-            if (value.end) { dateRange.lte = new Date(`${value.end}-12-31T24:00:00.000+00:00`) }
+            if (value.end) { dateRange.lte = new Date(`${value.end}-12-31T23:59:59.000+00:00`) }
             dateRange.relation = 'WITHIN'
             yearFilter = ['range', 'instances.pub_date', dateRange]
             this.dateFilterRange = dateRange
