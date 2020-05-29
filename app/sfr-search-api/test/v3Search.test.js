@@ -273,7 +273,7 @@ describe('v3 simple search tests', () => {
       testBody = testSearch.query.build()
       expect(testBody).to.have.property('query')
       expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T00:00:00.000+00:00').getTime())
-      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte.getTime()).to.equal(new Date('2000-12-31T24:00:00.000+00:00').getTime())
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte.getTime()).to.equal(new Date('2000-12-31T23:59:59.000+00:00').getTime())
       done()
     })
 
@@ -287,6 +287,27 @@ describe('v3 simple search tests', () => {
       expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('1900-01-01T00:00:00.000+00:00').getTime())
       // eslint-disable-next-line no-unused-expressions
       expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte).to.be.undefined
+      done()
+    })
+
+    it('should pad a date with zeros if it is less than 4 digits', (done) => {
+      const testParams = { filters: [{ field: 'years', value: { start: 999 } }] }
+      const testSearch = new V3Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      testSearch.addFilters()
+      testBody = testSearch.query.build()
+      expect(testBody).to.have.property('query')
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].gte.getTime()).to.equal(new Date('0999-01-01T00:00:00.000+00:00').getTime())
+      // eslint-disable-next-line no-unused-expressions
+      expect(testBody.query.nested.query.bool.must[0].range['instances.pub_date'].lte).to.be.undefined
+      done()
+    })
+
+    it('should raise an error if an invalid date is passed in', (done) => {
+      const testParams = { filters: [{ field: 'years', value: { start: 'March 20, 1988' } }] }
+      const testSearch = new V3Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      expect(testSearch.addFilters.bind()).to.throw(InvalidFilterError('years filter start value March 20, 1988 is not a valid year'))
       done()
     })
 
