@@ -48,21 +48,12 @@ After initialization, if this is a new application, run `eb create` to create th
 
 ## Searching
 
-The `search` endpoint supports both `GET` and `POST` requests with the same basic parameters. Queries can be both for an individual term or an array of terms. In either case the main `query` object must be comprised of the following:
+The `search` endpoint supports both `GET` and `POST` requests with the same basic parameters. Queries can be both for an individual term or an array of terms. In either case the main `queries` object must be comprised of the following:
 
 - `field` the field(s) you would like to search. Currently supported are `keyword`, `title`, `author` and `subject`.
 - `query` the string you would like to search. The query field supports boolean search construction as well as quotation marks for exact term matching.
 
-For example a simple search query looks like:
-
-``` json
-{
-    "field": "keyword",
-    "query": "history"
-}
-```
-
-A more complex query looks like:"
+A standard search query looks like:
 
 ``` json
 {
@@ -87,6 +78,7 @@ The following search field options are supported:
 - `viaf`: An utility endpoint that returns works associated with an agent identified by a VIAF ID.
 - `lcnaf`: An utility endpoint that returns works associated with a LCNAF ID.
 - `subject`: Queries the full set of subjects associated with a work.
+- `standardNumber`: Query for one of the following standard numbers: `ISBN`, `ISSN`, `LCCN` or `OCLC`. These identifiers can also be passed to query a specific standard number.
 
 ## Paging
 
@@ -122,6 +114,8 @@ Filtering is supported on a set of pre-defined fields. At present the following 
   - `pdf`
   - `epub`
   - `html`
+
+- `government_document`: Set to `true` to show only records flagged as government_documents, and `false` to exclude them. If not set, all documents are returned.
 
 ## Aggregations/Facets
 
