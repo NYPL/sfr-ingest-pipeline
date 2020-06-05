@@ -16,8 +16,8 @@ jobs:
       - "./runCommand.sh test func= LANG=node.js"
 before_deploy:
   - cd app/sfr-search-api
-  - git fetch origin beta-production
-  - git fetch origin development
+  - git fetch origin beta-production:beta-production
+  - git fetch origin development:development
   - git archive --format zip --output ../../sfr-search-api-prod.zip beta-production ./
   - git archive --format zip --output ../../sfr-search-api-dev.zip development ./
   - cd ../../
