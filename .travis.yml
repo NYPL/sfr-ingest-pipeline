@@ -17,7 +17,7 @@ jobs:
 before_deploy:
   - cd app/sfr-search-api
   - git archive --format zip --output ../../sfr-search-api-dev.zip development ./
-  - git archive --format zip --output ../../sfr-search-api-prod.zip development ./
+  - git archive --format zip --output ../../sfr-search-api-prod.zip beta-production ./
   - cd ../../
 deploy:
   - provider: elasticbeanstalk
@@ -30,6 +30,19 @@ deploy:
     bucket_name: elasticbeanstalk-us-east-1-224280085904
     bucket_path: sfr-search-api-development
     zip_file: sfr-search-api-dev.zip
+    on:
+      repo: NYPL/sfr-ingest-pipeline
+      branch: development
+  - provider: elasticbeanstalk
+    skip_cleanup: true
+    access_key_id: "$AWS_ACCESS_KEY_ID_PRODUCTION"
+    secret_access_key: "$AWS_SECRET_ACCESS_KEY_PRODUCTION"
+    region: us-east-1
+    app: DigitalResearchBooks-search-api
+    env: digital-research-books-api
+    bucket_name: elasticbeanstalk-us-east-1-946183545209
+    bucket_path: DigitalResearchBooks-search-api
+    zip_file: sfr-search-api-prod.zip
     on:
       repo: NYPL/sfr-ingest-pipeline
       branch: development
