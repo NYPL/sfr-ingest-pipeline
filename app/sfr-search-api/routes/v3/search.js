@@ -34,7 +34,16 @@ const searchEndpoints = (app, respond, handleError) => {
   })
 
   app.get('/sfr/search', async (rec, res) => {
-    const params = rec.query
+    const params = {}
+
+    // Handle any JSON parts of the query
+    Object.keys(rec.query).forEach((key) => {
+      try {
+        params[key] = JSON.parse(rec.query[key])
+      } catch (err) {
+        params[key] = rec.query[key] // Not a JSON field, just add value to params
+      }
+    })
 
     const searcher = new V3Search(app, params)
 
