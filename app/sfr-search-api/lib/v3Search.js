@@ -715,7 +715,16 @@ class V3Search {
             break
           case 'language':
             this.logger.debug(`Filtering works by language ${value}`)
-            langFilters.push(['nested', { path: 'instances.languages', query: { term: { 'instances.languages.language': value } } }])
+            // eslint-disable-next-line no-case-declarations
+            const langBoolQuery = {
+              bool: {
+                should: [
+                  { term: { 'instances.languages.language': value } },
+                  { term: { 'instances.languages.iso_3': value.toLowerCase() } },
+                ],
+              },
+            }
+            langFilters.push(['nested', { path: 'instances.languages', query: langBoolQuery }])
             break
           case 'show_all':
             if (!(typeof value === 'boolean')) {

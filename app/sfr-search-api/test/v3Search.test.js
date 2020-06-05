@@ -312,14 +312,14 @@ describe('v3 simple search tests', () => {
     })
 
     it('should add multiple language filters in a bool query block', (done) => {
-      const testParams = { filters: [{ field: 'language', value: 'Testing' }, { field: 'language', value: 'Hello' }] }
+      const testParams = { filters: [{ field: 'language', value: 'Testing' }, { field: 'language', value: 'tes' }] }
       const testSearch = new V3Search(testApp, testParams)
       testSearch.query = bodybuilder()
       testSearch.addFilters()
       testBody = testSearch.query.build()
       expect(testBody).to.have.property('query')
-      expect(testBody.query.bool.must[0].nested.query.bool.must[1].nested.query.term['instances.languages.language']).to.equal('Testing')
-      expect(testBody.query.bool.must[1].nested.query.bool.must[1].nested.query.term['instances.languages.language']).to.equal('Hello')
+      expect(testBody.query.bool.must[0].nested.query.bool.must[1].nested.query.bool.should[0].term['instances.languages.language']).to.equal('Testing')
+      expect(testBody.query.bool.must[1].nested.query.bool.must[1].nested.query.bool.should[1].term['instances.languages.iso_3']).to.equal('tes')
       done()
     })
 
