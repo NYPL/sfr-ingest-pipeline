@@ -1,7 +1,7 @@
 # Changelog
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
-## [0.0.5] - Unreleased
+## [0.0.5] - 2020-06-05
 ### Added
 - Edition detail endpoint to the API to allow users to retrieve an individual edition and its component instances
 - Added identifier array to edition detail endpoint
