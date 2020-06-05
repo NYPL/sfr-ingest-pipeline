@@ -16,23 +16,10 @@ jobs:
       - "./runCommand.sh test func= LANG=node.js"
 before_deploy:
   - cd app/sfr-search-api
-  - "git archive --format zip --output ../../sfr-search-api-dev.zip development ./"
-  - "git archive --format zip --output ../../sfr-search-api-prod.zip beta-production ./"
+  - git archive --format zip --output ../../sfr-search-api-prod.zip beta-production ./
+  - git archive --format zip --output ../../sfr-search-api-dev.zip development ./
   - cd ../../
 deploy:
-  - provider: elasticbeanstalk
-    skip_cleanup: true
-    access_key_id: "$AWS_ACCESS_KEY_ID_DEVELOPMENT"
-    secret_access_key: "$AWS_SECRET_ACCESS_KEY_DEVELOPMENT"
-    region: us-east-1
-    app: sfr-search-api
-    env: sfr-search-api-dev
-    bucket_name: elasticbeanstalk-us-east-1-224280085904
-    bucket_path: sfr-search-api-development
-    zip_file: sfr-search-api-dev.zip
-    on:
-      repo: NYPL/sfr-ingest-pipeline
-      branch: development
   - provider: elasticbeanstalk
     skip_cleanup: true
     access_key_id: "$AWS_ACCESS_KEY_ID_PRODUCTION"
@@ -46,6 +33,19 @@ deploy:
     on:
       repo: NYPL/sfr-ingest-pipeline
       branch: beta-production
+  - provider: elasticbeanstalk
+    skip_cleanup: true
+    access_key_id: "$AWS_ACCESS_KEY_ID_DEVELOPMENT"
+    secret_access_key: "$AWS_SECRET_ACCESS_KEY_DEVELOPMENT"
+    region: us-east-1
+    app: sfr-search-api
+    env: sfr-search-api-dev
+    bucket_name: elasticbeanstalk-us-east-1-224280085904
+    bucket_path: sfr-search-api-development
+    zip_file: sfr-search-api-dev.zip
+    on:
+      repo: NYPL/sfr-ingest-pipeline
+      branch: development
 env:
   global:
     - ELASTICSEARCH_INDEX: sfr
