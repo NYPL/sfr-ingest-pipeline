@@ -1,6 +1,12 @@
 # Changelog
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
+## [0.0.6] - unreleased
+### ADDED
+- Support for ISO3 language codes in the language filter
+### Fixed
+- GET method for the search endpoint when using sort and filter options
+
 ## [0.0.5] - 2020-06-05
 ### Added
 - Edition detail endpoint to the API to allow users to retrieve an individual edition and its component instances
