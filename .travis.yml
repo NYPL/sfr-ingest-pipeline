@@ -16,8 +16,8 @@ jobs:
       - "./runCommand.sh test func= LANG=node.js"
 before_deploy:
   - cd app/sfr-search-api
-  - git archive --format zip --output ../../sfr-search-api-dev.zip development ./
-  - git archive --format zip --output ../../sfr-search-api-prod.zip beta-production ./
+  - "git archive --format zip --output ../../sfr-search-api-dev.zip development ./"
+  - "git archive --format zip --output ../../sfr-search-api-prod.zip beta-production ./"
   - cd ../../
 deploy:
   - provider: elasticbeanstalk
