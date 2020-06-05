@@ -45,7 +45,7 @@ deploy:
     zip_file: sfr-search-api-prod.zip
     on:
       repo: NYPL/sfr-ingest-pipeline
-      branch: development
+      branch: beta-production
 env:
   global:
     - ELASTICSEARCH_INDEX: sfr
