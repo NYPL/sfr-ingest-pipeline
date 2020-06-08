@@ -478,6 +478,11 @@ class V3Search {
     }
     queries.forEach((q) => {
       const { field, query } = q
+
+      if (!field || !query) {
+        throw new MissingParamError('Each query object in your request must contain query and field fields')
+      }
+
       this.buildQuery(field, V3Search.escapeLucene(query))
     })
 
@@ -496,10 +501,6 @@ class V3Search {
    * @param {string} query Query string supplied by the user
    */
   buildQuery(field, query) {
-    if (!field || !query) {
-      throw new MissingParamError('Each query object in your request must contain query and field fields')
-    }
-
     // Catch case where escape character has been escaped and reduce to a single escape character
     const queryTerm = query.replace(/[\\]+([^\w\s]{1})/g, '\\$1')
 
