@@ -1,5 +1,5 @@
 const bodybuilder = require('bodybuilder')
-const { MissingParamError, InvalidFilterError } = require('./errors')
+const { MissingParamError, InvalidFilterError, DatabaseError } = require('./errors')
 const Helpers = require('../helpers/esSourceHelpers')
 const { DBConnection } = require('./db')
 /*
@@ -101,22 +101,35 @@ class V3Search {
    * @returns {array} Array of works from the database that can be sent to the end user
    */
   async loadWorks(works, innerType) {
+    let dbWork
     const outWorks = []
+
     /* eslint-disable no-await-in-loop */
     for (let i = 0; i < works.length; i += 1) {
-      const dbWork = await this.getWork(works[i].uuid, ['agents'])
+      try {
+        dbWork = await this.getWork(works[i].uuid, ['agents'])
+      } catch (err) {
+        throw new DatabaseError(`Unable to retrieve work ${works[i].uuid} from database`)
+      }
+
       if (dbWork) {
         dbWork.sort_title = dbWork.sort_title || works[i].sort_title || dbWork.title.toLowerCase()
         dbWork.instances = null
         dbWork.editions = null
         dbWork.edition_count = works[i].edition_count
         dbWork.edition_range = works[i].edition_range
-        await this.getInnerRecords(works[i], dbWork, innerType)
+
+        try {
+          await this.getInnerRecords(works[i], dbWork, innerType)
+        } catch (err) {
+          throw new DatabaseError(`Unable to retrieve ${innerType} from database for work ${works[i].uuid}`)
+        }
 
         dbWork.sort = works[i].sort
         outWorks.push(dbWork)
       }
     }
+
     /* eslint-enable no-await-in-loop */
     return outWorks
   }
@@ -244,10 +257,11 @@ class V3Search {
       })
 
       instances.forEach((inst) => {
-        if ((inst.formats && inst.formats.length > 0)
+        if (((inst.formats && inst.formats.length > 0)
         || inst.pub_date
         || (inst.agents && inst.agents.length > 0)
-        || inst.pub_place) {
+        || inst.pub_place)
+        && inst.instance_id && inst.edition_id) {
           dbRec.instanceIds.push({
             instance_id: inst.instance_id,
             edition_id: inst.edition_id,
@@ -464,6 +478,11 @@ class V3Search {
     }
     queries.forEach((q) => {
       const { field, query } = q
+
+      if (!field || !query) {
+        throw new MissingParamError('Each query object in your request must contain query and field fields')
+      }
+
       this.buildQuery(field, V3Search.escapeLucene(query))
     })
 
@@ -482,10 +501,6 @@ class V3Search {
    * @param {string} query Query string supplied by the user
    */
   buildQuery(field, query) {
-    if (!field || !query) {
-      throw new MissingParamError('Each query object in your request must contain query and field fields')
-    }
-
     // Catch case where escape character has been escaped and reduce to a single escape character
     const queryTerm = query.replace(/[\\]+([^\w\s]{1})/g, '\\$1')
 
