@@ -7,6 +7,7 @@ This file documents all updates and releases to the ResearchNow Data Ingest pipe
 ### Fixed
 - GET method for the search endpoint when using sort and filter options
 - Handle database errors in a more logical and clear way
+- Omit download links for HathiTrust works digitized by Google
 
 ## [0.0.5] - 2020-06-05
 ### Added

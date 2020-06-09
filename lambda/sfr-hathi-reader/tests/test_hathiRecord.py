@@ -163,6 +163,21 @@ class TestHathi(unittest.TestCase):
         itemTest.buildItem()
         self.assertIsInstance(itemTest.item, Format)
         self.assertEqual(itemTest.item.source, 'hathitrust')
+        self.assertEqual(len(itemTest.item.links), 2)
+
+    def test_build_item_google_digitization(self):
+        testItemRow = {
+            'htid': 'test.00000',
+            'provider_entity': 'nypl',
+            'responsible_entity': 'nypl',
+            'digitization_entity': 'google',
+        }
+        itemTest = HathiRecord(testItemRow)
+        itemTest.buildItem()
+        self.assertIsInstance(itemTest.item, Format)
+        self.assertEqual(itemTest.item.source, 'hathitrust')
+        self.assertEqual(len(itemTest.item.links), 1)
+        self.assertEqual(itemTest.item.links[0].flags['download'], False)
 
     def test_create_rights(self):
         testRightsRow = {
