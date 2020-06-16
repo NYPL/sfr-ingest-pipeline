@@ -22,6 +22,29 @@ const formatFilterTrans = {
   html: 'text/html',
 }
 
+const alt639LanguageCodes = {
+  alb: 'sqi',
+  arm: 'hye',
+  baq: 'eus',
+  bur: 'mya',
+  cze: 'ces',
+  chi: 'zho',
+  ger: 'deu',
+  dut: 'nld',
+  gre: 'ell',
+  fre: 'fra',
+  geo: 'kat',
+  ice: 'isl',
+  mac: 'mkd',
+  mao: 'mri',
+  may: 'msa',
+  per: 'fas',
+  rum: 'ron',
+  slo: 'slk',
+  tib: 'bod',
+  wel: 'cym',
+}
+
 /**
  * Class representing a v3 API search object. This replicates the functionality of
  * the v2 search endpoint but connects to the postgres database for loading metadata
@@ -730,17 +753,19 @@ class V3Search {
             break
           case 'language':
             this.logger.debug(`Filtering works by language ${value}`)
-            // eslint-disable-next-line no-case-declarations
+            /* eslint-disable no-case-declarations */
+            const filterLang = alt639LanguageCodes[value.toLowerCase()] || value
             const langBoolQuery = {
               bool: {
                 should: [
-                  { term: { 'instances.languages.language': value } },
-                  { term: { 'instances.languages.iso_3': value.toLowerCase() } },
+                  { term: { 'instances.languages.language': filterLang } },
+                  { term: { 'instances.languages.iso_3': filterLang.toLowerCase() } },
                 ],
               },
             }
             langFilters.push(['nested', { path: 'instances.languages', query: langBoolQuery }])
             break
+            /* eslint-enable no-case-declarations */
           case 'show_all':
             if (!(typeof value === 'boolean')) {
               throw new InvalidFilterError('The show_all filter only accepts boolean values')

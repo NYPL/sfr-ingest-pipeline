@@ -323,6 +323,17 @@ describe('v3 simple search tests', () => {
       done()
     })
 
+    it('should replace a alternate ISO 639-2 code with standard code', (done) => {
+      const testParams = { filters: [{ field: 'language', value: 'ger' }] }
+      const testSearch = new V3Search(testApp, testParams)
+      testSearch.query = bodybuilder()
+      testSearch.addFilters()
+      testBody = testSearch.query.build()
+      expect(testBody).to.have.property('query')
+      expect(testBody.query.nested.query.bool.must[1].nested.query.bool.should[1].term['instances.languages.iso_3']).to.equal('deu')
+      done()
+    })
+
     it('should add the show_all filter unless specific disabled', (done) => {
       const testParams = {}
       const testSearch = new V3Search(testApp, testParams)
