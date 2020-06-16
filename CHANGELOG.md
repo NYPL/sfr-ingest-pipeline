@@ -1,7 +1,7 @@
 # Changelog
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
-## [0.0.6] - unreleased
+## [0.0.6] - 2020-06-16
 ### ADDED
 - Support for ISO3 language codes in the language filter
 ### Fixed
