@@ -145,6 +145,7 @@ class V3Edition {
    */
   sortInstances() {
     // Sort instances by holdings
+    // TODO sort() has changed in nodejs 11>, update this function to reflect that
     this.edition.instances.sort((a, b) => {
       const aHoldingCount = a.measurements.map(m => m.value).reduce((acc, cur) => acc + cur)
       const bHoldingCount = b.measurements.map(m => m.value).reduce((acc, cur) => acc + cur)

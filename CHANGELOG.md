@@ -1,6 +1,14 @@
 # Changelog
 This file documents all updates and releases to the ResearchNow Data Ingest pipeline.
 
+## [0.0.6] - 2020-06-16
+### ADDED
+- Support for ISO3 language codes in the language filter
+### Fixed
+- GET method for the search endpoint when using sort and filter options
+- Handle database errors in a more logical and clear way
+- Omit download links for HathiTrust works digitized by Google
+
 ## [0.0.5] - 2020-06-05
 ### Added
 - Edition detail endpoint to the API to allow users to retrieve an individual edition and its component instances

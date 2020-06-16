@@ -9,6 +9,17 @@ function ElasticSearchError(message) {
 
 ElasticSearchError.prototype = Error.prototype
 
+function DatabaseError(message) {
+  if (!message || typeof message !== 'string' || message.trim() === '') {
+    throw new Error('error message is required')
+  }
+
+  this.message = message
+  this.name = 'DatabaseError'
+}
+
+DatabaseError.prototype = Error.prototype
+
 function MissingParamError(message) {
   if (!message || typeof message !== 'string' || message.trim() === '') {
     throw new Error('error message is required')
@@ -44,6 +55,7 @@ NotFoundError.prototype = Error.prototype
 
 module.exports = {
   ElasticSearchError,
+  DatabaseError,
   MissingParamError,
   InvalidFilterError,
   NotFoundError,
