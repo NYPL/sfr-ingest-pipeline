@@ -166,6 +166,16 @@ const parseLinks = (work, nestedType) => {
               link[key] = flags[key]
             })
             delete link.flags
+
+            // Shim for compatibility with new webreader
+            // Replaces oepbs/content.opf with META-INF/container.xml and sets
+            // media_type to application/epub+xml for reader identification
+            const opfRegex = /[a-z0-9\-]+\/[a-z0-9\-]+\.opf$/
+            const linkMatch = link.url.match(opfRegex)
+            if (linkMatch) {
+              link.url = link.url.replace(linkMatch[0], 'META-INF/container.xml')
+              link.media_type = 'application/epub+xml'
+            }
           })
         }
       })
